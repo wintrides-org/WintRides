@@ -1,3 +1,5 @@
+##WintRides## is a centralized platform that provides reliable, accessible and affordable rides for college students around college towns and to key locations like airports
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
