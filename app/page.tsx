@@ -1,11 +1,22 @@
 import Image from "next/image";
 import RequestButton from "@/components/requestbutton";
+import Link from "next/link";
 
 
 export default function HomePage() {
   return (
     <main className="p-6">
-      <RequestButton />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <RequestButton />
+          <Link
+            href="/carpool/feed"
+            className="rounded-xl px-4 py-2 font-medium shadow-sm border border-neutral-200 bg-white hover:bg-neutral-50"
+          >
+            Carpools
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }

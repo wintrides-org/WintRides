@@ -1,5 +1,5 @@
 /* 
-This file defines the types and interface for ride requests in the WinRides application.
+This file defines the types and interface for ride requests in the WintRides application.
 The interface is to help with alignment across all platforms on the app
 The types defined here define what major attributes of a request are
 They are to be used for both frontend and backend development
