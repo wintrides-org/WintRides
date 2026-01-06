@@ -35,16 +35,20 @@ export interface RideRequest {
     id: string;
     riderId: string;
 
+    // Request lifecycle metadata.
     type: RequestType;
     status: RequestStatus;
 
     pickup: Location;
     dropoff: Location;
+    pickupNotes?: string;
 
     partySize: number;
 
-    // Only for scheduled or group requests
-    pickupAt?: string; // ISO timestamp
+    // Always present so all request types share the same shape
+    pickupAt: string; // ISO timestamp
+    // Defaults to 1 for immediate/scheduled requests.
+    carsNeeded: number;
 
     createdAt: string;
 }
