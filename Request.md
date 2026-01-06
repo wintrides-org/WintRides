@@ -1,5 +1,37 @@
 # WintRides Request Flows (MVP Design Note)
 
+## Backend diagram (Supabase + Prisma)
+
+```
+Browser UI (RequestForm)
+  |
+  | 1) POST /api/requests/quote
+  v
+Next.js API Route (quote)
+  |
+  | validates + estimates (no DB write)
+  v
+Response: quote + ETA/price range
+
+Browser UI
+  |
+  | 2) POST /api/requests/confirm
+  v
+Next.js API Route (confirm)
+  |
+  | Prisma Client (type-safe queries)
+  v
+Prisma Adapter (@prisma/adapter-pg)
+  |
+  | uses pg driver
+  v
+Supabase-hosted PostgreSQL
+  |
+  | inserts ride_requests row
+  v
+Response: created request record
+```
+
 ## Goal
 Support three rider request flows using **one shared backend model** and a **two-step submission UX**:
 

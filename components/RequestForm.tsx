@@ -7,7 +7,6 @@ type FieldErrors = Partial<
   Record<"partySize" | "pickup" | "dropoff" | "pickupAt" | "carsNeeded", string>
 >;
 
-// Props control which fields appear for each request flow.
 type RequestFormProps = {
   requestType: RequestType;
   title: string;
@@ -16,7 +15,6 @@ type RequestFormProps = {
   showCarsNeeded?: boolean;
 };
 
-// Draft payload used for the quote step before final submission.
 type QuoteDraft = Omit<RideRequest, "id">;
 
 // Basic input sanity checks for MVP validation.
@@ -51,7 +49,6 @@ function estimatePriceRange(partySize: number) {
   return { min, max };
 }
 
-// Shared form component used by Immediate, Scheduled, and Group request pages.
 export default function RequestForm({
   requestType,
   title,
@@ -115,13 +112,11 @@ export default function RequestForm({
     const dropoffErr = validateTextLocation(dropoff);
     if (dropoffErr) next.dropoff = dropoffErr;
 
-    // Scheduled/group require a future pickup time.
     if (showPickupAt) {
       const pickupAtErr = validatePickupAt(pickupAtInput);
       if (pickupAtErr) next.pickupAt = pickupAtErr;
     }
 
-    // Group requests require carsNeeded; other flows default to 1.
     if (showCarsNeeded) {
       if (!Number.isFinite(carsNeeded) || carsNeeded < 1) {
         next.carsNeeded = "Must be at least 1 car.";
@@ -136,14 +131,12 @@ export default function RequestForm({
   function buildPayload(): QuoteDraft {
     const now = new Date();
     const waitMinutes = estimateWaitMinutes(partySize);
-    // Immediate requests infer pickupAt from now; scheduled/group use user input.
     const pickupAt = showPickupAt
       ? new Date(pickupAtInput).toISOString()
       : new Date(now.getTime() + waitMinutes * 60 * 1000).toISOString();
     const createdAt = now.toISOString();
     const riderId = "rider_placeholder";
 
-    // Keep the payload shape consistent across all flows.
     return {
       riderId,
       type: requestType,
@@ -169,13 +162,12 @@ export default function RequestForm({
     setQuoteOpen(true);
   }
 
-  // Step 2: confirm quote and create the request in the backend.
+  // Step 2: confirm quote and create the request.
   async function onConfirmQuote() {
     if (!quoteDraft) return;
     setSubmitting(true);
 
     try {
-      // Replace with a dedicated "quote confirm" API when available.
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -348,7 +340,6 @@ export default function RequestForm({
           aria-modal="true"
           aria-label="Confirm quote"
         >
-          {/* Backdrop closes the modal without clearing inputs. */}
           <button
             type="button"
             className="absolute inset-0 bg-black/50"
@@ -364,7 +355,6 @@ export default function RequestForm({
                   Confirm to place your request, or edit details.
                 </p>
               </div>
-              {/* Explicit close control for accessibility and clarity. */}
               <button
                 type="button"
                 onClick={onEditQuote}
@@ -375,7 +365,6 @@ export default function RequestForm({
               </button>
             </div>
 
-            {/* Request summary pulled from the drafted payload. */}
             <div className="mt-4 grid gap-3 text-sm text-neutral-700">
               <div>
                 <span className="font-medium">Pickup:</span> {quoteDraft.pickup.label}
@@ -420,7 +409,6 @@ export default function RequestForm({
               ) : null}
             </div>
 
-            {/* Quote estimates shown only in the modal. */}
             <div className="mt-4 rounded-2xl border p-4">
               <div className="text-sm font-medium">Estimates (MVP)</div>
               <div className="mt-2 text-sm text-neutral-700">
@@ -435,7 +423,6 @@ export default function RequestForm({
               </div>
             </div>
 
-            {/* Confirm/Edit/Cancel control the quote step lifecycle. */}
             <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
