@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Caveat } from "next/font/google";
+import { Geist, Geist_Mono, Sacramento, Quicksand, Nunito} from "next/font/google";
 import "./globals.css";
 
-const brandFont = Caveat({
+const brandFont = Sacramento({
   variable: "--font-brand",
   subsets: ["latin"],
+  weight: "400",
+});
+
+const quickSand = Quicksand({
+  subsets: ["latin"],
   weight: ["600", "700"],
+  variable: "--font-quick-sand",
+});
+
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-nunito",
 });
 
 const geistSans = Geist({
@@ -30,7 +43,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${brandFont.variable}`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${brandFont.variable} ${quickSand.variable} ${nunito.variable}`}
+      >
         {children}
       </body>
     </html>
