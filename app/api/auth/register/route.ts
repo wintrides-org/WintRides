@@ -158,7 +158,8 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         // Only return token in development environment
         // In production, this should always be undefined
-        verificationToken: process.env.NODE_ENV === "development" ? verificationToken : undefined
+        //verificationToken: process.env.NODE_ENV === "development" ? verificationToken : undefined
+        verificationToken
       },
       { status: 201 } // 201 Created
     );
