@@ -79,11 +79,13 @@ function toIso(value: string) {
   return parsed.toISOString();
 }
 
+/** Fake MVP time logic: replace with more accurate logic */
 export function estimateWaitMinutes(partySize: number) {
   const base = 4;
   return Math.min(20, base + Math.max(0, partySize - 1) * 2);
 }
 
+/** Fake MVP price logic: replace with more accurate logic */
 export function estimatePriceRange(partySize: number) {
   const base = 7;
   const perRider = 2;

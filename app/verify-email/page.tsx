@@ -30,7 +30,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -43,6 +43,7 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error" | "pending">("loading");
   const [message, setMessage] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const lastVerifiedToken = useRef<string | null>(null);
 
   /**
    * Verify email with token
@@ -86,6 +87,10 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     // If token is provided, automatically verify
     if (token) {
+      if (lastVerifiedToken.current === token) {
+        return;
+      }
+      lastVerifiedToken.current = token;
       verifyEmail(token);
     } else if (email) {
       // If only email is provided, show pending state

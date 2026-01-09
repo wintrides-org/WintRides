@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { RideRequest, RequestStatus, RequestType } from "@/types/request";
+import type { RequestType } from "@/types/request";
+import type {
+  NormalizedRequest,
+  QuoteEstimates,
+  QuoteInput,
+} from "@/lib/requestValidation";
 
 type FieldErrors = Partial<
   Record<"partySize" | "pickup" | "dropoff" | "pickupAt" | "carsNeeded", string>
@@ -15,7 +20,7 @@ type RequestFormProps = {
   showCarsNeeded?: boolean;
 };
 
-type QuoteDraft = Omit<RideRequest, "id">;
+type QuoteDraft = NormalizedRequest;
 
 // Basic input sanity checks for MVP validation.
 function isAllDigits(s: string) {
@@ -33,20 +38,6 @@ function validateTextLocation(label: string) {
   if (isAllDigits(trimmed)) return "Please enter a real location (not only numbers).";
   if (isTooShort(trimmed)) return "Please be more specific (at least 3 characters).";
   return undefined;
-}
-
-// MVP stub estimates; replace with backend pricing/ETA later.
-function estimateWaitMinutes(partySize: number) {
-  const base = 4;
-  return Math.min(20, base + Math.max(0, partySize - 1) * 2);
-}
-
-function estimatePriceRange(partySize: number) {
-  const base = 7;
-  const perRider = 2;
-  const min = base + (partySize - 1) * perRider;
-  const max = min + 4;
-  return { min, max };
 }
 
 export default function RequestForm({
@@ -84,10 +75,9 @@ export default function RequestForm({
   // Quote step state (modal + payload preview).
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteDraft, setQuoteDraft] = useState<QuoteDraft | null>(null);
-
-  // Derived estimates update when party size changes.
-  const waitMins = useMemo(() => estimateWaitMinutes(partySize), [partySize]);
-  const price = useMemo(() => estimatePriceRange(partySize), [partySize]);
+  const [quoteEstimates, setQuoteEstimates] = useState<QuoteEstimates | null>(
+    null
+  );
 
   // Scheduled/group pickup time validation.
   function validatePickupAt(input: string) {
@@ -128,38 +118,56 @@ export default function RequestForm({
   }
 
   // Build the shared request payload for quote/submit.
-  function buildPayload(): QuoteDraft {
-    const now = new Date();
-    const waitMinutes = estimateWaitMinutes(partySize);
-    const pickupAt = showPickupAt
-      ? new Date(pickupAtInput).toISOString()
-      : new Date(now.getTime() + waitMinutes * 60 * 1000).toISOString();
-    const createdAt = now.toISOString();
-    const riderId = "rider_placeholder";
-
+  function buildPayload(): QuoteInput {
     return {
-      riderId,
       type: requestType,
-      status: "OPEN" as RequestStatus,
-      pickup: { label: pickup.trim(), address: pickup.trim() },
-      dropoff: { label: dropoff.trim(), address: dropoff.trim() },
+      pickup: pickup.trim(),
+      dropoff: dropoff.trim(),
       pickupNotes: pickupNotes.trim() || undefined,
       partySize,
-      pickupAt,
-      carsNeeded: showCarsNeeded ? carsNeeded : 1,
-      createdAt,
+      pickupAt: showPickupAt ? new Date(pickupAtInput).toISOString() : undefined,
+      carsNeeded: showCarsNeeded ? carsNeeded : undefined,
     };
   }
 
   // Step 1: validate and open the quote modal.
-  function onSubmit() {
+  async function onSubmit() {
     setSubmitError("");
     setSubmitSuccess(false);
 
     if (!validateForm()) return;
-    const payload = buildPayload();
-    setQuoteDraft(payload);
-    setQuoteOpen(true);
+    setSubmitting(true);
+
+    try {
+      const payload = buildPayload();
+      const res = await fetch("/api/requests/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(body?.error || body?.message || "Quote failed.");
+      }
+
+      const quote = body?.quote;
+      if (!quote?.request || !quote?.estimates) {
+        throw new Error("Quote response was incomplete.");
+      }
+
+      setQuoteDraft(quote.request as QuoteDraft);
+      setQuoteEstimates(quote.estimates as QuoteEstimates);
+      setQuoteOpen(true);
+    } catch (e: any) {
+      setSubmitError(e?.message || "Something went wrong.");
+      setQuoteOpen(false);
+      setQuoteDraft(null);
+      setQuoteEstimates(null);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Step 2: confirm quote and create the request.
@@ -168,20 +176,22 @@ export default function RequestForm({
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/requests", {
+      const res = await fetch("/api/requests/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(quoteDraft),
       });
 
+      const body = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || "Request failed.");
+        throw new Error(body?.error || body?.message || "Request failed.");
       }
 
       setSubmitSuccess(true);
       setQuoteOpen(false);
       setQuoteDraft(null);
+      setQuoteEstimates(null);
     } catch (e: any) {
       setSubmitError(e?.message || "Something went wrong.");
       setQuoteOpen(false);
@@ -199,6 +209,7 @@ export default function RequestForm({
   function onCancelQuote() {
     setQuoteOpen(false);
     setQuoteDraft(null);
+    setQuoteEstimates(null);
   }
 
   return (
@@ -324,10 +335,9 @@ export default function RequestForm({
           ) : null}
         </div>
 
-        <p className="mt-2 text-xs text-neutral-500">You’ll review a quote before confirming.
-</p>
-
-
+        <p className="mt-2 text-xs text-neutral-500">
+          You’ll review a quote before confirming.
+        </p>
         {submitError ? (
           <p className="text-sm text-red-600">{submitError}</p>
         ) : null}
@@ -413,12 +423,16 @@ export default function RequestForm({
               <div className="text-sm font-medium">Estimates (MVP)</div>
               <div className="mt-2 text-sm text-neutral-700">
                 Estimated wait time:{" "}
-                <span className="font-medium">{waitMins} min</span>
+                <span className="font-medium">
+                  {quoteEstimates ? `${quoteEstimates.waitMinutes} min` : "—"}
+                </span>
               </div>
               <div className="mt-1 text-sm text-neutral-700">
                 Estimated price range:{" "}
                 <span className="font-medium">
-                  ${price.min}–${price.max}
+                  {quoteEstimates
+                    ? `$${quoteEstimates.priceMin}–$${quoteEstimates.priceMax}`
+                    : "—"}
                 </span>
               </div>
             </div>

@@ -31,6 +31,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, getUserByEmail } from "@/lib/mockUsers";
 
+function getRegistrationErrorStatus(message: string): number {
+  if (message.includes("already exists")) {
+    return 409;
+  }
+  if (
+    message.includes("Email must be from a valid campus domain") ||
+    message.includes("Invalid email format") ||
+    message.includes("Legal name is required") ||
+    message.includes("License upload is required") ||
+    message.includes("License verification failed")
+  ) {
+    return 400;
+  }
+
+  return 500;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Parse request body
@@ -153,9 +170,11 @@ export async function POST(request: NextRequest) {
     //   - Don't expose internal error messages to client
     //   - Log to monitoring service (Sentry, Datadog)
     console.error("Error registering user:", error);
+    const message = error?.message || "Failed to register user";
+    const status = getRegistrationErrorStatus(message);
     return NextResponse.json(
-      { error: error.message || "Failed to register user" },
-      { status: 500 }
+      { error: message },
+      { status }
     );
   }
 }
