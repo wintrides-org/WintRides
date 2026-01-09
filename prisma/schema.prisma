@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RequestType {
+  IMMEDIATE
+  SCHEDULED
+  GROUP
+}
+
+enum RequestStatus {
+  DRAFT
+  OPEN
+  MATCHED
+  CANCELED
+  EXPIRED
+}
+
+model RideRequest {
+  id            String        @id @default(uuid())
+  riderId       String
+  type          RequestType
+  status        RequestStatus
+  pickupLabel   String
+  pickupAddress String
+  dropoffLabel  String
+  dropoffAddress String
+  pickupNotes   String?
+  partySize     Int
+  pickupAt      DateTime
+  carsNeeded    Int
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status])
+  @@index([pickupAt])
+}
