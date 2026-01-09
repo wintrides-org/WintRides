@@ -493,7 +493,7 @@ function extractLicenseData(licenseUploadUrl?: string): {
   
   return {
     licenseNumber: undefined, // MVP: not extracted. Production: extract via OCR
-    expirationDate: undefined // MVP: not extracted. Production: extract via OCR
+    expirationDate: undefined // MVP: not extracted. Production: extract via OCR and convert to date
   };
 }
 
@@ -695,7 +695,8 @@ export function getLicenseExpirationStatus(driverInfo?: {
 export function enableDriverCapability(
   userId: string,
   legalName: string,
-  licenseUploadUrl: string
+  licenseUploadUrl: string,
+  expirationDate: string
 ): User | null {
   const user = getUserById(userId);
   if (!user) {
