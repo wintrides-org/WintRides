@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test --loader ./scripts/ts-test-loader.mjs"
+    "test": "node --test --loader ./scripts/ts-test-loader.mjs",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "dotenv": "^17.2.3",

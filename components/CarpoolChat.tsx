@@ -55,6 +55,7 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
   }, [carpoolId]);
 
   // Auto-scroll logic: scroll on initial load, when user sends message, or if user is near bottom
+  /**
   useEffect(() => {
     if (loading) return; // Don't scroll while loading
     
@@ -84,6 +85,7 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
+  */
 
   // Send message
   async function handleSend() {

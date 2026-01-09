@@ -20,8 +20,17 @@ type Option = {
   href: string; // Where to navigate when selected
 };
 
+type RequestButtonProps = {
+  label?: string;
+  className?: string;
+  unstyled?: boolean;
+};
 
-export default function RequestButton() {
+export default function RequestButton({
+  label = "Request",
+  className = "",
+  unstyled = false,
+}: RequestButtonProps) {
   const router = useRouter(); // define a router object for navigation
   const [open, setOpen] = useState(false); // contols whether the modal is visible 
 
@@ -63,9 +72,13 @@ export default function RequestButton() {
       <button
         type="button"
         onClick={() => setOpen(true)} // Open modal
-        className="rounded-xl px-4 py-2 font-medium shadow-sm border border-neutral-200 bg-white hover:bg-neutral-50"
+        className={
+          unstyled
+            ? className
+            : `rounded-xl px-4 py-2 font-medium shadow-sm border border-neutral-200 bg-white hover:bg-neutral-50 ${className}`
+        }
       >
-        Request
+        {label}
       </button>
       
       {/* Only show the modal if open === True */}
