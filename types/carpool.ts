@@ -5,7 +5,7 @@ These types are used for the group carpool coordination feature.
 
 // Carpool thread status lifecycle
 export type CarpoolStatus =
-  | "DRAFT"                  // only creator sees
+  // | "DRAFT"                  // only creator sees
   | "OPEN"                   // visible, joinable
   | "PENDING_CONFIRMATIONS"  // some joins, not enough confirms
   | "CONFIRMED"              // group is locked-in; details finalizing

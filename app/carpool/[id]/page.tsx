@@ -299,7 +299,7 @@ export default function CarpoolThreadPage() {
           </>
         )}
 
-        {isJoined && isConfirmed && carpool.status !== "CONFIRMED" && (
+        {isJoined && isConfirmed && carpool.status == "CONFIRMED" && (
           <button
             type="button"
             onClick={handleUnconfirm}
