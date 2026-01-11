@@ -18,6 +18,7 @@ export type RequestStatus =
 | "DRAFT"     // user is filling the form
 | "OPEN"      // submitted, waiting for driver
 | "MATCHED"   // driver accepted
+| "COMPLETED" // ride finished
 | "CANCELED"  // rider or system canceled
 | "EXPIRED";  // no driver accepted in time
 

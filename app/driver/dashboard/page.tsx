@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
+import { estimatePriceRange } from "@/lib/requestValidation";
 
 const displayFont = Playfair_Display({
   subsets: ["latin"],
@@ -56,6 +57,18 @@ export default function DriverDashboardPage() {
   const [pingsOpen, setPingsOpen] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
+  const [openRequests, setOpenRequests] = useState<
+    {
+      id: string;
+      pickupLabel: string;
+      dropoffLabel: string;
+      pickupAt: string;
+      partySize: number;
+      carsNeeded: number;
+    }[]
+  >([]);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [confirmCard, setConfirmCard] = useState<string>("");
   const [upcomingRequests, setUpcomingRequests] = useState<
     {
       id: string;
@@ -96,6 +109,36 @@ export default function DriverDashboardPage() {
     };
   }, [driverId]);
 
+  useEffect(() => {
+    let ignore = false;
+    let interval: NodeJS.Timeout | null = null;
+
+    async function fetchOpenRequests() {
+      try {
+        const res = await fetch("/api/requests?status=OPEN");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!ignore) {
+          setOpenRequests((data.requests || []).slice(0, 3));
+        }
+      } catch {
+        if (!ignore) {
+          setOpenRequests([]);
+        }
+      }
+    }
+
+    fetchOpenRequests();
+    interval = setInterval(fetchOpenRequests, 10000);
+
+    return () => {
+      ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, []);
+
   const formatPickupTime = (pickupAt: string) =>
     new Date(pickupAt).toLocaleString([], {
       month: "short",
@@ -103,6 +146,29 @@ export default function DriverDashboardPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  async function handleAccept(requestId: string) {
+    setConfirmCard("");
+    setAcceptingId(requestId);
+
+    try {
+      const res = await fetch("/api/requests/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, driverId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to accept request.");
+      }
+      setOpenRequests((prev) => prev.filter((req) => req.id !== requestId));
+      setConfirmCard("Request accepted and moved to Upcoming Rides.");
+    } catch (err: any) {
+      setConfirmCard(err?.message || "Failed to accept request.");
+    } finally {
+      setAcceptingId(null);
+    }
+  }
 
   return (
     <main
@@ -329,26 +395,29 @@ export default function DriverDashboardPage() {
                 <div className="rounded-b-3xl bg-[#d9b58c] px-5 py-4">
                   {isAvailable ? (
                     <div className="space-y-3">
-                      {mockPings.map((ping) => (
+                      {openRequests.map((ping) => (
                         <div
                           key={ping.id}
                           className="flex items-center justify-between gap-3 rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-3"
                         >
                           <div className="text-sm text-[#0a1b3f]">
-                            <span className="font-semibold">Destination:</span> {ping.destination}
+                            <span className="font-semibold">Destination:</span> {ping.dropoffLabel}
                             <span className="mx-2 text-[#0a3570]">•</span>
-                            <span className="font-semibold">Pickup:</span> {ping.pickup}
+                            <span className="font-semibold">Pickup:</span> {ping.pickupLabel}
                             <span className="mx-2 text-[#0a3570]">•</span>
-                            <span className="font-semibold">Pick-up time:</span> {ping.pickupTime}
+                            <span className="font-semibold">Pick-up time:</span> {formatPickupTime(ping.pickupAt)}
                             <span className="mx-2 text-[#0a3570]">•</span>
-                            <span className="font-semibold">Pay:</span> {ping.pay}
+                            <span className="font-semibold">Pay:</span>{" "}
+                            ${estimatePriceRange(ping.partySize).min}
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                              onClick={() => handleAccept(ping.id)}
+                              disabled={acceptingId === ping.id}
+                              className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2] disabled:opacity-60"
                             >
-                              Accept
+                              {acceptingId === ping.id ? "Accepting..." : "Accept"}
                             </button>
                             <button
                               type="button"
@@ -359,6 +428,11 @@ export default function DriverDashboardPage() {
                           </div>
                         </div>
                       ))}
+                      {openRequests.length === 0 ? (
+                        <p className="rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-4 text-center text-sm text-[#0a1b3f]">
+                          No open ride requests yet.
+                        </p>
+                      ) : null}
                     </div>
                   ) : (
                     <p className="rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-4 text-center text-sm text-[#0a1b3f]">
@@ -408,6 +482,12 @@ export default function DriverDashboardPage() {
                       <span className="rounded-full bg-[#d9e8ff] px-3 py-1 text-xs font-semibold text-[#0a3570]">
                         UPCOMING
                       </span>
+                      <Link
+                        href="/driver/upcoming"
+                        className="rounded-full border border-[#0a3570] bg-white px-3 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                      >
+                        View
+                      </Link>
                     </div>
                   ))
                 )}
@@ -472,6 +552,21 @@ export default function DriverDashboardPage() {
         </>
         )}
       </div>
+      {confirmCard ? (
+        <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm text-[#0a1b3f]">{confirmCard}</p>
+            <button
+              type="button"
+              onClick={() => setConfirmCard("")}
+              className="rounded-full border border-[#0a3570] px-2 py-0.5 text-xs font-semibold text-[#0a3570]"
+              aria-label="Dismiss confirmation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

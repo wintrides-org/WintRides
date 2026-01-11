@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
+import { estimatePriceRange } from "@/lib/requestValidation";
 
 type RideRequestRow = {
   id: string;
@@ -30,6 +31,8 @@ export default function DriverUpcomingPage() {
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [completeNotice, setCompleteNotice] = useState("");
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -73,10 +76,33 @@ export default function DriverUpcomingPage() {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        pay: 8 + request.partySize * 2,
+        pay: estimatePriceRange(request.partySize).min,
       })),
     [requests]
   );
+
+  async function handleComplete(requestId: string, pay: number) {
+    setCompleteNotice("");
+    setCompletingId(requestId);
+
+    try {
+      const res = await fetch("/api/requests/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, driverId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to complete ride.");
+      }
+      setRequests((prev) => prev.filter((req) => req.id !== requestId));
+      setCompleteNotice(`You earned $${pay} for this trip!`);
+    } catch (err: any) {
+      setCompleteNotice(err?.message || "Failed to complete ride.");
+    } finally {
+      setCompletingId(null);
+    }
+  }
 
   return (
     <main
@@ -107,6 +133,21 @@ export default function DriverUpcomingPage() {
         </header>
 
         <section className="mt-8 space-y-4">
+          {completeNotice ? (
+            <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 text-sm text-[#0a1b3f] shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
+              <div className="flex items-start justify-between gap-3">
+                <p>{completeNotice}</p>
+                <button
+                  type="button"
+                  onClick={() => setCompleteNotice("")}
+                  className="rounded-full border border-[#0a3570] px-2 py-0.5 text-xs font-semibold text-[#0a3570]"
+                  aria-label="Dismiss confirmation"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ) : null}
           {loading && (
             <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
               Loading upcoming rides...
@@ -160,17 +201,23 @@ export default function DriverUpcomingPage() {
                     </span>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        request.pickupLabel
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
                       className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
                     >
                       Navigate
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleComplete(request.id, request.pay)}
+                      disabled={completingId === request.id}
+                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2] disabled:opacity-60"
+                    >
+                      {completingId === request.id ? "Completing..." : "Complete"}
                     </button>
                   </div>
                 </div>

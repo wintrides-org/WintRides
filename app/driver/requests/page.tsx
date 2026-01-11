@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
+import { estimatePriceRange } from "@/lib/requestValidation";
 
 type RideRequestRow = {
   id: string;
@@ -112,7 +113,7 @@ export default function DriverRequestsPage() {
       requests.map((request) => ({
         ...request,
         pickupTime: formatPickup(request.pickupAt),
-        pay: 8 + request.partySize * 2,
+        pay: estimatePriceRange(request.partySize).min,
       })),
     [requests]
   );
@@ -262,8 +263,18 @@ export default function DriverRequestsPage() {
 
         <section className="mt-8 space-y-4">
           {acceptNotice ? (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4 text-sm text-[#0a3570]">
-              {acceptNotice}
+            <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 text-sm text-[#0a1b3f] shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
+              <div className="flex items-start justify-between gap-3">
+                <p>{acceptNotice}</p>
+                <button
+                  type="button"
+                  onClick={() => setAcceptNotice("")}
+                  className="rounded-full border border-[#0a3570] px-2 py-0.5 text-xs font-semibold text-[#0a3570]"
+                  aria-label="Dismiss confirmation"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ) : null}
           {loading && (
