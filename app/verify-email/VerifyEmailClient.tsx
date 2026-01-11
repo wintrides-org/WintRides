@@ -8,7 +8,7 @@
  * 2. Page extracts token from URL query parameter
  * 3. Automatically calls verification API
  * 4. Shows success/error state
- * 5. Redirects to sign in page on success
+ * 5. Redirects to sign in page on success (with optional next step)
  *
  * STATES:
  * - loading: Verifying token
@@ -39,6 +39,7 @@ export default function VerifyEmailClient() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const next = searchParams.get("next");
 
   const [status, setStatus] = useState<"loading" | "success" | "error" | "pending">(
     "loading"
@@ -62,7 +63,9 @@ export default function VerifyEmailClient() {
       setMessage("Email verified successfully! You can now sign in.");
 
       setTimeout(() => {
-        router.push("/signin");
+        // Preserve optional redirect path for post-signup driver intent.
+        const nextParam = next ? `?next=${encodeURIComponent(next)}` : "";
+        router.push(`/signin${nextParam}`);
       }, 1500);
     } catch (e: any) {
       setStatus("error");

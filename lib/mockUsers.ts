@@ -13,6 +13,12 @@ Production: Replace all functions with database calls:
 */
 
 import type { User, Campus, DriverInfo } from "@/types/user";
+import {
+  isValidIssuingState,
+  normalizeExpirationDate,
+  validateDriverLicenseInput
+} from "@/lib/licenseValidation";
+import { updateLicenseDetails } from "@/lib/licenseExpiration";
 import crypto from "crypto";
 
 // In-memory stores (MVP only - replace with database in production)
@@ -126,7 +132,7 @@ function getCampusFromEmail(email: string): Campus {
 /**
  * Validate email domain is from a valid campus
  * 
- * MVP: Checks for .edu, .ac.uk, .edu.au domains
+ * MVP: Checks for .edu
  * Production: 
  *   - Check against database of approved campus domains
  *   - May need to support additional international domains
@@ -134,7 +140,7 @@ function getCampusFromEmail(email: string): Campus {
  */
 function isValidCampusEmail(email: string): boolean {
   const domain = email.split("@")[1]?.toLowerCase();
-  return domain?.endsWith(".edu") || domain?.endsWith(".ac.uk") || domain?.endsWith(".edu.au");
+  return domain?.endsWith(".edu");
 }
 
 /**
@@ -191,18 +197,17 @@ export function getUserByEmail(email: string): User | undefined {
  * 2. Check if user already exists
  * 3. Get or create campus based on email domain
  * 4. Generate verification token and pseudonym
- * 5. If wantsToDrive: validate license upload and verify name match
+ * 5. If license details provided: validate manual license details and enable driver
  * 6. Create user record (email not verified yet)
  * 7. Return user and verification token
  * 
  * MVP: 
- *   - License verification is basic (just checks upload exists)
+ *   - License verification is basic (validates manual entry)
  *   - Verification token returned in response (for dev testing)
  * 
  * Production:
  *   - Send verification email with token (never return token in response)
- *   - Use proper OCR to verify license name matches legal name
- *   - Store license in cloud storage (not base64 in database)
+ *   - Use authoritative services to validate license details
  *   - Add rate limiting to prevent spam registrations
  *   - Add CAPTCHA for bot protection
  *   - Log registration attempts for security monitoring
@@ -212,11 +217,13 @@ export function createUser(data: {
   password: string;
   wantsToDrive?: boolean;
   legalName?: string;
-  licenseUploadUrl?: string;
+  licenseNumber?: string;
+  licenseExpirationDate?: string;
+  issuingState?: string;
 }): { user: User; verificationToken: string } {
   // Validate email domain
   if (!isValidCampusEmail(data.email)) {
-    throw new Error("Email must be from a valid campus domain (.edu, .ac.uk, .edu.au)");
+    throw new Error("Email must be from a valid campus domain (.edu)");
   }
 
   // Check if user already exists
@@ -235,34 +242,36 @@ export function createUser(data: {
   // Driver info (if applicable)
   // Everyone is a rider by default. Driver is an optional add-on.
   let driverInfo: DriverInfo | undefined;
-  if (data.wantsToDrive) {
-    // Validate required driver fields
-    if (!data.legalName) {
-      throw new Error("Legal name is required for driver registration");
+  // Driver info is only created when full license details are provided.
+  // This allows signup to capture intent without enabling driver capability.
+  const hasDriverDetails =
+    data.legalName || data.licenseNumber || data.licenseExpirationDate || data.issuingState;
+
+  if (hasDriverDetails) {
+    // Validate manual license fields with shared rules (state rules + expiration window).
+    const licenseErrors = validateDriverLicenseInput({
+      legalName: data.legalName,
+      licenseNumber: data.licenseNumber,
+      licenseExpirationDate: data.licenseExpirationDate,
+      issuingState: data.issuingState
+    });
+
+    if (Object.keys(licenseErrors).length > 0) {
+      // Surface the first validation error to keep the response concise.
+      const firstError = Object.values(licenseErrors)[0];
+      throw new Error(firstError);
     }
-    if (!data.licenseUploadUrl) {
-      throw new Error("License upload is required for driver registration");
-    }
-    
-    // Verify license name matches legal name
-    // MVP: Basic check (just verifies license is uploaded)
-    // Production: Use OCR to extract name from license and compare
-    if (!verifyLicenseName(data.legalName, data.licenseUploadUrl)) {
-      throw new Error("License verification failed. Please ensure the name on your license matches the legal name provided.");
-    }
-    
-    // Extract license data (license number, expiration date) via OCR
-    // MVP: No OCR - returns undefined
-    // Production: Extract via OCR service (AWS Textract, Google Vision, etc.)
-    const licenseData = extractLicenseData(data.licenseUploadUrl);
+
+    const normalizedExpiration = normalizeExpirationDate(data.licenseExpirationDate);
     
     // Create driver info with verification timestamps
     const now = new Date().toISOString();
     driverInfo = {
-      legalName: data.legalName.trim(),
-      licenseNumber: licenseData.licenseNumber, // Extracted via OCR (production)
-      licenseUploadUrl: data.licenseUploadUrl,
-      expirationDate: licenseData.expirationDate, // Extracted via OCR (production) - ISO date string (YYYY-MM-DD)
+      legalName: data.legalName?.trim() || "",
+      // Manual entry: store license details as provided after validation.
+      licenseNumber: data.licenseNumber?.trim(),
+      issuingState: isValidIssuingState(data.issuingState) ? data.issuingState : undefined,
+      licenseExpirationDate: normalizedExpiration,
       verified: true, // MVP: auto-verified. Production: may require manual review
       verifiedAt: now, // First verification timestamp
       lastVerifiedAt: now, // Last verification timestamp (same as first for initial registration)
@@ -277,7 +286,8 @@ export function createUser(data: {
     passwordHash: hashPassword(data.password),
     campusId: campus.id,
     pseudonym,
-    isDriverAvailable: data.wantsToDrive || false, // Enable availability if registering as driver
+    // Driver availability is enabled only when driverInfo is created.
+    isDriverAvailable: Boolean(driverInfo),
     driverInfo,
     emailVerified: false, // Email not verified yet - user must click verification link
     emailVerificationToken: verificationToken,
@@ -458,82 +468,26 @@ export function getAllCampuses(): Campus[] {
 }
 
 /**
- * Extract license data from license image using OCR
- * 
- * MVP: Returns undefined - no OCR implemented
- * Production:
- *   1. Use OCR service (AWS Textract, Google Vision API, Tesseract) to extract text
- *   2. Parse extracted text to find:
- *      - License number (unique identifier on license)
- *      - Expiration date (format varies by state/country)
- *      - Name (for verification)
- *   3. Return extracted data
- * 
- * LICENSE NUMBER:
- * - Unique identifier on driver's license (e.g., "D1234567", "123456789")
- * - Format varies by jurisdiction
- * - Used for verification and record-keeping
- * - Optional field - not required for MVP
- * 
- * EXPIRATION DATE:
- * - Extracted from license expiration field
- * - Stored as ISO date string (YYYY-MM-DD)
- * - Used to track license validity and send expiration alerts
- */
-function extractLicenseData(licenseUploadUrl?: string): {
-  licenseNumber?: string;
-  expirationDate?: string;
-} {
-  // MVP: No OCR - return undefined
-  // Production: Implement OCR extraction
-  // Example using AWS Textract:
-  //   const textract = new AWS.Textract();
-  //   const result = await textract.detectDocumentText({ Document: { Bytes: licenseImage } });
-  //   Parse result to extract license number and expiration date
-  
-  return {
-    licenseNumber: undefined, // MVP: not extracted. Production: extract via OCR
-    expirationDate: undefined // MVP: not extracted. Production: extract via OCR and convert to date
-  };
-}
-
 /**
- * Verify that license name matches legal name
- * 
- * MVP: 
- *   - Simple validation - just checks that legal name is provided and license is uploaded
- *   - No actual OCR or name extraction
- * 
- * Production:
- *   1. Extract text from license image using OCR (Tesseract, AWS Textract, Google Vision)
- *   2. Parse extracted text to find name field
- *   3. Compare extracted name with legalName using fuzzy matching
- *      - Handle variations (middle names, initials, etc.)
- *      - Case-insensitive comparison
- *      - Handle special characters and accents
- *   4. Return true if names match (with confidence threshold)
- *   5. Store extracted license data (number, expiration, etc.) for future use
- * 
- * SECURITY NOTE: In production, also verify:
- *   - License is not expired
- *   - License is from valid jurisdiction
- *   - License image is not a screenshot or edited image
+ * Legacy OCR helpers (deprecated in manual-entry flow).
+ * These are intentionally commented out to avoid requesting license upload URLs.
  */
-function verifyLicenseName(legalName: string, licenseUploadUrl?: string): boolean {
-  // For MVP: Simple validation - just check that legal name is provided
-  // In production, you would:
-  // 1. Extract text from license image using OCR
-  // 2. Compare extracted name with legalName
-  // 3. Return true if names match (with fuzzy matching for variations)
-  
-  if (!legalName || !legalName.trim()) {
-    return false;
-  }
-  
-  // MVP: Just verify legal name is provided and license is uploaded
-  // In production, implement actual OCR and name matching
-  return !!licenseUploadUrl;
-}
+// function extractLicenseData(licenseUploadUrl?: string): {
+//   licenseNumber?: string;
+//   expirationDate?: string;
+// } {
+//   return {
+//     licenseNumber: undefined,
+//     expirationDate: undefined
+//   };
+// }
+
+// function verifyLicenseName(legalName: string, licenseUploadUrl?: string): boolean {
+//   if (!legalName || !legalName.trim()) {
+//     return false;
+//   }
+//   return !!licenseUploadUrl;
+// }
 
 /**
  * Check if license is expired
@@ -541,11 +495,11 @@ function verifyLicenseName(legalName: string, licenseUploadUrl?: string): boolea
  * Compares expiration date with current date.
  * License is expired if expiration date is before today (at 00:00).
  * 
- * @param expirationDate ISO date string (YYYY-MM-DD) or undefined
+ * @param licenseExpirationDate ISO date string (YYYY-MM-DD) or undefined
  * @returns true if license is expired, false if valid or no expiration date
  */
-function isLicenseExpired(expirationDate?: string): boolean {
-  if (!expirationDate) {
+function isLicenseExpired(licenseExpirationDate?: string): boolean {
+  if (!licenseExpirationDate) {
     // No expiration date - assume valid (MVP behavior)
     // Production: Require expiration date
     return false;
@@ -554,7 +508,7 @@ function isLicenseExpired(expirationDate?: string): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Set to 00:00:00
   
-  const expiration = new Date(expirationDate);
+  const expiration = new Date(licenseExpirationDate);
   expiration.setHours(0, 0, 0, 0);
   
   // License is expired if expiration date is before today
@@ -564,19 +518,19 @@ function isLicenseExpired(expirationDate?: string): boolean {
 /**
  * Check if license expires within specified days
  * 
- * @param expirationDate ISO date string (YYYY-MM-DD) or undefined
+ * @param licenseExpirationDate ISO date string (YYYY-MM-DD) or undefined
  * @param days Number of days to check (e.g., 7 for 1 week, 3 for 3 days, 1 for 1 day)
  * @returns true if license expires within specified days
  */
-function isLicenseExpiringWithin(expirationDate?: string, days: number = 7): boolean {
-  if (!expirationDate) {
+function isLicenseExpiringWithin(licenseExpirationDate?: string, days: number = 7): boolean {
+  if (!licenseExpirationDate) {
     return false; // No expiration date - can't determine
   }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const expiration = new Date(expirationDate);
+  const expiration = new Date(licenseExpirationDate);
   expiration.setHours(0, 0, 0, 0);
   
   // Calculate days until expiration
@@ -586,37 +540,20 @@ function isLicenseExpiringWithin(expirationDate?: string, days: number = 7): boo
   return daysUntilExpiration >= 0 && daysUntilExpiration <= days;
 }
 
-/**
- * Check if license can be re-uploaded (1 week before expiration)
- * 
- * License upload field becomes editable 1 week before expiration.
- * This allows users to upload a new license before the current one expires.
- * 
- * @param expirationDate ISO date string (YYYY-MM-DD) or undefined
- * @returns true if license can be re-uploaded (1 week or less until expiration)
- */
-function canReuploadLicense(expirationDate?: string): boolean {
-  if (!expirationDate) {
-    return false; // No expiration date - can't determine
-  }
-  
-  // Can re-upload if expiration is within 1 week (7 days)
-  return isLicenseExpiringWithin(expirationDate, 7);
-}
 
 /**
  * Get expiration status and alerts needed
  * 
  * Determines:
  * - If license is expired
- * - If license can be re-uploaded (1 week before expiration)
- * - Which alerts need to be sent (1 week, 3 days, 1 day before)
+ * - Reminder windows (1 week, 3 days, 1 day before expiration)
+ * - Re-entry is always allowed; reminders only signal upcoming expiration
  * 
  * @param driverInfo Driver info with expiration date and alert tracking
  * @returns Object with expiration status and alerts needed
  */
 export function getLicenseExpirationStatus(driverInfo?: {
-  expirationDate?: string;
+  licenseExpirationDate?: string;
   expirationAlertsSent?: {
     oneWeek?: string;
     threeDays?: string;
@@ -624,7 +561,6 @@ export function getLicenseExpirationStatus(driverInfo?: {
   };
 }): {
   isExpired: boolean;
-  canReupload: boolean;
   daysUntilExpiration: number | null;
   alertsNeeded: {
     oneWeek: boolean;
@@ -632,10 +568,9 @@ export function getLicenseExpirationStatus(driverInfo?: {
     oneDay: boolean;
   };
 } {
-  if (!driverInfo || !driverInfo.expirationDate) {
+  if (!driverInfo || !driverInfo.licenseExpirationDate) {
     return {
       isExpired: false,
-      canReupload: false,
       daysUntilExpiration: null,
       alertsNeeded: {
         oneWeek: false,
@@ -645,7 +580,7 @@ export function getLicenseExpirationStatus(driverInfo?: {
     };
   }
 
-  const expirationDate = driverInfo.expirationDate;
+  const expirationDate = driverInfo.licenseExpirationDate;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -655,7 +590,6 @@ export function getLicenseExpirationStatus(driverInfo?: {
   const daysUntilExpiration = Math.ceil((expiration.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
   const isExpired = daysUntilExpiration < 0;
-  const canReupload = daysUntilExpiration <= 7 && daysUntilExpiration >= 0;
   
   // Determine which alerts need to be sent
   // Only send alerts if they haven't been sent yet
@@ -669,7 +603,6 @@ export function getLicenseExpirationStatus(driverInfo?: {
 
   return {
     isExpired,
-    canReupload,
     daysUntilExpiration: daysUntilExpiration < 0 ? null : daysUntilExpiration,
     alertsNeeded
   };
@@ -681,22 +614,23 @@ export function getLicenseExpirationStatus(driverInfo?: {
  * FLOW:
  * 1. Check if user exists
  * 2. Check if user already has driver capability (prevent duplicates)
- * 3. Verify license name matches legal name
+ * 3. Validate manual license details (state rules + expiration window)
  * 4. Create driverInfo with verification timestamps
  * 5. Enable driver availability
  * 
  * This is used when:
  * - User didn't sign up as driver initially but wants to enable it later
- * - User needs to re-upload license (if previous one expired/invalid)
+ * - User can re-enter license details at any time; expiration still blocks driving
  * 
- * MVP: Basic license verification
- * Production: Full OCR verification as described in verifyLicenseName()
+ * MVP: Basic manual-entry validation
+ * Production: Validate details against authoritative sources
  */
 export function enableDriverCapability(
   userId: string,
   legalName: string,
-  licenseUploadUrl: string,
-  expirationDate: string
+  licenseNumber: string,
+  licenseExpirationDate: string,
+  issuingState: string
 ): User | null {
   const user = getUserById(userId);
   if (!user) {
@@ -708,29 +642,30 @@ export function enableDriverCapability(
     throw new Error("User already has driver capability enabled");
   }
 
-  // Verify license name matches legal name
-  // MVP: Basic check
-  // Production: Full OCR verification
-  if (!verifyLicenseName(legalName, licenseUploadUrl)) {
-    throw new Error("License verification failed. Please ensure the name on your license matches the legal name provided.");
+  // Validate manual license details with shared rules.
+  const licenseErrors = validateDriverLicenseInput({
+    legalName,
+    licenseNumber,
+    licenseExpirationDate,
+    issuingState
+  });
+
+  if (Object.keys(licenseErrors).length > 0) {
+    const firstError = Object.values(licenseErrors)[0];
+    throw new Error(firstError);
   }
 
-  // Extract license data (license number, expiration date) via OCR
-  // MVP: No OCR - expirationDate can be provided manually or left undefined
-  // Production: Extract via OCR service - expirationDate should come from OCR, not parameter
-  const licenseData = extractLicenseData(licenseUploadUrl);
-  
-  // Use provided expirationDate if available, otherwise use extracted (production)
-  // In production, expirationDate should always come from OCR extraction
-  const finalExpirationDate = expirationDate || licenseData.expirationDate;
+  const normalizedExpiration = normalizeExpirationDate(licenseExpirationDate);
   
   // Create driver info with verification timestamps
   const now = new Date().toISOString();
   user.driverInfo = {
     legalName: legalName.trim(),
-    licenseNumber: licenseData.licenseNumber, // Extracted via OCR (production)
-    licenseUploadUrl,
-    expirationDate: finalExpirationDate, // ISO date string (YYYY-MM-DD) - from OCR in production
+    // Manual entry: store validated license details.
+    licenseNumber: licenseNumber.trim(),
+    issuingState: isValidIssuingState(issuingState) ? issuingState : undefined,
+    licenseExpirationDate: normalizedExpiration,
+    // licenseUploadUrl, // Deprecated: manual entry replaces license upload URL.
     verified: true,
     verifiedAt: now, // First verification timestamp
     lastVerifiedAt: now, // Last verification timestamp (same as first for initial enable)
@@ -743,22 +678,73 @@ export function enableDriverCapability(
 }
 
 /**
+ * Update stored driver license details for an existing driver.
+ *
+ * FLOW:
+ * 1. Check if user exists and already has driver capability
+ * 2. Validate manual license details (state rules + expiration window)
+ * 3. Update stored driverInfo with new license details
+ * 4. Update verification timestamps
+ */
+export function updateDriverLicenseDetails(
+  userId: string,
+  legalName: string,
+  licenseNumber: string,
+  licenseExpirationDate: string,
+  issuingState: string
+): User | null {
+  const user = getUserById(userId);
+  if (!user || !user.driverInfo) {
+    return null;
+  }
+
+  // Validate manual license details with shared rules.
+  const licenseErrors = validateDriverLicenseInput({
+    legalName,
+    licenseNumber,
+    licenseExpirationDate,
+    issuingState
+  });
+
+  if (Object.keys(licenseErrors).length > 0) {
+    const firstError = Object.values(licenseErrors)[0];
+    throw new Error(firstError);
+  }
+
+  const normalizedExpiration = normalizeExpirationDate(licenseExpirationDate);
+
+  // Update driver info using shared helper to reset expiration alerts and timestamps.
+  user.driverInfo = updateLicenseDetails(
+    {
+      ...user.driverInfo,
+      legalName: legalName.trim(),
+      issuingState: isValidIssuingState(issuingState) ? issuingState : undefined
+    },
+    licenseNumber.trim(),
+    normalizedExpiration as string,
+    isValidIssuingState(issuingState) ? issuingState : undefined
+  );
+
+  user.updatedAt = new Date().toISOString();
+  return user;
+}
+
+/**
  * Verify stored license is still valid (for subsequent toggles)
  * 
  * FLOW:
  * 1. Check if user has driver capability
- * 2. Update lastVerifiedAt timestamp
+ * 2. Ensure license expiration date has not passed
+ * 3. Update lastVerifiedAt timestamp
  * 
  * This is called automatically when user toggles driver availability ON.
  * 
- * MVP: 
- *   - Just updates timestamp (assumes license is still valid)
- *   - No actual validation
+ * MVP:
+ *   - Validates license based on expiration date only
  * 
  * Production:
- *   - Check license expiration date (if stored)
  *   - Verify license hasn't been revoked (check against DMV database if available)
- *   - May require periodic re-verification (e.g., every 6 months)
+ *   - May prompt periodic license re-entry or review (e.g., every 6 months)
  *   - Could prompt user to confirm license is still valid
  */
 export function verifyStoredLicense(userId: string): User | null {
@@ -767,8 +753,14 @@ export function verifyStoredLicense(userId: string): User | null {
     return null; // User doesn't have driver capability
   }
 
-  // MVP: Just update verification timestamp
-  // Production: Add actual license validation checks
+  // Guard: only verify if the stored expiration date has not passed.
+  // Returning null lets callers block availability or require re-entry.
+  if (isLicenseExpired(user.driverInfo.licenseExpirationDate)) {
+    return null;
+  }
+
+  // MVP: Update verification timestamp for a still-valid license.
+  // Production: Add additional validation checks (revocation, jurisdiction rules, etc.).
   const now = new Date().toISOString();
   user.driverInfo.lastVerifiedAt = now;
   user.updatedAt = now;
@@ -784,22 +776,21 @@ export function verifyStoredLicense(userId: string): User | null {
  * 2. If toggling ON:
  *    a. Check if user has driver capability (driverInfo exists)
  *    b. If no capability: throw error (must enable first)
- *    c. Check if license is expired (disabled at 00:00 on expiration day)
- *    d. If expired: throw error (must upload new license)
- *    e. If valid: verify stored license is still valid
+ *    c. Verify stored license is still valid (expiration not passed)
+ *    d. If expired: throw error (must re-enter license details)
  * 3. Update isDriverAvailable flag
  * 
  * KEY BEHAVIOR:
- * - Toggling ON: 
- *   - Checks if license is expired (disabled at 00:00 on expiration day)
- *   - Automatically verifies stored license (no re-upload needed if valid)
+ * - Toggling ON:
+ *   - Verifies stored license (disabled at 00:00 on expiration day)
+ *   - Automatically updates verification timestamp when unexpired
  * - Toggling OFF: Simply disables availability
  * - First-time enable: Must use enableDriverCapability() first
  * 
  * LICENSE EXPIRATION:
  * - Driver toggle is disabled at 00:00 on expiration day
- * - User must upload new license to re-enable
- * - License upload field becomes editable 1 week before expiration
+ * - User must re-enter license details to re-enable
+ * - License details can be re-entered at any time; reminders happen near expiration
  * 
  * MVP: Basic toggle with automatic license verification
  * Production: 
@@ -814,19 +805,16 @@ export function updateDriverAvailability(userId: string, isAvailable: boolean): 
 
   // If toggling ON, check if user has driver capability
   if (isAvailable && !user.driverInfo) {
-    throw new Error("Driver capability not enabled. Please enable driver capability first by uploading your license.");
+    throw new Error("Driver capability not enabled. Please enable driver capability first by verifying your license details.");
   }
 
-  // If toggling ON and user has driver capability, check license expiration
+  // If toggling ON and user has driver capability, verify stored license status.
   if (isAvailable && user.driverInfo) {
-    // Check if license is expired (disabled at 00:00 on expiration day)
-    if (isLicenseExpired(user.driverInfo.expirationDate)) {
-      throw new Error("Your driver's license has expired. Please upload a new valid license to continue driving.");
+    // Verify stored license; null means expired and should block availability.
+    const verifiedUser = verifyStoredLicense(userId);
+    if (!verifiedUser) {
+      throw new Error("Your driver's license has expired. Please re-enter your license details to continue driving.");
     }
-    
-    // License is valid - verify stored license is still valid
-    // This happens automatically - no re-upload needed
-    verifyStoredLicense(userId);
   }
 
   // Update availability flag

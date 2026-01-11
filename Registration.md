@@ -39,7 +39,7 @@ email verification
 create password
 system assigns pseudonym + internal ID
 Option to sign up as a driver: 
-Ask for license upload. 
+Ask for license upload/manual entry of deatils 
 Verify name matches provided legal name 
 (for MVP+, verify image on id with pic)
 Sign In (repeated)
@@ -67,43 +67,84 @@ Then the other person taps: Enter code
 If the code matches, the system marks: Meet up confirmed
 
 
-**What has been built**
-1. User types and storage (types/user.ts, lib/mockUsers.ts)
-User interface with campus assignment, roles (rider/driver/both), and verification
-In-memory user storage (similar to mockCarpools.ts)
-Password hashing, session management, and email verification tokens
-2. API routes (app/api/auth/)
-/api/auth/register - Register new users with campus email validation
-/api/auth/verify-email - Verify email with token
-/api/auth/signin - Sign in with email/password
-/api/auth/session - Get current session info
-3. UI pages
-/register - Registration form with:
-Campus email validation (.edu, .ac.uk, .edu.au)
-Password creation (min 8 characters)
-Optional driver checkbox
-Driver fields: legal name (required), license upload (optional)
-/verify-email - Email verification page
-/signin - Sign in page
-4. Features implemented
-✅ Campus email domain validation
-✅ Email verification flow
-✅ Automatic campus assignment based on email domain
-✅ Pseudonym generation for users
-✅ Optional driver registration with legal name
-✅ License upload support (base64 for MVP)
-✅ Session management with cookies
-✅ Password hashing (SHA-256 for MVP; use bcrypt in production)
-5. Navigation
-Added Sign In and Register links to the home page
-Updated app metadata
-Important notes for MVP
-Email sending: The registration API logs the verification token to the console in development. In production, send the verification email via a service like SendGrid or Resend.
-Password hashing: Currently using SHA-256. For production, use bcrypt (install bcrypt and update lib/mockUsers.ts).
-File storage: License uploads are stored as base64. For production, use cloud storage (AWS S3, Cloudinary, etc.).
-Session storage: Sessions are in-memory. For production, use a database or Redis.
-Testing the flow
-Visit /register and create an account with a .edu email
-Check the console for the verification token (in development)
-Visit /verify-email?token=<token> to verify
-Sign in at /signin
+**: License verification logic**
+*license fields*
+{
+  legalName: string,
+  licenseNumber: string,
+  licenseExpirationDate: Date,
+  issuingState: USStateCode
+}
+
+*Issuing state validation*
+- issuingState must be a valid U.S. state or DC
+- Value must come from a controlled enum (no free-text)
+
+*License expiration check*
+- Expiration date must be at least 7 days in the future 
+
+*License number format check (state-aware)*
+- Validate against rules for the issuing state:
+    - Minimum and maximum length
+    - Allowed character set (numeric vs alphanumeric)
+- License number sanity
+    - No whitespace
+    - No special characters outside allowed pattern
+    - Not a repeated or obviously fake sequence (e.g., 0000000, AAAAAAA)
+
+*Legal name sanity check*
+- Minimum length (e.g., ≥ 2 characters)
+- Contains only reasonable name characters (letters, spaces, hyphens, apostrophes)
+- Not purely numeric or symbol-only
+
+Alabama (AL): 7–8, N
+Alaska (AK): 7, N
+Arizona (AZ): 8–9, A/N
+Arkansas (AR): 8–9, N
+California (CA): 7–8, A/N
+Colorado (CO): 9, N
+Connecticut (CT): 9, N
+Delaware (DE): 7, N
+Florida (FL): 12–13, A/N
+Georgia (GA): 7–9, N
+Hawaii (HI): 9, A/N
+Idaho (ID): 9, A/N
+Illinois (IL): 12, A/N
+Indiana (IN): 9–10, N
+Iowa (IA): 9, N
+Kansas (KS): 9, A/N
+Kentucky (KY): 9, N
+Louisiana (LA): 9, N
+Maine (ME): 7, N
+Maryland (MD): 13, A/N
+Massachusetts (MA): 9, N
+Michigan (MI): 10–13, A/N
+Minnesota (MN): 13, A/N
+Mississippi (MS): 9, N
+Missouri (MO): 9, N
+Montana (MT): 9, A/N
+Nebraska (NE): 7–8, A/N
+Nevada (NV): 9–10, A/N
+New Hampshire (NH): 2–7, N
+New Jersey (NJ): 9, A/N
+New Mexico (NM): 8–9, N
+New York (NY): 8–9, A/N
+North Carolina (NC): 12, N
+North Dakota (ND): 9, A/N
+Ohio (OH): 8–9, A/N
+Oklahoma (OK): 9, A/N
+Oregon (OR): 1–9, N
+Pennsylvania (PA): 8, N
+Rhode Island (RI): 7, N
+South Carolina (SC): 5–11, N
+South Dakota (SD): 9, N
+Tennessee (TN): 7–9, N
+Texas (TX): 7–8, N
+Utah (UT): 4–10, N
+Vermont (VT): 8, N
+Virginia (VA): 9, A/N
+Washington (WA): 12, A/N
+West Virginia (WV): 7, N
+Wisconsin (WI): 14, A/N
+Wyoming (WY): 9–10, N
+District of Columbia (DC): 7, N

@@ -1,0 +1,255 @@
+/**
+ * Become a Driver / Update License Page
+ *
+ * Dedicated form to collect manual license details after account creation.
+ *
+ * FLOW:
+ * 1. User signs in (must have a session token in localStorage for MVP)
+ * 2. User enters license details
+ * 3. Client-side validation using shared rules
+ * 4. Submit to /api/auth/driver/enable or /api/auth/driver/update
+ * 5. Redirect to dashboard on success
+ */
+
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  US_STATE_OPTIONS,
+  validateDriverLicenseInput
+} from "@/lib/licenseValidation";
+
+export default function EnableDriverPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode");
+  const isUpdate = mode === "update";
+
+  const [legalName, setLegalName] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [licenseExpirationDate, setLicenseExpirationDate] = useState("");
+  const [issuingState, setIssuingState] = useState("");
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  /**
+   * Validate the manual license fields using shared rules.
+   * Keeps the client in sync with server-side validation.
+   */
+  function validateForm(): boolean {
+    const next = validateDriverLicenseInput({
+      legalName,
+      licenseNumber,
+      licenseExpirationDate,
+      issuingState
+    });
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
+
+  /**
+   * Handle form submission to enable or update driver capability.
+   * Uses the same form, but switches endpoints based on `mode=update`.
+   * Requires an MVP session token in localStorage.
+   */
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess(false);
+
+    if (!validateForm()) return;
+
+    setSubmitting(true);
+
+    try {
+      // MVP: session token is stored in localStorage after sign-in.
+      const sessionToken = localStorage.getItem("sessionToken");
+      if (!sessionToken) {
+        throw new Error("Please sign in to become a driver.");
+      }
+
+      // Choose the endpoint based on form mode.
+      const endpoint = isUpdate ? "/api/auth/driver/update" : "/api/auth/driver/enable";
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          legalName: legalName.trim(),
+          licenseNumber: licenseNumber.trim(),
+          licenseExpirationDate,
+          issuingState
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to enable driver capability");
+      }
+
+      await res.json();
+      setSubmitSuccess(true);
+
+      // Redirect to dashboard after enabling or updating driver capability.
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
+    } catch (e: any) {
+      setSubmitError(e?.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="p-6 max-w-xl mx-auto">
+      <h1 className="text-2xl font-semibold">
+        {isUpdate ? "Update License Details" : "Become a Driver"}
+      </h1>
+      <p className="mt-1 text-sm text-neutral-600">
+        {isUpdate
+          ? "Update your license details to keep your driver profile current."
+          : "Enter your license details to enable driver capability."}
+      </p>
+
+      <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+        {/* Legal Name */}
+        <div className="grid gap-1">
+          <label htmlFor="legalName" className="text-sm font-medium">
+            Legal Name (as on license)
+          </label>
+          <input
+            id="legalName"
+            type="text"
+            value={legalName}
+            onChange={(e) => setLegalName(e.target.value)}
+            placeholder="First Last"
+            className="rounded-xl border p-3"
+            disabled={submitting}
+          />
+          {errors.legalName ? (
+            <p className="text-sm text-red-600">{errors.legalName}</p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              This must match the name on your driver's license.
+            </p>
+          )}
+        </div>
+
+        {/* Issuing State */}
+        <div className="grid gap-1">
+          <label htmlFor="issuingState" className="text-sm font-medium">
+            Issuing State <span className="text-red-600">*</span>
+          </label>
+          <select
+            id="issuingState"
+            value={issuingState}
+            onChange={(e) => setIssuingState(e.target.value)}
+            className="rounded-xl border p-3 text-sm"
+            disabled={submitting}
+            required
+          >
+            <option value="">Select a state</option>
+            {US_STATE_OPTIONS.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.name} ({option.code})
+              </option>
+            ))}
+          </select>
+          {errors.issuingState ? (
+            <p className="text-sm text-red-600">{errors.issuingState}</p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              Choose the issuing state shown on your license.
+            </p>
+          )}
+        </div>
+
+        {/* License Number */}
+        <div className="grid gap-1">
+          <label htmlFor="licenseNumber" className="text-sm font-medium">
+            License Number <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="licenseNumber"
+            type="text"
+            value={licenseNumber}
+            onChange={(e) => setLicenseNumber(e.target.value)}
+            placeholder="Enter your license number"
+            className="rounded-xl border p-3"
+            disabled={submitting}
+            required
+          />
+          {errors.licenseNumber ? (
+            <p className="text-sm text-red-600">{errors.licenseNumber}</p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              Must match the format rules for the selected state.
+            </p>
+          )}
+        </div>
+
+        {/* License Expiration Date */}
+        <div className="grid gap-1">
+          <label htmlFor="licenseExpirationDate" className="text-sm font-medium">
+            License Expiration Date <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="licenseExpirationDate"
+            type="date"
+            value={licenseExpirationDate}
+            onChange={(e) => setLicenseExpirationDate(e.target.value)}
+            className="rounded-xl border p-3"
+            disabled={submitting}
+            required
+          />
+          {errors.licenseExpirationDate ? (
+            <p className="text-sm text-red-600">{errors.licenseExpirationDate}</p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              Must be at least 7 days in the future.
+            </p>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-4 rounded-xl bg-black px-4 py-3 font-medium text-white hover:bg-neutral-800 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Submitting..." : (isUpdate ? "Update License Details" : "Enable Driver Capability")}
+        </button>
+
+        {/* Error Message */}
+        {submitError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {submitError}{" "}
+            <Link href="/signin?next=/driver/enable" className="underline">
+              Sign in
+            </Link>
+            .
+          </div>
+        )}
+
+        {/* Success Message */}
+        {submitSuccess && (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            {isUpdate
+              ? "License details updated! Redirecting to your dashboard..."
+              : "Driver capability enabled! Redirecting to your dashboard..."}
+          </div>
+        )}
+      </form>
+    </main>
+  );
+}

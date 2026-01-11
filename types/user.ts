@@ -4,10 +4,12 @@ This file defines the types and interfaces for user authentication and profiles 
 ARCHITECTURE NOTES:
 - Everyone is a rider by default
 - Driver is an optional add-on capability (determined by presence of driverInfo)
-- Users can toggle driver availability day-to-day without re-uploading license
-- License upload only required on first-time driver registration
-- For production, automatically disable driver capability once lincense is expired and ask for a re-upload
+- Users can toggle driver availability day-to-day without updating license info
+- Manual license entry is required on first-time driver registration
+- For production, automatically disable driver capability once license is expired and require re-entry before driving
 */
+
+import type { USStateCode } from "@/lib/licenseValidation";
 
 // User verification status (for future use - e.g., admin verification of drivers)
 export type VerificationStatus = "pending" | "verified" | "rejected";
@@ -30,29 +32,26 @@ export interface Campus {
  * 
  * This is only present if the user has driver capability enabled.
  * 
- * MVP: License verification is basic (just checks that license is uploaded)
+ * MVP: License verification is basic (manual entry validation only)
  * Production: 
- *   - Use OCR to extract name from license image
  *   - Verify name matches legalName with fuzzy matching
- *   - Extract and store license expiration date
  *   - Periodically check if license is still valid
- *   - Store license in secure cloud storage (S3, Cloudinary) with encryption
  * 
  * LICENSE EXPIRATION TRACKING:
- * - Expiration date is extracted from license via OCR (production)
- * - License upload field becomes editable 1 week before expiration
+ * - Expiration date is provided by the user and validated on entry
  * - Alerts sent: 1 week before, 3 days before, 1 day before expiration
- * - Driver toggle disabled at 00:00 on expiration day until new license uploaded
- * - Each new license upload stores new expiration date and restarts tracking
+ * - Driver toggle disabled at 00:00 on expiration day until license details are re-entered
+ * - Each re-entry stores a new expiration date and restarts tracking
  */
 export interface DriverInfo {
   legalName: string; // Full legal name as it appears on license
-  licenseNumber?: string; // Unique license identifier printed on the license (e.g., "D1234567", "123456789")
-                          // Format varies by jurisdiction (state/country)
-                          // Optional field - not required for MVP
-                          // Production: Extract via OCR for verification and record-keeping
-  licenseUploadUrl?: string; // MVP: base64 data URL. Production: URL to cloud storage (S3, Cloudinary)
-  expirationDate?: string; // ISO date string (YYYY-MM-DD) - License expiration date, extracted via OCR in production
+  // License number as entered by the user (validated per issuing state rules).
+  licenseNumber?: string;
+  // State that issued the license; must be a valid US state or DC.
+  issuingState?: USStateCode;
+  // ISO date string (YYYY-MM-DD) for license expiration.
+  licenseExpirationDate?: string;
+  // licenseUploadUrl?: string; // Deprecated: manual entry replaces license upload URL.
   verified: boolean; // Whether license has been verified
   verifiedAt?: string; // ISO timestamp when license was first verified (during initial upload)
   lastVerifiedAt?: string; // ISO timestamp when license was last verified (during subsequent toggles)
@@ -107,15 +106,17 @@ export interface User {
 /**
  * Registration request payload
  * 
- * MVP: License file is converted to base64 data URL on client
- * Production: Upload license to cloud storage first, then send URL
+ * MVP: Manual license details are entered in the dedicated driver form
+ * Production: Validate details against authoritative sources where possible
  */
 export interface RegisterRequest {
   email: string;
   password: string;
-  wantsToDrive?: boolean; // If true, legalName and licenseFile are required
-  legalName?: string; // Required if wantsToDrive is true
-  licenseFile?: File; // MVP: base64. Production: upload to S3/Cloudinary first
+  wantsToDrive?: boolean; // If true, capture intent and redirect to driver form after signup
+  legalName?: string; // Optional: only used if registering as a driver immediately
+  licenseNumber?: string; // Optional: only used if registering as a driver immediately
+  licenseExpirationDate?: string; // Optional: only used if registering as a driver immediately (YYYY-MM-DD)
+  issuingState?: USStateCode; // Optional: only used if registering as a driver immediately
 }
 
 /**
