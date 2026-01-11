@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "Driver capability not enabled" },
-        { status: 404 }
+        { status: 403 }
       );
     }
 
