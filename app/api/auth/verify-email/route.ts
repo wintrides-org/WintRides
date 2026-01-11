@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     // - Mark email as verified
     // - Clear verification token (one-time use)
     // - Update verification timestamp
-    const user = verifyEmail(token);
+    const user = await verifyEmail(token);
 
     // Check if verification was successful
     if (!user) {

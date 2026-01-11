@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Check if user already exists
     // MVP: Simple check
     // Production: Use database query with proper error handling
-    if (getUserByEmail(email)) {
+    if (await getUserByEmail(email)) {
       return NextResponse.json(
         { error: "User with this email already exists" },
         { status: 409 } // 409 Conflict
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     // - Create campus assignment
     // - If wantsToDrive: validate license details and create driverInfo
     // - Generate email verification token
-    const { user, verificationToken } = createUser({
+    const { user, verificationToken } = await createUser({
       email,
       password,
       wantsToDrive: wantsToDrive || false,

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate session
-    const session = getSession(sessionToken);
+    const session = await getSession(sessionToken);
     if (!session) {
       return NextResponse.json(
         { error: "Invalid or expired session" },
@@ -84,10 +84,10 @@ export async function POST(request: NextRequest) {
     // MVP: Verification only succeeds if the expiration date has not passed.
     // Production: May want to make this mandatory or add periodic verification.
     if (isAvailable && verifyLicense) {
-      const user = getUserById(session.userId);
+      const user = await getUserById(session.userId);
       if (user?.driverInfo) {
         // Verify stored license only when unexpired; return a clear error otherwise.
-        const verifiedUser = verifyStoredLicense(session.userId);
+        const verifiedUser = await verifyStoredLicense(session.userId);
         if (!verifiedUser) {
           return NextResponse.json(
             { error: "Your driver's license has expired. Please re-enter your license details to continue driving." },
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // - If toggling ON: Check if user has driver capability, verify stored license
     // - If toggling OFF: Simply disable availability
     // - Throw error if toggling ON without driver capability
-    const user = updateDriverAvailability(session.userId, isAvailable);
+    const user = await updateDriverAvailability(session.userId, isAvailable);
 
     // Check if user was found
     if (!user) {

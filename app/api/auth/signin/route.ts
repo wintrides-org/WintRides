@@ -9,13 +9,12 @@
  * 3. Check if email is verified (must verify before sign in)
  * 4. Create session
  * 5. Set session cookie
- * 6. Return user info and session token
+ * 6. Return user info
  * 
  * MVP:
  *   - Basic authentication
- *   - Session stored in-memory
+ *   - Session stored in database
  *   - Cookie set with session token
- *   - Returns session token in response
  * 
  * Production:
  *   - Add rate limiting to prevent brute force attacks
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     // - Update last login timestamp
     let user;
     try {
-      user = authenticateUser(email, password);
+      user = await authenticateUser(email, password);
     } catch (error: any) {
       // Handle email not verified error
       // User must verify email before they can sign in
@@ -91,16 +90,16 @@ export async function POST(request: NextRequest) {
     // ========================================================================
     
     // Create session for authenticated user
-    // MVP: 24 hour session, stored in-memory
+    // MVP: 24 hour session, stored in database
     // Production: Use Redis for session storage, implement refresh tokens
-    const sessionToken = createSession(user.id, 24); // 24 hour session
+    const sessionToken = await createSession(user.id, 24); // 24 hour session
 
     // ========================================================================
     // RESPONSE
     // ========================================================================
     
     // Create response with user info (excluding sensitive data)
-    // MVP: Return session token in response body
+    // MVP: Use httpOnly cookie for session
     // Production: Only use httpOnly cookies (don't return token in body)
     const response = NextResponse.json(
       {
@@ -113,7 +112,6 @@ export async function POST(request: NextRequest) {
           isDriver: !!user.driverInfo, // Whether user has driver capability
           isDriverAvailable: user.isDriverAvailable // Current driver availability
         },
-        sessionToken // MVP: Return in body. Production: Remove this
       },
       { status: 200 }
     );
@@ -132,8 +130,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set("sessionToken", sessionToken, {
       maxAge: 24 * 60 * 60, // 24 hours in seconds
       path: "/",
-      sameSite: "lax" // MVP: lax. Production: "strict" for better CSRF protection
-      // Production: Add httpOnly: true, secure: true
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax"
     });
 
     return response;

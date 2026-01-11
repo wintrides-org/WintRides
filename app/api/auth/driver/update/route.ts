@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = getSession(sessionToken);
+    const session = await getSession(sessionToken);
     if (!session) {
       return NextResponse.json(
         { error: "Invalid or expired session" },
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // ========================================================================
     // UPDATE DRIVER DETAILS
     // ========================================================================
-    const user = updateDriverLicenseDetails(
+    const user = await updateDriverLicenseDetails(
       session.userId,
       legalName,
       licenseNumber,

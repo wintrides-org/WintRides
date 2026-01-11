@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate session
-    const session = getSession(sessionToken);
+    const session = await getSession(sessionToken);
     if (!session) {
       return NextResponse.json(
         { error: "Invalid or expired session" },
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     // - Enable driver availability automatically
     // 
     // Manual entry: pass validated fields to the mock store.
-    const user = enableDriverCapability(
+    const user = await enableDriverCapability(
       session.userId,
       legalName,
       licenseNumber,
