@@ -8,12 +8,12 @@ By providing a centralized platform where students can request, offer, and share
 WintRides offers 3 major services:
 1) Request Service: Allows students to find a driver either for immediate and scheduled appointments or group events
 2) Offer Service: Allows students to pick up ride appointments, enabling them to offer rides to other students and get paid
-3) Share Service: Allows students find other students to ride with, promoting trust and affordability
+3) Share Service: Allows students to ride together with peers, fostering a greater sense of safety while making the ride more affordable through shared fare costs.
 
 ### Usage Instructions
 To use the platform, a user takes the following steps
 ## Create an Account/Sign-in flow
-  - Click on the production link: {insert link}
+  - Click on the production link: https://wint-rides.vercel.app/
   - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
   - Enter your username and password to sign in
 
