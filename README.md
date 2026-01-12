@@ -1,6 +1,12 @@
-### WintRides is a centralized platform that provides reliable, accessible and affordable rides for college students around college towns and to key locations like airports
+### PROJECT DESCRIPTION
+WintRides is a centralized platform that provides reliable, accessible and affordable rides for college students around college towns and to key locations like airports
 
-## Tech Stack
+### SET-UP AND INSTALLATION 
+
+**Technologies used:**
+- Cursor, Codex/ChatGPT, Vercel, PostegreSQL, VSCode (primary IDE), Prisma, Git (for version control)
+
+**Tech Stack**
 
 - Next.js (App Router)
 - React
@@ -10,21 +16,18 @@
 - Tailwind CSS
 - bcrypt (password hashing)
 
-### Technologies used: 
-- Cursor, Codex/ChatGPT, Vercel, PostegreSQL, VSCode (primary IDE), Prisma, Git (for version control)
-
-## Prerequisites
+**Prerequisites**
 
 - Node.js 20+
 - npm
 - PostgreSQL database
 
-## Installation & Setup
+**Installation & Setup**
 
 1) Clone the repo
 
 `
-git clone <your-repo-url>
+git clone <https://github.com/wintrides-org/WintRides.git>
 cd WintRides
 `
 
@@ -111,7 +114,6 @@ PostgreSQL
   v
 Response: created request record
 ```
-
 
 ## Deploy on Vercel
 
