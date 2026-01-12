@@ -11,7 +11,7 @@
 - bcrypt (password hashing)
 
 ### Technologies used: 
-- Cursor, Codex/ChatGPT, Vercel, PostegreSQL, VSCode (primary IDE), Prima, Git (for version control)
+- Cursor, Codex/ChatGPT, Vercel, PostegreSQL, VSCode (primary IDE), Prisma, Git (for version control)
 
 ## Prerequisites
 
