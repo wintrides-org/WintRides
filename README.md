@@ -39,11 +39,9 @@ npm install
 
 3) Configure environment variables
 
-Create a .env file in the project root with:
-
 `
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB_NAME"
-`
+cp .sample.env .env
+` 
 
 4) Set up the database
 
@@ -69,21 +67,27 @@ npm run dev
 
 Open http://localhost:3000.
 
-## Auth flow note
+**Auth flow note**
 
 - Registration logs an email verification link in the dev server console and returns a verification token in the API response.
 - Sign-in requires a verified .edu email
 
-## Common issues
+**Common issues**
 
-- DATABASE_URL missing or invalid.
+- DATABASE_URL missing or invalid (check that your .env file exists and is up-to-date)
 - Migrations not applied (run 
 npx prisma migrate deploy or 
 npx prisma migrate dev).
 - Node.js version too old (use 20+).
 - Email must be a .edu domain for registration.
 
-## Backend diagram (PostgreSQL + Prisma)
+**Optional: Deploy on Vercel**
+
+The easiest way to deploy this app is to use the [Vercel Platform] from the creators of Next.js.
+
+### Flow Diagrams
+
+**Backend diagram (PostgreSQL + Prisma)**
 
 ```
 Browser UI (RequestForm)
@@ -114,10 +118,4 @@ PostgreSQL
   v
 Response: created request record
 ```
-
-## Deploy on Vercel
-
-The easiest way to deploy this app is to use the [Vercel Platform] from the creators of Next.js.
-
-
 
