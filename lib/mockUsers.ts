@@ -320,12 +320,19 @@ export async function updateDriverLicenseDetails(
   const normalizedExpiration = normalizeExpirationDate(licenseExpirationDate);
   const normalizedState = isValidIssuingState(issuingState) ? issuingState : undefined;
 
+  const driverInfoForUpdate: DriverInfo = {
+    legalName: legalName.trim(),
+    licenseNumber: user.driverInfo.licenseNumber ?? undefined,
+    issuingState: normalizedState,
+    licenseExpirationDate: user.driverInfo.licenseExpirationDate ?? undefined,
+    verified: user.driverInfo.verified,
+    verifiedAt: user.driverInfo.verifiedAt ? user.driverInfo.verifiedAt.toISOString() : undefined,
+    lastVerifiedAt: user.driverInfo.lastVerifiedAt ? user.driverInfo.lastVerifiedAt.toISOString() : undefined,
+    expirationAlertsSent: (user.driverInfo.expirationAlertsSent ?? undefined) as DriverInfo["expirationAlertsSent"]
+  };
+
   const updatedDriverInfo = updateLicenseDetails(
-    {
-      ...user.driverInfo,
-      legalName: legalName.trim(),
-      issuingState: normalizedState
-    } as DriverInfo,
+    driverInfoForUpdate,
     licenseNumber.trim(),
     normalizedExpiration as string,
     normalizedState
@@ -357,7 +364,7 @@ export async function verifyStoredLicense(userId: string) {
     return null;
   }
 
-  if (isLicenseExpired(user.driverInfo.licenseExpirationDate)) {
+  if (isLicenseExpired(user.driverInfo.licenseExpirationDate ?? undefined)) {
     return null;
   }
 

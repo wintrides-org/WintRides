@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json(
       {
         message: "Sign in successful",
+        sessionToken,
         user: {
           id: user.id,
           email: user.email,
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
       maxAge: 24 * 60 * 60, // 24 hours in seconds
       path: "/",
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax"
     });
 
