@@ -1,6 +1,42 @@
-### PROJECT DESCRIPTION
-WintRides is a centralized platform that provides reliable, accessible and affordable rides for college students around college towns and to key locations like airports
+### WintRides is a centralized platform that provides reliable, accessible and affordable rides for college students in rural and surburban campuses. It improves mobility for students on these campuses by providing a smooth way to request, offer and share rides around rural college towns and to key locations like airports.
 
+### Addressing the Problem of Mobility with WintRides
+Requesting rides from fellow students is not a novel culture on college campuses in rural and suburban areas, as many rural campuses have little accessibility to traditional ride-sharing platforms like Uber and Lyft. However, the process usually involves asking for help on multiple messaging platforms or asking friends using direct word-of-mouth, making the hustle for rides a connection game. 
+By providing a centralized platform where students can request, offer, and share rides, WintRides eliminate the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
+
+**WintRides Services**
+WintRides offers 3 major services:
+1) Request Service: Allows students to find a driver either for immediate and scheduled appointments or group events
+2) Offer Service: Allows students to pick up ride appointments, enabling them to offer rides to other students and get paid
+3) Share Service: Allows students find other students to ride with, promoting trust and affordability
+
+### Usage Instructions
+To use the platform, a user takes the following steps
+## Create an Account/Sign-in flow
+  - Click on the production link: {insert link}
+  - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
+  - Enter your username and password to sign in
+
+## Request a Ride
+  - Click on the "Request a Ride" button on the homepage/dashboare
+  - Choose a request type from the inline modal that pops up 
+  - Complete the assoicated form
+  - Review the quote and submit
+  - Go back to your dashboard: there should be a card "Your Rides" with the confirmation details
+
+## Offer a Ride
+  - If you have not signed up to become a driver, click on the "Become a Driver" button
+  - Click on the "Offer a Ride" or "Take me to Driver Dashboard" button
+  - When on the driver dashboard, you'll see new ride requests in the "New Ride Requests" card. Click on "View All" to view all requests
+  ***Note that for the purposes of this demo, you are able to accept a ride you requested. We implemented this permission to allow the judges view the implementation end-to-end.***
+  - To accept a ride, click "Accept"
+  - Refresh the page and you'll see the details of your accepted ride in the "Upcoming Requests" card on your driver dashbaord
+  - Click View --> Then Click Navigate to navigate to the pickup
+  - Click on the "Complete" button when the ride is completed
+  ***Note that the Complete logic for v2 is that we use GPS to track if the rider and driver actually got to the destination. We allow the driver to mark the ride as completed for the hackathon.
+
+
+Here are instructions to set-up: 
 ### SET-UP AND INSTALLATION 
 
 **Technologies used:**
@@ -118,39 +154,4 @@ PostgreSQL
   v
 Response: created request record
 ```
-
-### Addressing the Problem of Mobility with WintRides
-Requesting rides from fellow students is not a novel culture on college campuses in rural and suburban areas, as many rural campuses have little accessibility to traditional ride-sharing platforms like Uber and Lyft. However, the process usually involves asking for help on multiple messaging platforms or asking friends using direct word-of-mouth, making the hustle for rides a connection game. 
-By providing a centralized platform wehre students can request, offer, and share rides, WintRides eliminate the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
-
-### WintRides Services
-WintRides offers 3 major services:
-1) Request Service: Allows students to find a driver either for immediate and scheduled appointments or group events
-2) Offer Service: Allows students to pick up ride appointments, enabling them to offer rides to other students and get paid
-3) Share Service: Allows students find other students to ride with, promoting trust and affordability
-
-### Usage Instructions
-To use the platform, a user takes the following steps
-## Create an Account/Sign-in flow
-  - Click on the production link: {insert link}
-  - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
-  - Enter your username and password to sign in
-
-## Request a Ride
-  - Click on the "Request a Ride" button on the homepage/dashboare
-  - Choose a request type from the inline modal that pops up 
-  - Complete the assoicated form
-  - Review the quote and submit
-  - Go back to your dashboard: there should be a card "Your Rides" with the confirmation details
-
-## Offer a Ride
-  - If you have not signed up to become a driver, click on the "Become a Driver" button
-  - Click on the "Offer a Ride" or "Take me to Driver Dashboard" button
-  - When on the driver dashboard, you'll see new ride requests in the "New Ride Requests" card. Click on "View All" to view all requests
-  ***Note that for the purposes of this demo, you are able to accept a ride you requested. We implemented this permission to allow the judges view the implementation end-to-end.***
-  - To accept a ride, click "Accept"
-  - Refresh the page and you'll see the details of your accepted ride in the "Upcoming Requests" card on your driver dashbaord
-  - Click View --> Then Click Navigate to navigate to the pickup
-  - Click on the "Complete" button when the ride is completed
-  ***Note that the Complete logic for v2 is that we use GPS to track if the rider and driver actually got to the destination. We allow the driver to mark the ride as completed for the hackathon.
 
