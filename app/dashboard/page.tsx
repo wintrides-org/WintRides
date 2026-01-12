@@ -47,9 +47,9 @@ export default function DashboardPage() {
   // MVP alerts list; swap with backend-driven notifications later.
   const alerts = useMemo(
     () => [
+      { tone: "bg-amber-400", text: "We found a driver for your trip to JFK" },
       { tone: "bg-red-500", text: "New carpool request to BDL" },
       { tone: "bg-amber-400", text: "2 people joined your carpool request" },
-      { tone: "bg-amber-400", text: "We found a driver for your trip to JFK" },
     ],
     []
   );
@@ -60,6 +60,13 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   // Controls whether the alert list is expanded.
   const [alertsOpen, setAlertsOpen] = useState(true);
+  const [lastRide, setLastRide] = useState<{
+    pickupLabel: string;
+    dropoffLabel: string;
+    pickupAt: string;
+    partySize: number;
+    type: string;
+  } | null>(null);
 
   /**
    * Check if user is authenticated
@@ -115,6 +122,17 @@ export default function DashboardPage() {
     // Kick off auth check on mount.
     checkAuthentication();
   }, [router]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("lastRideRequest");
+      if (stored) {
+        setLastRide(JSON.parse(stored));
+      }
+    } catch {
+      setLastRide(null);
+    }
+  }, []);
 
   // Loading state while auth check runs.
   if (isLoading) {
@@ -276,6 +294,24 @@ export default function DashboardPage() {
           ) : null}
         </section>
 
+        {lastRide ? (
+          <section className="mt-6 rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
+            <h2 className="text-lg font-semibold text-[#0a3570]">Your Rides</h2>
+            <p className="mt-2 text-sm text-[#6b5f52]">
+              {lastRide.dropoffLabel} •{" "}
+              {new Date(lastRide.pickupAt).toLocaleString([], {
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+            <p className="mt-1 text-sm text-[#6b5f52]">
+              Pickup: {lastRide.pickupLabel} • Party size: {lastRide.partySize}
+            </p>
+          </section>
+        ) : null}
+
         {/* Primary prompt */}
         <h2
           className={`${displayFont.className} mt-10 text-center text-3xl sm:text-4xl`}
@@ -342,7 +378,7 @@ export default function DashboardPage() {
                   </Link>
                   {/* Driver onboarding placeholder */}
                   <Link
-                    href="/in-progress"
+                    href="/driver/enable"
                     className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
                   >
                     Become a driver

@@ -27,7 +27,7 @@ const bodyFont = Work_Sans({
 });
 
 export default function DriverRequestsPage() {
-  const driverId = "driver_placeholder";
+  const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,6 +37,38 @@ export default function DriverRequestsPage() {
   const [timeStartFilter, setTimeStartFilter] = useState("");
   const [timeEndFilter, setTimeEndFilter] = useState("");
   const [payFilter, setPayFilter] = useState("ALL");
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchSession() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken");
+        const res = await fetch("/api/auth/session", {
+          headers: sessionToken
+            ? {
+                Authorization: `Bearer ${sessionToken}`,
+              }
+            : {},
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!ignore) {
+          setDriverId(data?.user?.id || "");
+        }
+      } catch {
+        if (!ignore) {
+          setDriverId("");
+        }
+      }
+    }
+
+    fetchSession();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -82,6 +114,9 @@ export default function DriverRequestsPage() {
     setAcceptingId(requestId);
 
     try {
+      if (!driverId) {
+        throw new Error("Unable to confirm driver. Please sign in again.");
+      }
       const res = await fetch("/api/requests/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -307,6 +342,7 @@ export default function DriverRequestsPage() {
               {filteredRequests.map((request) => (
                 <div
                   key={request.id}
+                  id={`request-${request.id}`}
                   className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">

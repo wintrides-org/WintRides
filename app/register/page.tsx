@@ -30,6 +30,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Playfair_Display, Work_Sans } from "next/font/google";
+
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -188,8 +199,22 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-semibold">Create Account</h1>
+    <main
+      className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className}`}
+    >
+      <div className="mx-auto max-w-xl">
+      <Link
+        href="/"
+        className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+        aria-label="Back to home"
+      >
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </Link>
+      <h1 className={`${displayFont.className} mt-6 text-2xl font-semibold`}>
+        Create Account
+      </h1>
       <p className="mt-1 text-sm text-neutral-600">
         Sign up with your campus email to join WintRides.
       </p>
@@ -316,8 +341,7 @@ export default function RegisterPage() {
           </Link>
         </p>
       </form>
+      </div>
     </main>
   );
 }
-
-

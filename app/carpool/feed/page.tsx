@@ -2,11 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Playfair_Display, Work_Sans } from "next/font/google";
 import CarpoolCard from "@/components/CarpoolCard";
 import type { CarpoolThread } from "@/types/carpool";
 
+// Define the fonts before the function
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
 export default function CarpoolFeedPage() {
   const router = useRouter();
+
   const [carpools, setCarpools] = useState<CarpoolThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
@@ -52,12 +65,25 @@ export default function CarpoolFeedPage() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f]">
+    <main
+      className={`min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f] ${bodyFont.className}`}
+    >
       <div className="mx-auto w-full max-w-4xl">
+        <Link
+          href="/dashboard"
+          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          aria-label="Back to dashboard"
+        >
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="mt-6 flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-semibold text-[#0a3570]">Carpool Feed</h1>
+            <h1 className={`${displayFont.className} text-3xl font-semibold text-[#0a3570]`}>
+              Carpool Feed
+            </h1>
             <p className="mt-1 text-sm text-[#6b5f52]">
               Browse and join carpools for your upcoming trips
             </p>

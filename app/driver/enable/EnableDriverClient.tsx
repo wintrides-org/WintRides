@@ -16,10 +16,21 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Playfair_Display, Work_Sans } from "next/font/google";
 import {
   US_STATE_OPTIONS,
   validateDriverLicenseInput
 } from "@/lib/licenseValidation";
+
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 export default function EnableDriverClient() {
   const router = useRouter();
@@ -164,8 +175,20 @@ export default function EnableDriverClient() {
   }
 
   return (
-    <main className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-semibold">
+    <main
+      className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className}`}
+    >
+      <div className="mx-auto max-w-xl">
+      <Link
+        href="/dashboard"
+        className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+        aria-label="Back to dashboard"
+      >
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </Link>
+      <h1 className={`${displayFont.className} mt-6 text-2xl font-semibold`}>
         {isUpdate ? "Update License Details" : "Become a Driver"}
       </h1>
       <p className="mt-1 text-sm text-neutral-600">
@@ -313,6 +336,7 @@ export default function EnableDriverClient() {
           )}
         </form>
       )}
+      </div>
     </main>
   );
 }

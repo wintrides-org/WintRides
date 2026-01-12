@@ -7,7 +7,7 @@ import { estimatePriceRange } from "@/lib/requestValidation";
 
 type RideRequestRow = {
   id: string;
-  status: "OPEN" | "MATCHED" | "CANCELED" | "EXPIRED" | "DRAFT";
+  status: "OPEN" | "MATCHED" | "COMPLETED" | "CANCELED" | "EXPIRED" | "DRAFT";
   type: "IMMEDIATE" | "SCHEDULED" | "GROUP";
   pickupLabel: string;
   dropoffLabel: string;
@@ -26,13 +26,11 @@ const bodyFont = Work_Sans({
   weight: ["400", "500", "600"],
 });
 
-export default function DriverUpcomingPage() {
+export default function DriverRideHistoryPage() {
   const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [completeNotice, setCompleteNotice] = useState("");
-  const [completingId, setCompletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -69,13 +67,13 @@ export default function DriverUpcomingPage() {
   useEffect(() => {
     let ignore = false;
 
-    async function fetchUpcoming() {
+    async function fetchHistory() {
       setError("");
       try {
         if (!driverId) return;
-        const res = await fetch(`/api/requests?status=MATCHED&driverId=${driverId}`);
+        const res = await fetch(`/api/requests?status=COMPLETED&driverId=${driverId}`);
         if (!res.ok) {
-          throw new Error("Failed to load upcoming rides.");
+          throw new Error("Failed to load ride history.");
         }
         const data = await res.json();
         if (!ignore) {
@@ -83,7 +81,7 @@ export default function DriverUpcomingPage() {
         }
       } catch (err: any) {
         if (!ignore) {
-          setError(err?.message || "Failed to load upcoming rides.");
+          setError(err?.message || "Failed to load ride history.");
         }
       } finally {
         if (!ignore) {
@@ -93,7 +91,7 @@ export default function DriverUpcomingPage() {
     }
 
     if (driverId) {
-      fetchUpcoming();
+      fetchHistory();
     }
 
     return () => {
@@ -116,32 +114,6 @@ export default function DriverUpcomingPage() {
     [requests]
   );
 
-  async function handleComplete(requestId: string, pay: number) {
-    setCompleteNotice("");
-    setCompletingId(requestId);
-
-    try {
-      if (!driverId) {
-        throw new Error("Unable to confirm driver. Please sign in again.");
-      }
-      const res = await fetch("/api/requests/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, driverId }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body?.error || "Failed to complete ride.");
-      }
-      setRequests((prev) => prev.filter((req) => req.id !== requestId));
-      setCompleteNotice(`You earned $${pay} for this trip!`);
-    } catch (err: any) {
-      setCompleteNotice(err?.message || "Failed to complete ride.");
-    } finally {
-      setCompletingId(null);
-    }
-  }
-
   return (
     <main
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
@@ -159,75 +131,21 @@ export default function DriverUpcomingPage() {
           </Link>
           <div>
             <h1 className={`${displayFont.className} text-3xl text-[#0a3570]`}>
-              Upcoming Rides
+              Ride History
             </h1>
             <p className="mt-1 text-sm text-[#6b5f52]">
-              Accepted rides waiting for pickup.
+              Completed rides you’ve finished.
             </p>
           </div>
           <span className="rounded-full border border-[#0a3570] bg-[#fdf7ef] px-4 py-2 text-xs font-semibold text-[#0a3570]">
-            {requests.length} upcoming
+            {requests.length} completed
           </span>
         </header>
 
         <section className="mt-8 space-y-4">
-          {completeNotice ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-              <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 text-center shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
-                <div className="pointer-events-none absolute inset-0">
-                  {Array.from({ length: 10 }).map((_, index) => (
-                    <span
-                      key={`complete-confetti-${index}`}
-                      className="absolute h-3 w-2 rounded-sm bg-[#800080]"
-                      style={{
-                        left: `${10 + index * 8}%`,
-                        top: "-12%",
-                        animationDelay: `${index * 0.1}s`,
-                        animationDuration: "2s",
-                      }}
-                    />
-                  ))}
-                </div>
-                <p className={`${displayFont.className} text-xl text-[#0a3570]`}>
-                  {completeNotice}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setCompleteNotice("")}
-                  className="mt-4 rounded-full border border-[#0a3570] px-4 py-1 text-xs font-semibold text-[#0a3570]"
-                  aria-label="Dismiss confirmation"
-                >
-                  ✕
-                </button>
-                <style jsx>{`
-                  span {
-                    animation-name: confetti-fall;
-                    animation-timing-function: ease-in;
-                    animation-iteration-count: 1;
-                    animation-fill-mode: forwards;
-                  }
-                  @keyframes confetti-fall {
-                    0% {
-                      transform: translateY(0) rotate(0deg);
-                      opacity: 1;
-                    }
-                    100% {
-                      transform: translateY(220px) rotate(220deg);
-                      opacity: 0;
-                    }
-                  }
-                  @media (prefers-reduced-motion: reduce) {
-                    span {
-                      animation: none;
-                    }
-                  }
-                `}</style>
-              </div>
-            </div>
-          ) : null}
           {loading && (
             <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
-              Loading upcoming rides...
+              Loading ride history...
             </div>
           )}
 
@@ -239,7 +157,7 @@ export default function DriverUpcomingPage() {
 
           {!loading && !error && formatted.length === 0 && (
             <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
-              No upcoming rides yet.
+              No completed rides yet.
             </div>
           )}
 
@@ -259,8 +177,8 @@ export default function DriverUpcomingPage() {
                         {request.pickupTime}
                       </p>
                     </div>
-                    <span className="rounded-full bg-[#d9e8ff] px-3 py-1 text-xs font-semibold text-[#0a3570]">
-                      UPCOMING
+                    <span className="rounded-full bg-[#efe3d2] px-3 py-1 text-xs font-semibold text-[#6b5f52]">
+                      COMPLETED
                     </span>
                   </div>
                   <div className="mt-3 text-sm text-[#0a1b3f]">
@@ -276,26 +194,6 @@ export default function DriverUpcomingPage() {
                     <span>
                       <span className="font-semibold">Pay:</span> ${request.pay}
                     </span>
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        request.pickupLabel
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
-                    >
-                      Navigate
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => handleComplete(request.id, request.pay)}
-                      disabled={completingId === request.id}
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2] disabled:opacity-60"
-                    >
-                      {completingId === request.id ? "Completing..." : "Complete"}
-                    </button>
                   </div>
                 </div>
               ))}

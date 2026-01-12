@@ -52,8 +52,8 @@ const confettiPieces = [
 ];
 
 export default function DriverDashboardPage() {
-  const driverId = "driver_placeholder";
-  const [isAvailable, setIsAvailable] = useState(false);
+  const [driverId, setDriverId] = useState<string>("");
+  const [isAvailable, setIsAvailable] = useState(true);
   const [pingsOpen, setPingsOpen] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
@@ -87,9 +87,44 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     let ignore = false;
 
+    async function fetchSession() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken");
+        const res = await fetch("/api/auth/session", {
+          headers: sessionToken
+            ? {
+                Authorization: `Bearer ${sessionToken}`,
+              }
+            : {},
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!ignore) {
+          setDriverId(data?.user?.id || "");
+        }
+      } catch {
+        if (!ignore) {
+          setDriverId("");
+        }
+      }
+    }
+
+    fetchSession();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
     async function fetchUpcoming() {
       try {
-        const res = await fetch(`/api/requests?status=MATCHED&driverId=${driverId}`);
+        if (!driverId) return;
+        const res = await fetch(
+          `/api/requests?status=MATCHED&driverId=${driverId}`
+        );
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
@@ -102,7 +137,9 @@ export default function DriverDashboardPage() {
       }
     }
 
-    fetchUpcoming();
+    if (driverId) {
+      fetchUpcoming();
+    }
 
     return () => {
       ignore = true;
@@ -152,6 +189,9 @@ export default function DriverDashboardPage() {
     setAcceptingId(requestId);
 
     try {
+      if (!driverId) {
+        throw new Error("Unable to confirm driver. Please sign in again.");
+      }
       const res = await fetch("/api/requests/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -235,8 +275,8 @@ export default function DriverDashboardPage() {
           </Link>
 
           <div className="flex items-center gap-3 text-[#0a3570]">
-            <button
-              type="button"
+            <Link
+              href="/dashboard"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
               aria-label="Profile"
             >
@@ -244,9 +284,9 @@ export default function DriverDashboardPage() {
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c2.2-4 13.8-4 16 0" />
               </svg>
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              href="/in-progress"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
               aria-label="Settings"
             >
@@ -254,18 +294,18 @@ export default function DriverDashboardPage() {
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a2 2 0 1 1-4 0v-.1a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a2 2 0 1 1 0-4h.1a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a2 2 0 1 1 4 0v.1a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6H20a2 2 0 1 1 0 4h-.1a1 1 0 0 0-.5.9Z" />
               </svg>
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              href="/dashboard"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
               aria-label="Home"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 10l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" />
               </svg>
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              href="/in-progress"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
               aria-label="Help"
             >
@@ -274,7 +314,7 @@ export default function DriverDashboardPage() {
                 <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4" />
                 <circle cx="12" cy="17" r="1" />
               </svg>
-            </button>
+            </Link>
           </div>
         </header>
 
@@ -307,12 +347,12 @@ export default function DriverDashboardPage() {
                 ))}
               </div>
               <p className="mt-2 text-sm text-[#6b5f52]">Ratings & reviews</p>
-              <button
-                type="button"
-                className="mt-4 rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
+              <Link
+                href="/in-progress"
+                className="mt-4 inline-flex rounded-full bg-[#9aa7b9] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
               >
                 View all reviews
-              </button>
+              </Link>
             </div>
 
             <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
@@ -356,17 +396,17 @@ export default function DriverDashboardPage() {
           </aside>
 
           <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 px-1">
-              <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
-                You earned $320 in the past week
-              </p>
-              <button
-                type="button"
-                className="rounded-full bg-[#0a3570] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
-              >
-                View My Insights
-              </button>
-            </div>
+              <div className="flex flex-wrap items-center justify-between gap-4 px-1">
+                <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+                  You earned $320 in the past week
+                </p>
+                <Link
+                  href="/in-progress"
+                  className="rounded-full bg-[#9aa7b9] px-6 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
+                >
+                  View My Insights
+                </Link>
+              </div>
 
             <div className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <div className="flex items-center justify-between rounded-t-3xl bg-[#0a3570] px-5 py-3 text-sm font-semibold text-white">
@@ -419,12 +459,12 @@ export default function DriverDashboardPage() {
                             >
                               {acceptingId === ping.id ? "Accepting..." : "Accept"}
                             </button>
-                            <button
-                              type="button"
+                            <Link
+                              href={`/driver/requests#request-${ping.id}`}
                               className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
                             >
                               View
-                            </button>
+                            </Link>
                           </div>
                         </div>
                       ))}
@@ -448,12 +488,12 @@ export default function DriverDashboardPage() {
                 Your Rides
               </h3>
               <div className="mt-4 flex flex-wrap gap-4">
-                <button
-                  type="button"
+                <Link
+                  href="/driver/ride-history"
                   className="rounded-full bg-[#0a3570] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
                 >
                   View Ride History
-                </button>
+                </Link>
                 <Link
                   href="/driver/upcoming"
                   className="rounded-full bg-[#0a3570] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"

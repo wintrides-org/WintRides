@@ -2,7 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Playfair_Display, Work_Sans } from "next/font/google";
 import type { TimeWindow } from "@/types/carpool";
+
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 type FieldErrors = Partial<Record<"destination" | "date" | "timeStart" | "timeEnd" | "pickupArea" | "seatsNeeded", string>>;
 
@@ -159,9 +171,22 @@ export default function CreateCarpoolPage() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f]">
+    <main
+      className={`min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f] ${bodyFont.className}`}
+    >
       <div className="mx-auto w-full max-w-xl">
-        <h1 className="text-3xl font-semibold text-[#0a3570]">Create Carpool</h1>
+        <Link
+          href="/carpool/feed"
+          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          aria-label="Back to carpool feed"
+        >
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <h1 className={`${displayFont.className} mt-6 text-3xl font-semibold text-[#0a3570]`}>
+          Create Carpool
+        </h1>
         <p className="mt-1 text-sm text-[#6b5f52]">
           Fill out the details to create a new carpool thread.
         </p>
