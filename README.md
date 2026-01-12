@@ -5,10 +5,10 @@
 - Next.js (App Router)
 - React
 - TypeScript
-- Prisma ORM + @prisma/adapter-pg
+- Prisma ORM + @prisma/adapter-pg (hosts database)
 - PostgreSQL
 - Tailwind CSS
-- bcrypt
+- bcrypt (password hashing)
 
 ### Technologies used: 
 - Cursor, Codex/ChatGPT, Vercel, PostegreSQL, VSCode (primary IDE), Prima, Git (for version control)
