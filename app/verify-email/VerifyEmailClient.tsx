@@ -1,3 +1,33 @@
+/**
+ * Email Verification Page
+ *
+ * Handles email verification via verification token
+ *
+ * FLOW:
+ * 1. User clicks verification link from email (contains token)
+ * 2. Page extracts token from URL query parameter
+ * 3. Automatically calls verification API
+ * 4. Shows success/error state
+ * 5. Redirects to sign in page on success (with optional next step)
+ *
+ * STATES:
+ * - loading: Verifying token
+ * - success: Email verified successfully
+ * - error: Invalid/expired token
+ * - pending: No token provided, waiting for email
+ *
+ * MVP:
+ *   - Token in URL query parameter
+ *   - Automatic verification on page load
+ *
+ * Production:
+ *   - Use POST instead of GET for security
+ *   - Add CSRF protection
+ *   - Better error messages
+ *   - Resend verification email option
+ *   - Token expiration handling
+ */
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -9,6 +39,7 @@ export default function VerifyEmailClient() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const next = searchParams.get("next");
 
   const [status, setStatus] = useState<"loading" | "success" | "error" | "pending">(
     "loading"
@@ -32,8 +63,10 @@ export default function VerifyEmailClient() {
       setMessage("Email verified successfully! You can now sign in.");
 
       setTimeout(() => {
-        router.push("/signin");
-      }, 3000);
+        // Preserve optional redirect path for post-signup driver intent.
+        const nextParam = next ? `?next=${encodeURIComponent(next)}` : "";
+        router.push(`/signin${nextParam}`);
+      }, 1500);
     } catch (e: any) {
       setStatus("error");
       setMessage(

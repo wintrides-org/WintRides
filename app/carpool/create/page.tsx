@@ -2,7 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Playfair_Display, Work_Sans } from "next/font/google";
 import type { TimeWindow } from "@/types/carpool";
+
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 type FieldErrors = Partial<Record<"destination" | "date" | "timeStart" | "timeEnd" | "pickupArea" | "seatsNeeded", string>>;
 
@@ -159,11 +171,25 @@ export default function CreateCarpoolPage() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <main className="p-6 max-w-xl">
-      <h1 className="text-2xl font-semibold">Create Carpool</h1>
-      <p className="mt-1 text-sm text-neutral-600">
-        Fill out the details to create a new carpool thread.
-      </p>
+    <main
+      className={`min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f] ${bodyFont.className}`}
+    >
+      <div className="mx-auto w-full max-w-xl">
+        <Link
+          href="/carpool/feed"
+          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          aria-label="Back to carpool feed"
+        >
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <h1 className={`${displayFont.className} mt-6 text-3xl font-semibold text-[#0a3570]`}>
+          Create Carpool
+        </h1>
+        <p className="mt-1 text-sm text-[#6b5f52]">
+          Fill out the details to create a new carpool thread.
+        </p>
 
       <div className="mt-6 grid gap-4">
         {/* Destination */}
@@ -174,7 +200,7 @@ export default function CreateCarpoolPage() {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="Type a destination"
-            className="rounded-xl border p-3"
+            className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
           />
           {errors.destination ? (
             <p className="text-sm text-red-600">{errors.destination}</p>
@@ -188,7 +214,7 @@ export default function CreateCarpoolPage() {
               key={d}
               type="button"
               onClick={() => setDestination(d)}
-              className="rounded-full border px-3 py-1 text-sm hover:bg-neutral-50"
+              className="rounded-full border border-[#1e3a5f] bg-[#e7c59a] px-3 py-1 text-sm font-medium text-[#1e3a5f] shadow-[0_6px_12px_rgba(10,27,63,0.08)] transition hover:bg-[#ddb680]"
             >
               {d}
             </button>
@@ -203,7 +229,7 @@ export default function CreateCarpoolPage() {
             value={date}
             min={today}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-xl border p-3"
+            className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
           />
           {errors.date ? (
             <p className="text-sm text-red-600">{errors.date}</p>
@@ -220,7 +246,7 @@ export default function CreateCarpoolPage() {
                 type="time"
                 value={timeStart}
                 onChange={(e) => setTimeStart(e.target.value)}
-                className="rounded-xl border p-3"
+                className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
               />
             </div>
             <div className="grid gap-1">
@@ -229,7 +255,7 @@ export default function CreateCarpoolPage() {
                 type="time"
                 value={timeEnd}
                 onChange={(e) => setTimeEnd(e.target.value)}
-                className="rounded-xl border p-3"
+                className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
               />
             </div>
           </div>
@@ -252,7 +278,7 @@ export default function CreateCarpoolPage() {
             value={pickupArea}
             onChange={(e) => setPickupArea(e.target.value)}
             placeholder="Type a pickup location"
-            className="rounded-xl border p-3"
+            className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
           />
           {errors.pickupArea ? (
             <p className="text-sm text-red-600">{errors.pickupArea}</p>
@@ -266,7 +292,7 @@ export default function CreateCarpoolPage() {
               key={p}
               type="button"
               onClick={() => setPickupArea(p)}
-              className="rounded-full border px-3 py-1 text-sm hover:bg-neutral-50"
+              className="rounded-full border border-[#1e3a5f] bg-[#e7c59a] px-3 py-1 text-sm font-medium text-[#1e3a5f] shadow-[0_6px_12px_rgba(10,27,63,0.08)] transition hover:bg-[#ddb680]"
             >
               {p}
             </button>
@@ -282,7 +308,7 @@ export default function CreateCarpoolPage() {
             max={10}
             value={seatsNeeded}
             onChange={(e) => setSeatsNeeded(Number(e.target.value))}
-            className="rounded-xl border p-3"
+            className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
           />
           {errors.seatsNeeded ? (
             <p className="text-sm text-red-600">{errors.seatsNeeded}</p>
@@ -302,7 +328,7 @@ export default function CreateCarpoolPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g., luggage, quiet ride, etc."
-            className="rounded-xl border p-3 min-h-[84px]"
+            className="min-h-[84px] rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
           />
         </div>
 
@@ -312,7 +338,7 @@ export default function CreateCarpoolPage() {
             type="button"
             onClick={onSubmit}
             disabled={submitting}
-            className="rounded-xl px-4 py-3 border bg-white hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-full bg-[#0a3570] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] disabled:opacity-50"
           >
             {submitting ? "Creating..." : "Create Carpool"}
           </button>
@@ -326,7 +352,7 @@ export default function CreateCarpoolPage() {
           <p className="text-sm text-red-600">{submitError}</p>
         ) : null}
       </div>
+      </div>
     </main>
   );
 }
-

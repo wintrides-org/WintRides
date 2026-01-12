@@ -6,7 +6,7 @@
  * FLOW:
  * 1. Validate request body (email, password, optional driver fields)
  * 2. Check if user already exists
- * 3. Validate driver requirements (if wantsToDrive is true)
+ * 3. Validate driver requirements when full license details are provided
  * 4. Create user account (email not verified yet)
  * 5. Generate verification token
  * 6. Return success response with verification token (MVP only)
@@ -14,12 +14,12 @@
  * MVP:
  *   - Returns verification token in response (for dev testing)
  *   - Logs verification link to console
- *   - License upload is base64 data URL
+ *   - Manual license entry validated on server when provided
  * 
  * Production:
  *   - NEVER return verification token in response
  *   - Send verification email using email service (SendGrid, Resend, AWS SES)
- *   - Upload license to cloud storage (S3, Cloudinary) before storing URL
+ *   - Validate license details against authoritative sources
  *   - Add rate limiting to prevent spam registrations
  *   - Add CAPTCHA verification
  *   - Validate email format more strictly
@@ -30,6 +30,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, getUserByEmail } from "@/lib/mockUsers";
+import { validateDriverLicenseInput } from "@/lib/licenseValidation";
 
 function getRegistrationErrorStatus(message: string): number {
   if (message.includes("already exists")) {
@@ -38,9 +39,13 @@ function getRegistrationErrorStatus(message: string): number {
   if (
     message.includes("Email must be from a valid campus domain") ||
     message.includes("Invalid email format") ||
-    message.includes("Legal name is required") ||
-    message.includes("License upload is required") ||
-    message.includes("License verification failed")
+    message.includes("Legal name") ||
+    // message.includes("License upload is required") ||
+    message.includes("License verification failed") ||
+    message.includes("License number") ||
+    message.includes("License expiration date") ||
+    message.includes("Issuing state") ||
+    message.includes("Legal name can only include")
   ) {
     return 400;
   }
@@ -52,7 +57,15 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { email, password, wantsToDrive, legalName, licenseUploadUrl } = body;
+    const {
+      email,
+      password,
+      wantsToDrive,
+      legalName,
+      licenseNumber,
+      licenseExpirationDate,
+      issuingState
+    } = body;
 
     // ========================================================================
     // VALIDATION
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Check if user already exists
     // MVP: Simple check
     // Production: Use database query with proper error handling
-    if (getUserByEmail(email)) {
+    if (await getUserByEmail(email)) {
       return NextResponse.json(
         { error: "User with this email already exists" },
         { status: 409 } // 409 Conflict
@@ -90,22 +103,24 @@ export async function POST(request: NextRequest) {
     // DRIVER REGISTRATION VALIDATION
     // ========================================================================
     
-    // If user wants to drive, validate driver-specific requirements
-    if (wantsToDrive) {
-      // Legal name is required for driver registration
-      if (!legalName) {
+    // If full driver details are provided, validate them for immediate driver enable.
+    // If only wantsToDrive is set, treat it as intent and collect details later.
+    const hasDriverDetails =
+      legalName || licenseNumber || licenseExpirationDate || issuingState;
+
+    if (hasDriverDetails) {
+      // Validate manual license entry against shared state-aware rules.
+      const licenseErrors = validateDriverLicenseInput({
+        legalName,
+        licenseNumber,
+        licenseExpirationDate,
+        issuingState
+      });
+
+      if (Object.keys(licenseErrors).length > 0) {
+        const firstError = Object.values(licenseErrors)[0];
         return NextResponse.json(
-          { error: "Legal name is required for driver registration" },
-          { status: 400 }
-        );
-      }
-      
-      // License upload is required for driver registration
-      // MVP: License is base64 data URL
-      // Production: License should already be uploaded to cloud storage, URL provided here
-      if (!licenseUploadUrl) {
-        return NextResponse.json(
-          { error: "License upload is required for driver registration" },
+          { error: firstError },
           { status: 400 }
         );
       }
@@ -121,14 +136,16 @@ export async function POST(request: NextRequest) {
     // - Hash password
     // - Generate pseudonym
     // - Create campus assignment
-    // - If wantsToDrive: verify license and create driverInfo
+    // - If wantsToDrive: validate license details and create driverInfo
     // - Generate email verification token
-    const { user, verificationToken } = createUser({
+    const { user, verificationToken } = await createUser({
       email,
       password,
       wantsToDrive: wantsToDrive || false,
       legalName,
-      licenseUploadUrl
+      licenseNumber,
+      licenseExpirationDate,
+      issuingState
     });
 
     // ========================================================================
@@ -158,7 +175,8 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         // Only return token in development environment
         // In production, this should always be undefined
-        verificationToken: process.env.NODE_ENV === "development" ? verificationToken : undefined
+        //verificationToken: process.env.NODE_ENV === "development" ? verificationToken : undefined
+        verificationToken
       },
       { status: 201 } // 201 Created
     );

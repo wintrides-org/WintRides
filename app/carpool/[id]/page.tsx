@@ -2,8 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
+import { Playfair_Display, Work_Sans } from "next/font/google";
 import CarpoolChat from "@/components/CarpoolChat";
 import type { CarpoolThread } from "@/types/carpool";
+
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 export default function CarpoolThreadPage() {
   const router = useRouter();
@@ -144,7 +156,16 @@ export default function CarpoolThreadPage() {
 
   if (loading) {
     return (
-      <main className="p-6 max-w-4xl mx-auto">
+      <main className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className} mx-auto max-w-4xl`}>
+        <Link
+          href="/carpool/feed"
+          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          aria-label="Back to carpool feed"
+        >
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
         <div className="text-center py-12 text-neutral-600">
           Loading carpool...
         </div>
@@ -154,7 +175,16 @@ export default function CarpoolThreadPage() {
 
   if (error && !carpool) {
     return (
-      <main className="p-6 max-w-4xl mx-auto">
+      <main className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className} mx-auto max-w-4xl`}>
+        <Link
+          href="/carpool/feed"
+          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          aria-label="Back to carpool feed"
+        >
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
         <div className="text-center py-12">
           <p className="text-red-600 mb-4">{error}</p>
           <button
@@ -200,21 +230,24 @@ export default function CarpoolThreadPage() {
   const canLock = isCreator && carpool.confirmedCount >= carpool.targetGroupSize && carpool.status !== "CONFIRMED";
 
   return (
-    <main className="p-6 max-w-4xl mx-auto">
-      {/* Back button */}
-      <button
-        type="button"
-        onClick={() => router.push("/carpool/feed")}
-        className="mb-4 text-sm text-neutral-600 hover:text-neutral-900"
+    <main className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className} mx-auto max-w-4xl`}>
+      <Link
+        href="/carpool/feed"
+        className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+        aria-label="Back to carpool feed"
       >
-        ← Back to Feed
-      </button>
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </Link>
 
       {/* Pinned Summary Card */}
       <div className="mb-6 p-4 rounded-xl border border-neutral-200 bg-neutral-50">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold mb-2">{carpool.destination}</h1>
+            <h1 className={`${displayFont.className} text-2xl font-semibold mb-2`}>
+              {carpool.destination}
+            </h1>
             <div className="space-y-1 text-sm text-neutral-600">
               <p>
                 <span className="font-medium">Date:</span> {formatDate(carpool.date)}
@@ -397,4 +430,3 @@ export default function CarpoolThreadPage() {
     </main>
   );
 }
-

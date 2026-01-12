@@ -98,12 +98,7 @@ export default function CarpoolCard({ carpool }: CarpoolCardProps) {
           </div>
         </div>
 
-        {/* Arrow indicator */}
-        <div className="text-neutral-400">
-          →
-        </div>
       </div>
     </button>
   );
 }
-

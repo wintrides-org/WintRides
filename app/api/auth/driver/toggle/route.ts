@@ -13,16 +13,16 @@
  * 5. Return success response
  * 
  * KEY BEHAVIOR:
- * - Toggling ON: Automatically verifies stored license (no re-upload needed)
+ * - Toggling ON: Automatically verifies stored license if unexpired (no mandatory re-entry needed)
  * - Toggling OFF: Simply disables availability
  * - First-time enable: Must use /api/auth/driver/enable first
  * 
  * MVP:
- *   - License verification is automatic (just updates timestamp)
- *   - No re-upload required for subsequent toggles
+ *   - License verification is based on license expiration date (no timestamp update if expired)
+ *   - No mandatory re-entry required for subsequent toggles
  * 
  * Production:
- *   - May require periodic license re-verification (e.g., every 6 months)
+ *   - May prompt periodic license re-entry or review (e.g., every 6 months)
  *   - Check license expiration date if stored
  *   - Could prompt user to confirm license is still valid
  *   - Track availability history for analytics
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate session
-    const session = getSession(sessionToken);
+    const session = await getSession(sessionToken);
     if (!session) {
       return NextResponse.json(
         { error: "Invalid or expired session" },
@@ -80,16 +80,20 @@ export async function POST(request: NextRequest) {
     // LICENSE VERIFICATION (if toggling ON)
     // ========================================================================
     
-    // If toggling ON and verifyLicense flag is set, verify stored license first
-    // MVP: This is optional - license verification happens automatically in updateDriverAvailability
-    // Production: May want to make this mandatory or add periodic verification
+    // If toggling ON and verifyLicense flag is set, verify stored license first.
+    // MVP: Verification only succeeds if the expiration date has not passed.
+    // Production: May want to make this mandatory or add periodic verification.
     if (isAvailable && verifyLicense) {
-      const user = getUserById(session.userId);
+      const user = await getUserById(session.userId);
       if (user?.driverInfo) {
-        // Verify stored license is still valid
-        // MVP: Just updates timestamp
-        // Production: Check expiration, revocation status, etc.
-        verifyStoredLicense(session.userId);
+        // Verify stored license only when unexpired; return a clear error otherwise.
+        const verifiedUser = await verifyStoredLicense(session.userId);
+        if (!verifiedUser) {
+          return NextResponse.json(
+            { error: "Your driver's license has expired. Please re-enter your license details to continue driving." },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -102,7 +106,7 @@ export async function POST(request: NextRequest) {
     // - If toggling ON: Check if user has driver capability, verify stored license
     // - If toggling OFF: Simply disable availability
     // - Throw error if toggling ON without driver capability
-    const user = updateDriverAvailability(session.userId, isAvailable);
+    const user = await updateDriverAvailability(session.userId, isAvailable);
 
     // Check if user was found
     if (!user) {

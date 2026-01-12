@@ -82,14 +82,13 @@ function toIso(value: string) {
 /** Fake MVP time logic: replace with more accurate logic */
 export function estimateWaitMinutes(partySize: number) {
   const base = 4;
-  return Math.min(20, base + Math.max(0, partySize - 1) * 2);
+  return Math.min(20, base + Math.max(0, (Math.round(partySize/4) - 1) * 2));
 }
 
 /** Fake MVP price logic: replace with more accurate logic */
 export function estimatePriceRange(partySize: number) {
   const base = 7;
-  const perRider = 2;
-  const min = base + (partySize - 1) * perRider;
+  const min = (Math.ceil(partySize)) * base;
   const max = min + 4;
   return { min, max };
 }

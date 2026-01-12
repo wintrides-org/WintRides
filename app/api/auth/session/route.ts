@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     // - Look up session by token
     // - Check if session is expired
     // - Return session info if valid
-    const session = getSession(sessionToken);
+    const session = await getSession(sessionToken);
     
     if (!session) {
       // Session not found or expired
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     // Get user by ID from session
     // MVP: Simple lookup
     // Production: Add caching for frequently accessed users
-    const user = getUserById(session.userId);
+    const user = await getUserById(session.userId);
     
     if (!user) {
       // User not found (shouldn't happen, but handle gracefully)

@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -16,13 +17,73 @@ enum RequestStatus {
   DRAFT
   OPEN
   MATCHED
+  COMPLETED
   CANCELED
   EXPIRED
+}
+
+model User {
+  id                     String     @id @default(uuid())
+  email                  String     @unique
+  passwordHash           String
+  campusId               String
+  pseudonym              String
+  isDriverAvailable      Boolean    @default(false)
+  emailVerified          Boolean    @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationToken String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  lastLoginAt            DateTime?
+  ridesCompleted         Int        @default(0)
+  noShowCount            Int        @default(0)
+
+  campus     Campus      @relation(fields: [campusId], references: [id])
+  driverInfo DriverInfo?
+  sessions   Session[]
+}
+
+model DriverInfo {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  legalName              String
+  licenseNumber          String?
+  issuingState           String?
+  licenseExpirationDate  String?
+  verified               Boolean  @default(false)
+  verifiedAt             DateTime?
+  lastVerifiedAt         DateTime?
+  expirationAlertsSent   Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Campus {
+  id          String   @id @default(uuid())
+  name        String
+  emailDomain String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
 }
 
 model RideRequest {
   id            String        @id @default(uuid())
   riderId       String
+  acceptedDriverId String?
   type          RequestType
   status        RequestStatus
   pickupLabel   String
@@ -33,6 +94,7 @@ model RideRequest {
   partySize     Int
   pickupAt      DateTime
   carsNeeded    Int
+  matchedAt     DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

@@ -18,6 +18,7 @@ export type RequestStatus =
 | "DRAFT"     // user is filling the form
 | "OPEN"      // submitted, waiting for driver
 | "MATCHED"   // driver accepted
+| "COMPLETED" // ride finished
 | "CANCELED"  // rider or system canceled
 | "EXPIRED";  // no driver accepted in time
 
@@ -34,6 +35,7 @@ export type Location = {
 export interface RideRequest { 
     id: string;
     riderId: string;
+    acceptedDriverId?: string;
 
     // Request lifecycle metadata.
     type: RequestType;
@@ -50,6 +52,7 @@ export interface RideRequest {
     // Defaults to 1 for immediate/scheduled requests.
     carsNeeded: number;
 
+    matchedAt?: string;
     createdAt: string;
 }
   

@@ -5,24 +5,22 @@
  * 
  * FLOW:
  * 1. Authenticate user (check session)
- * 2. Validate request body (legalName, licenseUploadUrl)
+ * 2. Validate request body (manual license fields)
  * 3. Check if user already has driver capability (prevent duplicates)
- * 4. Verify license name matches legal name
+ * 4. Validate manual license details (state rules + expiration window)
  * 5. Create driverInfo with verification timestamps
  * 6. Enable driver availability
  * 7. Return success response
  * 
  * USE CASE:
  * - User didn't sign up as driver initially but wants to enable it later
- * - User needs to re-upload license (if previous one expired/invalid)
+ * - User can re-enter license details at any time; expiration still blocks driving
  * 
  * MVP:
- *   - License upload is base64 data URL
- *   - Basic license verification (just checks upload exists)
+ *   - Manual license validation (state-aware rules)
  * 
  * Production:
- *   - Upload license to cloud storage (S3, Cloudinary) before calling this endpoint
- *   - Use OCR to extract name from license and verify it matches legalName
+ *   - Validate license details against authoritative sources where possible
  *   - May require manual admin review for first-time driver verification
  *   - Store license expiration date and check periodically
  *   - Add rate limiting to prevent abuse
@@ -31,6 +29,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { enableDriverCapability, getUserById, getSession } from "@/lib/mockUsers";
+import { validateDriverLicenseInput } from "@/lib/licenseValidation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate session
-    const session = getSession(sessionToken);
+    const session = await getSession(sessionToken);
     if (!session) {
       return NextResponse.json(
         { error: "Invalid or expired session" },
@@ -66,12 +65,16 @@ export async function POST(request: NextRequest) {
     
     // Parse request body
     const body = await request.json();
-    const { legalName, licenseUploadUrl, expirationDate } = body;
+    const {
+      legalName,
+      licenseNumber,
+      licenseExpirationDate,
+      issuingState
+    } = body;
     
-    // Note: expirationDate handling
-    // MVP: expirationDate can be provided manually or left undefined
-    // Production: expirationDate should be extracted via OCR from licenseUploadUrl
-    //             Do NOT trust user-provided expirationDate - always extract via OCR
+    // Manual license entry:
+    // - Validate the provided details using state-aware rules.
+    // - Reject any missing or malformed data before enabling driver capability.
 
     // Validate legal name is provided
     if (!legalName || !legalName.trim()) {
@@ -81,12 +84,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate license upload is provided
-    // MVP: License is base64 data URL
-    // Production: License should already be uploaded to cloud storage, URL provided here
-    if (!licenseUploadUrl) {
+    // Legacy license upload validation (deprecated in manual-entry flow).
+    // if (!licenseUploadUrl) {
+    //   return NextResponse.json(
+    //     { error: "License upload is required" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    // Validate manual license entry against shared rules.
+    const licenseErrors = validateDriverLicenseInput({
+      legalName,
+      licenseNumber,
+      licenseExpirationDate,
+      issuingState
+    });
+
+    if (Object.keys(licenseErrors).length > 0) {
+      const firstError = Object.values(licenseErrors)[0];
       return NextResponse.json(
-        { error: "License upload is required" },
+        { error: firstError },
         { status: 400 }
       );
     }
@@ -98,14 +115,18 @@ export async function POST(request: NextRequest) {
     // Enable driver capability
     // This will:
     // - Check if user already has driver capability (throw error if yes)
-    // - Verify license name matches legal name
-    // - Extract license data (number, expiration) via OCR (production)
+    // - Store validated license details
     // - Create driverInfo with verification timestamps and expiration date
     // - Enable driver availability automatically
     // 
-    // Note: In production, expirationDate should come from OCR extraction, not user input
-    // For MVP, expirationDate can be provided manually for testing
-    const user = enableDriverCapability(session.userId, legalName, licenseUploadUrl, expirationDate);
+    // Manual entry: pass validated fields to the mock store.
+    const user = await enableDriverCapability(
+      session.userId,
+      legalName,
+      licenseNumber,
+      licenseExpirationDate,
+      issuingState
+    );
 
     // Check if user was found
     if (!user) {

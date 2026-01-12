@@ -2,13 +2,14 @@
  * Dashboard Page
  * 
  * Main app page shown after user signs up or signs in.
- * Contains navigation to request rides and view carpools.
+ * Contains navigation to request rides, view carpools, and access driver tools.
  * 
  * AUTHENTICATION PROTECTION:
  * - This page requires user to be authenticated (signed in)
  * - On page load, checks if user has valid session
  * - If not authenticated: redirects to sign in page
  * - If authenticated: shows dashboard with Request and Carpool buttons
+ * - Shows a recent "Your Rides" card after a request is placed (MVP uses localStorage)
  * 
  * MVP:
  *   - Client-side session check on page load
@@ -25,7 +26,7 @@
 
 // Dashboard is a client component because it checks auth state on the client
 // and uses local UI state (alerts, menus).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import RequestButton from "@/components/requestbutton";
 import Link from "next/link";
@@ -47,9 +48,9 @@ export default function DashboardPage() {
   // MVP alerts list; swap with backend-driven notifications later.
   const alerts = useMemo(
     () => [
+      { tone: "bg-amber-400", text: "We found a driver for your trip to JFK" },
       { tone: "bg-red-500", text: "New carpool request to BDL" },
       { tone: "bg-amber-400", text: "2 people joined your carpool request" },
-      { tone: "bg-amber-400", text: "We found a driver for your trip to JFK" },
     ],
     []
   );
@@ -57,9 +58,19 @@ export default function DashboardPage() {
   // State to track authentication check
   // null = checking, true = authenticated, false = not authenticated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isDriver, setIsDriver] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // Controls whether the alert list is expanded.
   const [alertsOpen, setAlertsOpen] = useState(true);
+  const [lastRide, setLastRide] = useState<{
+    pickupLabel: string;
+    dropoffLabel: string;
+    pickupAt: string;
+    partySize: number;
+    type: string;
+  } | null>(null);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Check if user is authenticated
@@ -92,10 +103,13 @@ export default function DashboardPage() {
 
         if (res.ok) {
           // Valid session: allow dashboard render.
+          const data = await res.json().catch(() => null);
           setIsAuthenticated(true);
+          setIsDriver(Boolean(data?.user?.isDriver));
         } else {
           // Invalid session: clear token and bounce to sign-in.
           setIsAuthenticated(false);
+          setIsDriver(null);
           
           localStorage.removeItem("sessionToken");
           
@@ -105,6 +119,7 @@ export default function DashboardPage() {
         // Any error => treat as not authenticated for MVP safety.
         console.error("Error checking authentication:", error);
         setIsAuthenticated(false);
+        setIsDriver(null);
         localStorage.removeItem("sessionToken");
         router.push("/signin");
       } finally {
@@ -112,9 +127,28 @@ export default function DashboardPage() {
       }
     }
 
-    // Kick off auth check on mount.
-    checkAuthentication();
+  // Kick off auth check on mount.
+  checkAuthentication();
   }, [router]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("lastRideRequest");
+      if (stored) {
+        setLastRide(JSON.parse(stored));
+      }
+    } catch {
+      setLastRide(null);
+    }
+  }, []);
 
   // Loading state while auth check runs.
   if (isLoading) {
@@ -134,10 +168,43 @@ export default function DashboardPage() {
     return null; // Don't render anything while redirecting
   }
 
+  const handleDriverDashboardClick = () => {
+    if (isDriver) {
+      router.push("/driver/dashboard");
+      return;
+    }
+
+    router.push("/driver/enable");
+  };
+
+  const handleBecomeDriverClick = () => {
+    if (!isDriver) {
+      router.push("/driver/enable");
+      return;
+    }
+
+    setShowDriverModal(true);
+    if (redirectTimeoutRef.current) {
+      clearTimeout(redirectTimeoutRef.current);
+    }
+    redirectTimeoutRef.current = setTimeout(() => {
+      router.push("/driver/dashboard");
+    }, 3000);
+  };
+
   return (
     <main
       className={`min-h-screen bg-[#f4ecdf] bg-[radial-gradient(circle_at_top,_#f9f2e8,_#f4ecdf_60%)] ${bodyFont.className}`}
     >
+      {showDriverModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
+          <div className="relative w-full max-w-xl rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-8 text-center shadow-[0_20px_50px_rgba(10,27,63,0.35)]">
+            <p className="text-lg font-semibold text-[#0a1b3f]">
+              Oops, you are already a driver. Taking you to your dashboard!
+            </p>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-10 text-[#0a1b3f]">
         {/* Header with greeting + MVP utility icons */}
         <header className="flex flex-wrap items-start justify-between gap-6">
@@ -145,7 +212,7 @@ export default function DashboardPage() {
             <h1
               className={`${displayFont.className} text-3xl sm:text-4xl`}
             >
-              Welcome, Chioma
+              Welcome, Chioma👋🏽
             </h1>
             <p className="mt-1 text-sm text-[#6b5f52]">
               Ready for your next ride?
@@ -276,6 +343,24 @@ export default function DashboardPage() {
           ) : null}
         </section>
 
+        {lastRide ? (
+          <section className="mt-6 rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
+            <h2 className="text-lg font-semibold text-[#0a3570]">Your Rides</h2>
+            <p className="mt-2 text-sm text-[#6b5f52]">
+              {lastRide.dropoffLabel} •{" "}
+              {new Date(lastRide.pickupAt).toLocaleString([], {
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+            <p className="mt-1 text-sm text-[#6b5f52]">
+              Pickup: {lastRide.pickupLabel} • Party size: {lastRide.partySize}
+            </p>
+          </section>
+        ) : null}
+
         {/* Primary prompt */}
         <h2
           className={`${displayFont.className} mt-10 text-center text-3xl sm:text-4xl`}
@@ -289,19 +374,9 @@ export default function DashboardPage() {
             <RequestButton
               label="Request a Ride"
               unstyled
-              className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-base font-semibold text-white hover:bg-[#0a2d5c]"
+              className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-base font-semibold text-white shadow-[0_8px_20px_rgba(10,27,63,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] hover:shadow-[0_14px_28px_rgba(10,27,63,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
             />
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <svg
-                viewBox="0 0 120 60"
-                className="h-10 w-24 text-[#0a1b3f]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <path d="M2 30c12-16 24-16 36 0s24 16 36 0 24-16 36 0" />
-                <path d="M92 16l22 14-22 14" />
-              </svg>
               <div className="flex-1 rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
                 <p className="text-lg font-semibold">
                   Wanna split a ride with a friend?
@@ -328,23 +403,14 @@ export default function DashboardPage() {
 
           {/* Offer a ride row */}
           <div className="grid gap-6 md:grid-cols-[220px_auto] md:items-center">
-            <Link
-              href="/register"
-              className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-center text-base font-semibold text-white hover:bg-[#0a2d5c]"
+            <button
+              type="button"
+              onClick={handleDriverDashboardClick}
+              className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-center text-base font-semibold text-white shadow-[0_8px_20px_rgba(10,27,63,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] hover:shadow-[0_14px_28px_rgba(10,27,63,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
             >
               Offer a Ride
-            </Link>
+            </button>
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <svg
-                viewBox="0 0 120 60"
-                className="h-10 w-24 text-[#0a1b3f]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <path d="M2 30c12-16 24-16 36 0s24 16 36 0 24-16 36 0" />
-                <path d="M92 16l22 14-22 14" />
-              </svg>
               <div className="flex-1 rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
                 <p className="text-lg font-semibold">
                   Have extra seats? Offer a ride today!
@@ -354,19 +420,21 @@ export default function DashboardPage() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {/* Driver tools placeholder */}
-                  <Link
-                    href="/in-progress"
+                  <button
+                    type="button"
+                    onClick={handleDriverDashboardClick}
                     className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
                   >
-                    My driver dashboard
-                  </Link>
+                    Take me to driver dashboard
+                  </button>
                   {/* Driver onboarding placeholder */}
-                  <Link
-                    href="/in-progress"
+                  <button
+                    type="button"
+                    onClick={handleBecomeDriverClick}
                     className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
                   >
                     Become a driver
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
