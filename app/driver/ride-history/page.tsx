@@ -1,3 +1,9 @@
+/**
+ * Driver Ride History (MVP)
+ *
+ * Shows COMPLETED rides for the signed-in driver.
+ */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

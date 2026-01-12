@@ -2,13 +2,14 @@
  * Dashboard Page
  * 
  * Main app page shown after user signs up or signs in.
- * Contains navigation to request rides and view carpools.
+ * Contains navigation to request rides, view carpools, and access driver tools.
  * 
  * AUTHENTICATION PROTECTION:
  * - This page requires user to be authenticated (signed in)
  * - On page load, checks if user has valid session
  * - If not authenticated: redirects to sign in page
  * - If authenticated: shows dashboard with Request and Carpool buttons
+ * - Shows a recent "Your Rides" card after a request is placed (MVP uses localStorage)
  * 
  * MVP:
  *   - Client-side session check on page load

@@ -1,3 +1,10 @@
+/**
+ * Driver Requests (MVP)
+ *
+ * Lists OPEN ride requests with filters and lets drivers accept a request.
+ * Accept moves the request to Upcoming and shows a confirmation card.
+ */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

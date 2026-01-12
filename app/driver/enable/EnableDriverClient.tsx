@@ -1,14 +1,8 @@
 /**
- * Become a Driver / Update License Page
+ * Become a Driver / Update License Page (MVP)
  *
  * Dedicated form to collect manual license details after account creation.
- *
- * FLOW:
- * 1. User signs in (must have a session token in localStorage for MVP)
- * 2. User enters license details
- * 3. Client-side validation using shared rules
- * 4. Submit to /api/auth/driver/enable or /api/auth/driver/update
- * 5. Redirect to dashboard on success
+ * Uses session token to guard updates and routes back to dashboard on success.
  */
 
 "use client";

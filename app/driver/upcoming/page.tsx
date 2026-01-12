@@ -1,3 +1,10 @@
+/**
+ * Driver Upcoming Rides (MVP)
+ *
+ * Lists MATCHED rides for the signed-in driver.
+ * Complete marks a ride as COMPLETED and shows a confetti confirmation.
+ */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

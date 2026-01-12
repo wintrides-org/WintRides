@@ -2,6 +2,7 @@
  * Sign In Page (Client)
  *
  * User authentication form with optional post-signin redirect.
+ * Stores the session token in localStorage for MVP flows.
  */
 
 "use client";

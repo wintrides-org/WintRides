@@ -1,3 +1,11 @@
+/**
+ * Driver Dashboard (MVP)
+ *
+ * Shows driver profile, availability toggle, new ride requests, and ride summaries.
+ * New ride requests pull the top 3 OPEN requests; Accept updates status to MATCHED.
+ * Upcoming rides are fetched for the signed-in driver and summarized in "Your Rides."
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
