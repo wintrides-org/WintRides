@@ -160,3 +160,29 @@ PostgreSQL
 Response: created request record
 ```
 
+### Pages Directory Structure
+```
+/
+├── (landing) /
+├── /register
+├── /signin
+├── /verify-email
+├── /dashboard
+├── /request
+│   ├── /immediate
+│   ├── /scheduled
+│   ├── /group
+│   └── /success
+├── /driver
+│   ├── /dashboard
+│   ├── /requests
+│   ├── /upcoming
+│   ├── /ride-history
+│   └── /enable
+├── /carpool
+│   ├── /feed
+│   ├── /create
+│   └── /[id]
+└── /in-progress
+```
+
