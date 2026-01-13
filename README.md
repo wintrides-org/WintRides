@@ -249,6 +249,6 @@ Olohi led the frontend development of the WintRides platform, focusing on transl
 
 ## View Final Product 
 - **Project presentation slides:** https://www.canva.com/design/DAG-QcG0678/EiSKxXHAPYMA5rQ6P909OQ/view?utm_content=DAG-QcG0678&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h4ff236529f
-- **Project demo vide:** https://youtube.com/shorts/ORM8TcAcBlI?si=crlZ_PiUscZ1F-6V
+- **Project demo video:** https://youtube.com/shorts/ORM8TcAcBlI?si=crlZ_PiUscZ1F-6V
 
 
