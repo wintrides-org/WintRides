@@ -35,7 +35,7 @@ WintRides offers 3 major services:
 ### Usage Instructions
 To use the platform, a user takes the following steps
 ## Create an Account/Sign-in flow
-  - Click on the production link: https://wint-rides.vercel.app/
+  - Click on the production link: https://wint-rides-blond.vercel.app/ (app works best in light mode)
   - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
   - Enter your username and password to sign in
   - You'll be taken to the dashboard
