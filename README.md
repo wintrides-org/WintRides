@@ -1,41 +1,78 @@
+## Table of contents
+- [Project Description](#project-description)
+  - [Addressing Mobility](#wintrides-services)
+- [Usage Instructions](#usage-instructions)
+  - [Create an Account/Sign-in flow](#create-an-accountsign-in-flow)
+  - [Request a Ride](#request-a-ride)
+  - [Offer a Ride](#offer-a-ride)
+- [SET-UP AND INSTALLATION](#set-up-and-installation)
+  - [Technologies used](#technologies-used)
+  - [Tech Stack](#tech-stack)
+  - [Prerequisites](#prerequisites)
+  - [Installation & Setup](#installation--setup)
+  - [Auth flow note](#auth-flow-note)
+  - [Common issues](#common-issues)
+  - [Optional: Deploy on Vercel](#optional-deploy-on-vercel)
+- [Flow Diagrams](#flow-diagrams)
+  - [Backend diagram (PostgreSQL + Prisma)](#backend-diagram-postgresql--prisma)
+- [Pages Directory Structure](#pages-directory-structure)
+
+
+### Project Description
 __WintRides__ is a centralized platform that provides reliable, accessible and affordable rides for college students in rural and surburban campuses. It improves mobility for students on these campuses by providing a smooth way to request, offer and share rides around rural college towns and to key locations like airports.
 
-*To-do: passive vs active*
-### Addressing the Problem of Mobility with WintRides 
+## Addressing the Problem of Mobility with WintRides
 Requesting rides from fellow students is not a novel culture on college campuses in rural and suburban areas, as many rural campuses have little accessibility to traditional ride-sharing platforms like Uber and Lyft. However, the process usually involves asking for help on multiple messaging platforms or asking friends using direct word-of-mouth, making the hustle for rides a connection game. 
-By providing a centralized platform where students can request, offer, and share rides, WintRides eliminate the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
+By providing a centralized platform where students can request, offer, and share rides, WintRides eliminates the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
 
 **WintRides Services**
 
 WintRides offers 3 major services:
 1) Request Service: Allows students to find a driver either for immediate and scheduled appointments or group events
 2) Offer Service: Allows students to pick up ride appointments, enabling them to offer rides to other students and get paid
-3) Share Service: Allows students find other students to ride with, promoting trust and affordability
+3) Share Service: Allows students to ride together with peers, fostering a greater sense of safety while making the ride more affordable through shared fare costs.
 
 ### Usage Instructions
 To use the platform, a user takes the following steps
 ## Create an Account/Sign-in flow
-  - Click on the production link: {wint-rides-blond.vercel.app}
-  - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation. (can also sign-up as a driver on dashboard)
+  - Click on the production link: https://wint-rides.vercel.app/
+  - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
   - Enter your username and password to sign in
+  - You'll be taken to the dashboard
 
 ## Request a Ride
-  - Click on the "Request a Ride" button on the homepage/dashboard
+  Given you are on the dashboard,
+  - Click on the "Request a Ride" button on the dashboard
   - Choose a request type from the inline modal that pops up 
   - Complete the associated form
   - Review the quote and submit
   - Go back to your dashboard: there should be a card "Your Rides" with the confirmation details
 
 ## Offer a Ride
+Given you are on the dashboard,
+  - Navigate to the dashboard
   - If you have not signed up to become a driver, click on the "Become a Driver" button
   - Click on the "Offer a Ride" or "Take me to Driver Dashboard" button
   - When on the driver dashboard, you'll see new ride requests in the "New Ride Requests" card. Click on "View All" to view all requests
-  ***Note that for the purposes of this demo, you are able to accept a ride you requested. We implemented this permission to allow the judges view the implementation end-to-end.***
+
+  *Note that for the purposes of this demo, you are able to accept a ride you requested. We implemented this permission to allow the judges view the implementation end-to-end.*
   - To accept a ride, click "Accept"
   - Refresh the page and you'll see the details of your accepted ride in the "Upcoming Requests" card on your driver dashbaord
   - Click View --> Then Click Navigate to navigate to the pickup location
   - Click on the "Complete" button when the ride is completed
-  ***Note that the Complete logic for v2 is that we use GPS to track if the rider and driver actually got to the destination. We allow the driver to mark the ride as completed for the hackathon.***
+
+  *Note that the Complete logic for v2 is that we use GPS to track if the rider and driver actually got to the destination. We allow the driver to mark the ride as completed for the MVP used for the hackathon.*
+
+### Share a Ride
+Given you are on the dashboard,
+- Click on the "Create Carpool Request to start a rideshare request feed
+OR
+- Click on the "Join Available Carpool" to see available rideshare requests that you can join
+- If you clicked on the "Create Carpool Request" form, complete the associated form and you'll be taken to the carpool feed with details about the status of your rideshare
+- If you clicked on "Join Available Carpool", you'll be taken to the carpool feeds with details about available carpools
+- Click a carpool feed to view more details about it
+- Click on "Join Carpool" to join an available carpool request
+- You can utilize the chat option to text other ridesharers
 
 
 Here are instructions to set-up and test code on local machine: 

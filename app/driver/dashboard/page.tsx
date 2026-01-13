@@ -240,7 +240,7 @@ export default function DriverDashboardPage() {
               ))}
             </div>
             <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
-              Thank you, Chioma, for delivering safe rides to other students!
+              Thank you, Olohi, for delivering safe rides to other students!
             </p>
             <p className="mt-3 text-sm text-[#6b5f52]">
               Loading your driver dashboard...
@@ -340,7 +340,7 @@ export default function DriverDashboardPage() {
                 </span>
               </div>
               <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
-                Chioma Opara
+                Olohi John
               </h2>
               <div className="mt-3 flex items-center justify-center gap-1 text-[#f0b429]">
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -563,7 +563,7 @@ export default function DriverDashboardPage() {
                   <div className="grid gap-3 text-sm text-[#0a1b3f]">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="w-24 font-semibold">Name</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">Chioma Opara</span>
+                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">Olohi John</span>
                       <button type="button" className="text-[#0a3570]" aria-label="Edit name">
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 20h9" />

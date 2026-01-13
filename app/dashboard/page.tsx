@@ -26,7 +26,7 @@
 
 // Dashboard is a client component because it checks auth state on the client
 // and uses local UI state (alerts, menus).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import RequestButton from "@/components/requestbutton";
 import Link from "next/link";
@@ -58,6 +58,7 @@ export default function DashboardPage() {
   // State to track authentication check
   // null = checking, true = authenticated, false = not authenticated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isDriver, setIsDriver] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // Controls whether the alert list is expanded.
   const [alertsOpen, setAlertsOpen] = useState(true);
@@ -68,6 +69,8 @@ export default function DashboardPage() {
     partySize: number;
     type: string;
   } | null>(null);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Check if user is authenticated
@@ -100,10 +103,13 @@ export default function DashboardPage() {
 
         if (res.ok) {
           // Valid session: allow dashboard render.
+          const data = await res.json().catch(() => null);
           setIsAuthenticated(true);
+          setIsDriver(Boolean(data?.user?.isDriver));
         } else {
           // Invalid session: clear token and bounce to sign-in.
           setIsAuthenticated(false);
+          setIsDriver(null);
           
           localStorage.removeItem("sessionToken");
           
@@ -113,6 +119,7 @@ export default function DashboardPage() {
         // Any error => treat as not authenticated for MVP safety.
         console.error("Error checking authentication:", error);
         setIsAuthenticated(false);
+        setIsDriver(null);
         localStorage.removeItem("sessionToken");
         router.push("/signin");
       } finally {
@@ -120,9 +127,17 @@ export default function DashboardPage() {
       }
     }
 
-    // Kick off auth check on mount.
-    checkAuthentication();
+  // Kick off auth check on mount.
+  checkAuthentication();
   }, [router]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -153,10 +168,43 @@ export default function DashboardPage() {
     return null; // Don't render anything while redirecting
   }
 
+  const handleDriverDashboardClick = () => {
+    if (isDriver) {
+      router.push("/driver/dashboard");
+      return;
+    }
+
+    router.push("/driver/enable");
+  };
+
+  const handleBecomeDriverClick = () => {
+    if (!isDriver) {
+      router.push("/driver/enable");
+      return;
+    }
+
+    setShowDriverModal(true);
+    if (redirectTimeoutRef.current) {
+      clearTimeout(redirectTimeoutRef.current);
+    }
+    redirectTimeoutRef.current = setTimeout(() => {
+      router.push("/driver/dashboard");
+    }, 3000);
+  };
+
   return (
     <main
       className={`min-h-screen bg-[#f4ecdf] bg-[radial-gradient(circle_at_top,_#f9f2e8,_#f4ecdf_60%)] ${bodyFont.className}`}
     >
+      {showDriverModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
+          <div className="relative w-full max-w-xl rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-8 text-center shadow-[0_20px_50px_rgba(10,27,63,0.35)]">
+            <p className="text-lg font-semibold text-[#0a1b3f]">
+              Oops, you are already a driver. Taking you to your dashboard!
+            </p>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-10 text-[#0a1b3f]">
         {/* Header with greeting + MVP utility icons */}
         <header className="flex flex-wrap items-start justify-between gap-6">
@@ -355,12 +403,13 @@ export default function DashboardPage() {
 
           {/* Offer a ride row */}
           <div className="grid gap-6 md:grid-cols-[220px_auto] md:items-center">
-            <Link
-              href="/register"
+            <button
+              type="button"
+              onClick={handleDriverDashboardClick}
               className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-center text-base font-semibold text-white shadow-[0_8px_20px_rgba(10,27,63,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] hover:shadow-[0_14px_28px_rgba(10,27,63,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
             >
               Offer a Ride
-            </Link>
+            </button>
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="flex-1 rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
                 <p className="text-lg font-semibold">
@@ -371,19 +420,21 @@ export default function DashboardPage() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {/* Driver tools placeholder */}
-                  <Link
-                    href="/driver/dashboard"
+                  <button
+                    type="button"
+                    onClick={handleDriverDashboardClick}
                     className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
                   >
                     Take me to driver dashboard
-                  </Link>
+                  </button>
                   {/* Driver onboarding placeholder */}
-                  <Link
-                    href="/driver/enable"
+                  <button
+                    type="button"
+                    onClick={handleBecomeDriverClick}
                     className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
                   >
                     Become a driver
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>

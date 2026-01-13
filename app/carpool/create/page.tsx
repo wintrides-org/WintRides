@@ -37,12 +37,12 @@ export default function CreateCarpoolPage() {
   // Suggested pickup areas
   const suggestedPickups = useMemo(
     () => [
-      "Campus Center",
-      "Yolanda King House",
-      "King/Scales House",
-      "Ford Hall",
-      "Seelye Hall",
-      "Chase-Duckett House"
+      "Smith College",
+      "Northampton Post Office",
+      "Amherst College",
+      "Ziskind Dorm",
+      "Smith's Seelye Hall",
+      "Chase-Duckett House",
     ],
     []
   );
