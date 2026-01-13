@@ -65,8 +65,7 @@ export interface DriverInfo {
 /**
  * Main user interface
  * 
- * MVP: In-memory storage
- * Production: This maps to database schema (PostgreSQL, MongoDB, etc.)
+ * This maps to database schema (PostgreSQL)
  */
 export interface User {
   id: string; // Unique user identifier
