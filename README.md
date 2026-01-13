@@ -21,9 +21,9 @@
 ### Project Description
 __WintRides__ is a centralized platform that provides reliable, accessible and affordable rides for college students in rural and surburban campuses. It improves mobility for students on these campuses by providing a smooth way to request, offer and share rides around rural college towns and to key locations like airports.
 
-## Addressing the Problem of Mobility with WintRides##
+## Addressing the Problem of Mobility with WintRides
 Requesting rides from fellow students is not a novel culture on college campuses in rural and suburban areas, as many rural campuses have little accessibility to traditional ride-sharing platforms like Uber and Lyft. However, the process usually involves asking for help on multiple messaging platforms or asking friends using direct word-of-mouth, making the hustle for rides a connection game. 
-By providing a centralized platform where students can request, offer, and share rides, WintRides eliminate the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
+By providing a centralized platform where students can request, offer, and share rides, WintRides eliminates the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
 
 **WintRides Services**
 
@@ -38,15 +38,19 @@ To use the platform, a user takes the following steps
   - Click on the production link: https://wint-rides.vercel.app/
   - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
   - Enter your username and password to sign in
+  - You'll be taken to the dashboard
 
 ## Request a Ride
-  - Click on the "Request a Ride" button on the homepage/dashboard
+  Given you are on the dashboard,
+  - Click on the "Request a Ride" button on the dashboard
   - Choose a request type from the inline modal that pops up 
   - Complete the associated form
   - Review the quote and submit
   - Go back to your dashboard: there should be a card "Your Rides" with the confirmation details
 
 ## Offer a Ride
+Given you are on the dashboard,
+  - Navigate to the dashboard
   - If you have not signed up to become a driver, click on the "Become a Driver" button
   - Click on the "Offer a Ride" or "Take me to Driver Dashboard" button
   - When on the driver dashboard, you'll see new ride requests in the "New Ride Requests" card. Click on "View All" to view all requests
@@ -58,6 +62,17 @@ To use the platform, a user takes the following steps
   - Click on the "Complete" button when the ride is completed
 
   *Note that the Complete logic for v2 is that we use GPS to track if the rider and driver actually got to the destination. We allow the driver to mark the ride as completed for the MVP used for the hackathon.*
+
+### Share a Ride
+Given you are on the dashboard,
+- Click on the "Create Carpool Request to start a rideshare request feed
+OR
+- Click on the "Join Available Carpool" to see available rideshare requests that you can join
+- If you clicked on the "Create Carpool Request" form, complete the associated form and you'll be taken to the carpool feed with details about the status of your rideshare
+- If you clicked on "Join Available Carpool", you'll be taken to the carpool feeds with details about available carpools
+- Click a carpool feed to view more details about it
+- Click on "Join Carpool" to join an available carpool request
+- You can utilize the chat option to text other ridesharers
 
 
 Here are instructions to set-up and test code on local machine: 

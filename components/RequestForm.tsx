@@ -64,11 +64,11 @@ export default function RequestForm({
   // Suggested pickup chips for fast entry.
   const suggestedPickups = useMemo(
     () => [
-      "Campus Center",
-      "Yolanda King House",
-      "King/Scales House",
-      "Ford Hall",
-      "Seelye Hall",
+      "Smith College",
+      "Northampton Post Office",
+      "Amherst College",
+      "Ziskind Dorm",
+      "Smith's Seelye Hall",
       "Chase-Duckett House",
     ],
     []
