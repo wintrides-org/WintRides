@@ -1,6 +1,6 @@
 # WintRides Request Flows (MVP Design Note)
 
-## Backend diagram (Supabase + Prisma)
+## Backend diagram
 
 ```
 Browser UI (RequestForm)

@@ -21,9 +21,9 @@
 ### Project Description
 __WintRides__ is a centralized platform that provides reliable, accessible and affordable rides for college students in rural and surburban campuses. It improves mobility for students on these campuses by providing a smooth way to request, offer and share rides around rural college towns and to key locations like airports.
 
-## Addressing the Problem of Mobility with WintRides##
+## Addressing the Problem of Mobility with WintRides
 Requesting rides from fellow students is not a novel culture on college campuses in rural and suburban areas, as many rural campuses have little accessibility to traditional ride-sharing platforms like Uber and Lyft. However, the process usually involves asking for help on multiple messaging platforms or asking friends using direct word-of-mouth, making the hustle for rides a connection game. 
-By providing a centralized platform where students can request, offer, and share rides, WintRides eliminate the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
+By providing a centralized platform where students can request, offer, and share rides, WintRides eliminates the hassle associated with ridesharing and increases mobility on and off campus for students in rural and suburban college campuses. 
 
 **WintRides Services**
 
@@ -35,18 +35,22 @@ WintRides offers 3 major services:
 ### Usage Instructions
 To use the platform, a user takes the following steps
 ## Create an Account/Sign-in flow
-  - Click on the production link: https://wint-rides.vercel.app/
+  - Click on the production link: https://wint-rides-blond.vercel.app/ (app works best in light mode)
   - Complete the instructions to create an account or skip to sign in if account has been created already. If interested in becoming a driver, indicate that during account creation
   - Enter your username and password to sign in
+  - You'll be taken to the dashboard
 
 ## Request a Ride
-  - Click on the "Request a Ride" button on the homepage/dashboard
+  Given you are on the dashboard,
+  - Click on the "Request a Ride" button on the dashboard
   - Choose a request type from the inline modal that pops up 
   - Complete the associated form
   - Review the quote and submit
   - Go back to your dashboard: there should be a card "Your Rides" with the confirmation details
 
 ## Offer a Ride
+Given you are on the dashboard,
+  - Navigate to the dashboard
   - If you have not signed up to become a driver, click on the "Become a Driver" button
   - Click on the "Offer a Ride" or "Take me to Driver Dashboard" button
   - When on the driver dashboard, you'll see new ride requests in the "New Ride Requests" card. Click on "View All" to view all requests
@@ -58,6 +62,17 @@ To use the platform, a user takes the following steps
   - Click on the "Complete" button when the ride is completed
 
   *Note that the Complete logic for v2 is that we use GPS to track if the rider and driver actually got to the destination. We allow the driver to mark the ride as completed for the MVP used for the hackathon.*
+
+### Share a Ride
+Given you are on the dashboard,
+- Click on the "Create Carpool Request to start a rideshare request feed
+OR
+- Click on the "Join Available Carpool" to see available rideshare requests that you can join
+- If you clicked on the "Create Carpool Request" form, complete the associated form and you'll be taken to the carpool feed with details about the status of your rideshare
+- If you clicked on "Join Available Carpool", you'll be taken to the carpool feeds with details about available carpools
+- Click a carpool feed to view more details about it
+- Click on "Join Carpool" to join an available carpool request
+- You can utilize the chat option to text other ridesharers
 
 
 Here are instructions to set-up and test code on local machine: 
@@ -82,59 +97,78 @@ Here are instructions to set-up and test code on local machine:
 
 **Prerequisites**
 
-- Node.js v20+
-- npm
+- Git
+- Node.js v20+ (includes npm)
 - PostgreSQL database
 
 **Installation & Setup**
 
 1) Clone the repo
 
-`
-git clone <https://github.com/wintrides-org/WintRides.git>
+`ash
+git clone https://github.com/wintrides-org/WintRides.git
 cd WintRides
 `
 
 2) Install dependencies
 
+**A. *Install Node.js (Windows/mac)***
+
+1) Run the Node.js LTS installer appropriate to your machine from https://nodejs.org.
+2) Close and reopen PowerShell/Terminal.
+3) Verify:
+
+`ash
+node -v
+npm -v
 `
+
+**B. *Configure environment variables***
+
+`ash
+cp .sample.env .env
+`
+
+**C. *Install other relevant dependencies***
+
+`ash
 npm install
 `
 
-3) Configure environment variables
-
-`
-cp .sample.env .env
-` 
-
 4) Set up the database
-
-`
-npx prisma migrate deploy
-`
 
 For local development you can use:
 
-`
+`ash
 npx prisma migrate dev
 `
 
-5) Seed the database***************
+Else, do: 
 
-There is no Prisma seed script configured yet. If you need sample data, add a seed script or use the app flows to create data.
-
-6) Start the app locally
-
+`ash
+npx prisma migrate deploy
 `
+
+6) Start the app locally (optional: can deploy on vercel)
+
+`ash
 npm run dev
 `
 
 Open http://localhost:3000.
 
-**Auth flow note**
 
-- Registration logs an email verification link in the dev server console and returns a verification token in the API response.
-- Sign-in requires a verified .edu email
+7) Create sample data in the database
+
+Use the app flows to create data. Instructions to navigate through the app can be found in the **Usage instructions** section 
+
+**Authentication flow note**
+
+- Email verification is currently **simulated** for development and testing.
+- Upon registration (sign-up), a verification link is logged in the dev server console, and a verification token is returned in the API response.
+- A user is considered “verified” if their email ends with **`.edu`**. The system does **not** yet verify that the email address actually exists.
+- Future versions of this app will implement real email delivery and stronger verification by sending a verification link to the user’s email and validating it upon click.
+- Note that the current implementation of sign-in is restricted to users with a **verified `.edu` email address**.
 
 **Common issues**
 
@@ -143,10 +177,6 @@ Open http://localhost:3000.
 npx prisma migrate deploy or 
 npx prisma migrate dev).
 - Node.js version too old (use v20+).
-
-**Optional: Deploy on Vercel**
-
-The easiest way to deploy this app is to use the [Vercel Platform] from the creators of Next.js.
 
 ### Additional Notes 
 
@@ -182,7 +212,7 @@ PostgreSQL
 Response: created request record
 ```
 
-### Pages Directory Structure
+**Pages Directory Structure**
 ```
 /
 ├── (landing) /
@@ -207,4 +237,11 @@ Response: created request record
 │   └── /[id]
 └── /in-progress
 ```
+
+### The WintRides Team
+
+- **Chioma Opara**
+- **Olohi John**: 
+
+
 
