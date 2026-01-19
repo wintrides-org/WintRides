@@ -27,7 +27,7 @@
 // Dashboard is a client component because it checks auth state on the client (browser)
 // This means it shows the page before it checks if the user is logged in for that session
 // and uses local UI state (alerts, menus).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import RequestButton from "@/components/requestbutton";
 import Link from "next/link";
@@ -47,16 +47,11 @@ const bodyFont = Work_Sans({
 export default function DashboardPage() {
   const router = useRouter();
 
-  // MVP alerts list; swap with backend-driven notifications later.
-  const alerts = useMemo(
-    () => [
-      { tone: "bg-amber-400", text: "We found a driver for your trip to JFK" },
-      { tone: "bg-red-500", text: "New carpool request to BDL" },
-      { tone: "bg-amber-400", text: "2 people joined your carpool request" },
-    ],
-    []
-  );
-  
+  // Alerts pulled from the notifications API and rendered in the Alerts panel.
+  const [alerts, setAlerts] = useState<
+    { id: string; tone: string; text: string }[]
+  >([]);
+
   // State to track authentication check:
   // null = checking, true = authenticated, false = not authenticated.
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -138,6 +133,62 @@ export default function DashboardPage() {
   // Kick off auth check on mount.
   checkAuthentication();
   }, [router]);
+
+  useEffect(() => {
+    let ignore = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    // Fetch notifications for the signed-in user and map them to alert UI data.
+    async function fetchAlerts() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken");
+        // MVP: pass the session token via Authorization header.
+        const res = await fetch("/api/notifications", {
+          method: "GET",
+          headers: sessionToken
+            ? {
+                Authorization: `Bearer ${sessionToken}`,
+              }
+            : {},
+        });
+
+        // If the request fails, keep the last known alerts.
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        // Defensive guard: only accept arrays from the API response.
+        const items = Array.isArray(data?.notifications) ? data.notifications : [];
+
+        if (!ignore) {
+          // Map backend notifications into the alert list shown on the dashboard.
+          setAlerts(
+            items.map((item: { id: string; type?: string; message?: string }) => ({
+              id: item.id,
+              tone: item.type === "RIDE_ACCEPTED" ? "bg-amber-400" : "bg-red-500",
+              text: item.message || "New notification",
+            }))
+          );
+        }
+      } catch {
+        if (!ignore) {
+          // If the API fails, clear alerts so we don't show stale items.
+          setAlerts([]);
+        }
+      }
+    }
+
+    // Start polling after auth succeeds so we only request user-specific data.
+    if (isAuthenticated) {
+      fetchAlerts();
+      interval = setInterval(fetchAlerts, 15000);
+    }
+
+    return () => {
+      ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     return () => {
@@ -322,9 +373,12 @@ export default function DashboardPage() {
           </button>
           {alertsOpen ? (
             <ul className="mt-2 space-y-4">
+              {alerts.length === 0 ? (
+                <li className="text-sm text-[#6b5f52]">No alerts yet.</li>
+              ) : null}
               {alerts.map((alert) => (
                 <li
-                  key={alert.text}
+                  key={alert.id}
                   className="flex flex-wrap items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3 text-sm sm:text-base">

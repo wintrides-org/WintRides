@@ -133,7 +133,7 @@ export default function DriverRequestsPage() {
       const res = await fetch("/api/requests/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, driverId }),
+        body: JSON.stringify({ requestId }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {

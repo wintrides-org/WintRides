@@ -32,7 +32,7 @@ function isValidCampusEmail(email: string): boolean {
 async function getCampusFromEmail(email: string) {
   const domain = email.split("@")[1]?.toLowerCase();
   if (!domain) {
-    throw new Error("Invalid email format");
+    throw new Error("Invalid email format");}
 
   const existing = await prisma.campus.findUnique({ where: { emailDomain: domain } }); // Look up campus by domain.
   if (existing) { // If already configured, reuse it.
