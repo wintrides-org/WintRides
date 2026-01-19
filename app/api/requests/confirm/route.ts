@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // inserts the request payload as a row in the table with the values defined as data.x
     const created = await prisma.rideRequest.create({
       data: {
         riderId: "rider_placeholder",

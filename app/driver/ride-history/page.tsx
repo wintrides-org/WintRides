@@ -33,6 +33,7 @@ const bodyFont = Work_Sans({
 });
 
 export default function DriverRideHistoryPage() {
+  // Driver/session info and completed rides state.
   const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,7 @@ export default function DriverRideHistoryPage() {
   useEffect(() => {
     let ignore = false;
 
+    // Identify the signed-in driver so we can load their history.
     async function fetchSession() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
@@ -73,6 +75,7 @@ export default function DriverRideHistoryPage() {
   useEffect(() => {
     let ignore = false;
 
+    // Load COMPLETED rides for this driver.
     async function fetchHistory() {
       setError("");
       try {
@@ -96,6 +99,7 @@ export default function DriverRideHistoryPage() {
       }
     }
 
+    // Only fetch once a driver ID is known.
     if (driverId) {
       fetchHistory();
     }
@@ -105,6 +109,7 @@ export default function DriverRideHistoryPage() {
     };
   }, [driverId]);
 
+  // Add display-friendly fields (formatted time and pay estimate).
   const formatted = useMemo(
     () =>
       requests.map((request) => ({
@@ -125,6 +130,7 @@ export default function DriverRideHistoryPage() {
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
     >
       <div className="mx-auto w-full max-w-5xl">
+        {/* Page header with back button, title, and completed count. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/driver/dashboard"
@@ -148,6 +154,7 @@ export default function DriverRideHistoryPage() {
           </span>
         </header>
 
+        {/* History list with loading/error/empty states. */}
         <section className="mt-8 space-y-4">
           {loading && (
             <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
