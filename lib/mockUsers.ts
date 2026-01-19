@@ -9,7 +9,7 @@ import {
 import { updateLicenseDetails } from "@/lib/licenseExpiration";
 import { prisma } from "@/lib/prisma";
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 10; // Number of bcrypt salt rounds for password hashing.
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -33,23 +33,22 @@ async function getCampusFromEmail(email: string) {
   const domain = email.split("@")[1]?.toLowerCase();
   if (!domain) {
     throw new Error("Invalid email format");
+
+  const existing = await prisma.campus.findUnique({ where: { emailDomain: domain } }); // Look up campus by domain.
+  if (existing) { // If already configured, reuse it.
+    return existing; // Return the existing campus record.
   }
 
-  const existing = await prisma.campus.findUnique({ where: { emailDomain: domain } });
-  if (existing) {
-    return existing;
-  }
+  const campusName = domain // Derive a friendly campus name from the domain.
+    .split(".")[0] // Take the first label (e.g., "smith").
+    .split("-") // Split on hyphens for multi-word names.
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word.
+    .join(" "); // Join words with spaces.
 
-  const campusName = domain
-    .split(".")[0]
-    .split("-")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
-  return prisma.campus.create({
+  return prisma.campus.create({ // Create a campus entry for this allowed domain.
     data: {
-      name: `${campusName} Campus`,
-      emailDomain: domain
+      name: `${campusName} Campus`, // Use derived name for display.
+      emailDomain: domain // Store the domain for future lookups.
     }
   });
 }
