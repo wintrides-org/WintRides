@@ -13,16 +13,16 @@ import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
 
+// Defines the fonts used throughout the page
 const displayFont = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
-
 const bodyFont = Work_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
-
+// Mock alerts on the driver's profile: has been replaced with real requests
 const mockPings = [
   {
     id: "ping-1",
@@ -47,6 +47,7 @@ const mockPings = [
   },
 ];
 
+// confetti pieces for the welcome intro page
 const confettiPieces = [
   { left: "8%", top: "-10%", delay: "0s", duration: "1.6s" },
   { left: "18%", top: "-15%", delay: "0.2s", duration: "1.9s" },
@@ -60,6 +61,7 @@ const confettiPieces = [
 ];
 
 export default function DriverDashboardPage() {
+  // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
   const [isAvailable, setIsAvailable] = useState(true);
   const [pingsOpen, setPingsOpen] = useState(true);
@@ -75,6 +77,7 @@ export default function DriverDashboardPage() {
       carsNeeded: number;
     }[]
   >([]);
+  // initializes accept status of a request, confirm status, and what upcoming requests should be shown as
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [confirmCard, setConfirmCard] = useState<string>("");
   const [upcomingRequests, setUpcomingRequests] = useState<
@@ -87,17 +90,20 @@ export default function DriverDashboardPage() {
     }[]
   >([]);
 
+  // Shows intro page
   useEffect(() => {
     const timer = setTimeout(() => setShowIntro(false), 2000);
     return () => clearTimeout(timer);
   }, []);
-
+  
   useEffect(() => {
     let ignore = false;
 
+    // Load the current session to identify the signed-in driver.
     async function fetchSession() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
+        // Session API accepts the token via Authorization header for MVP.
         const res = await fetch("/api/auth/session", {
           headers: sessionToken
             ? {
@@ -108,6 +114,7 @@ export default function DriverDashboardPage() {
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
+          // Store driver ID to use in later API calls.
           setDriverId(data?.user?.id || "");
         }
       } catch {
@@ -127,6 +134,7 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     let ignore = false;
 
+    // Fetch upcoming rides for this driver after we know their ID.
     async function fetchUpcoming() {
       try {
         if (!driverId) return;
@@ -136,6 +144,7 @@ export default function DriverDashboardPage() {
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
+          // Update the "Your Rides" list.
           setUpcomingRequests(data.requests || []);
         }
       } catch {
@@ -145,6 +154,7 @@ export default function DriverDashboardPage() {
       }
     }
 
+    // Only fetch when a valid driverId exists.
     if (driverId) {
       fetchUpcoming();
     }
@@ -158,12 +168,14 @@ export default function DriverDashboardPage() {
     let ignore = false;
     let interval: NodeJS.Timeout | null = null;
 
+    // Poll open ride requests so drivers see fresh requests.
     async function fetchOpenRequests() {
       try {
         const res = await fetch("/api/requests?status=OPEN");
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
+          // Show only the top 3 open requests on this page.
           setOpenRequests((data.requests || []).slice(0, 3));
         }
       } catch {
@@ -173,6 +185,7 @@ export default function DriverDashboardPage() {
       }
     }
 
+    // Initial load + periodic refresh every 10 seconds.
     fetchOpenRequests();
     interval = setInterval(fetchOpenRequests, 10000);
 
@@ -184,6 +197,7 @@ export default function DriverDashboardPage() {
     };
   }, []);
 
+  // Format a request's pickup time for display on cards.
   const formatPickupTime = (pickupAt: string) =>
     new Date(pickupAt).toLocaleString([], {
       month: "short",
@@ -192,6 +206,7 @@ export default function DriverDashboardPage() {
       minute: "2-digit",
     });
 
+  // Accept a request and move it from "open" to "upcoming" for this driver.
   async function handleAccept(requestId: string) {
     setConfirmCard("");
     setAcceptingId(requestId);
@@ -200,15 +215,17 @@ export default function DriverDashboardPage() {
       if (!driverId) {
         throw new Error("Unable to confirm driver. Please sign in again.");
       }
+      // Server marks the request as matched to the driver.
       const res = await fetch("/api/requests/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, driverId }),
+        body: JSON.stringify({ requestId }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(body?.error || "Failed to accept request.");
       }
+      // Remove accepted request from the open list and show confirmation.
       setOpenRequests((prev) => prev.filter((req) => req.id !== requestId));
       setConfirmCard("Request accepted and moved to Upcoming Rides.");
     } catch (err: any) {
@@ -223,6 +240,7 @@ export default function DriverDashboardPage() {
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
     >
       <div className="mx-auto w-full max-w-6xl">
+        {/* Intro splash (brief confetti screen) before showing the dashboard. */}
         {showIntro ? (
           <div className="relative mx-auto mt-12 w-full max-w-xl overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] px-8 py-10 text-center shadow-[0_18px_40px_rgba(10,27,63,0.15)]">
             <div className="pointer-events-none absolute inset-0">
@@ -271,6 +289,7 @@ export default function DriverDashboardPage() {
           </div>
         ) : (
         <>
+        {/* Main dashboard layout once the intro has finished. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/dashboard"
@@ -282,6 +301,7 @@ export default function DriverDashboardPage() {
             </svg>
           </Link>
 
+          {/* Quick action icons (profile, settings, home, help). */}
           <div className="flex items-center gap-3 text-[#0a3570]">
             <Link
               href="/dashboard"
@@ -326,8 +346,10 @@ export default function DriverDashboardPage() {
           </div>
         </header>
 
+        {/* Two-column layout: left = driver profile/availability, right = requests and earnings. */}
         <section className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-6">
+            {/* Driver profile card with rating and review link. */}
             <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5 text-center">
               <div className="relative mx-auto h-32 w-32 overflow-hidden rounded-2xl border-2 border-[#0a3570] bg-[#f4ecdf]">
                 <img
@@ -363,6 +385,7 @@ export default function DriverDashboardPage() {
               </Link>
             </div>
 
+            {/* Availability toggle card (client-side only for MVP). */}
             <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
               <div
                 className={`flex items-center justify-between gap-3 rounded-full border-2 border-[#0a3570] px-3 py-2 ${
@@ -404,6 +427,7 @@ export default function DriverDashboardPage() {
           </aside>
 
           <div className="space-y-6">
+              {/* Earnings summary for the last week. */}
               <div className="flex flex-wrap items-center justify-between gap-4 px-1">
                 <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
                   You earned $320 in the past week
@@ -416,6 +440,7 @@ export default function DriverDashboardPage() {
                 </Link>
               </div>
 
+            {/* Collapsible list of new/open ride requests. */}
             <div className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <div className="flex items-center justify-between rounded-t-3xl bg-[#0a3570] px-5 py-3 text-sm font-semibold text-white">
                 <button
@@ -441,6 +466,7 @@ export default function DriverDashboardPage() {
               </div>
               {pingsOpen ? (
                 <div className="rounded-b-3xl bg-[#d9b58c] px-5 py-4">
+                  {/* Only show requests when the driver is available. */}
                   {isAvailable ? (
                     <div className="space-y-3">
                       {openRequests.map((ping) => (
@@ -459,6 +485,7 @@ export default function DriverDashboardPage() {
                             ${estimatePriceRange(ping.partySize).min}
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Accept triggers a POST to /api/requests/accept. */}
                             <button
                               type="button"
                               onClick={() => handleAccept(ping.id)}
@@ -491,6 +518,7 @@ export default function DriverDashboardPage() {
               ) : null}
             </div>
 
+            {/* Upcoming rides summary with shortcuts to history/upcoming pages. */}
             <section className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6">
               <h3 className={`${displayFont.className} text-xl text-[#0a3570]`}>
                 Your Rides
@@ -543,6 +571,7 @@ export default function DriverDashboardPage() {
             </section>
 
 
+            {/* Collapsible payment details section (mock data for MVP). */}
             <section className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <button
                 type="button"
@@ -600,6 +629,7 @@ export default function DriverDashboardPage() {
         </>
         )}
       </div>
+      {/* Toast-style confirmation after accepting a request. */}
       {confirmCard ? (
         <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
           <div className="flex items-start justify-between gap-3">

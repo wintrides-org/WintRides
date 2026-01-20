@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 
+// Defines the fonts used on the page for consistency
 const displayFont = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
@@ -25,6 +26,7 @@ type FieldErrors = Partial<
   Record<"partySize" | "pickup" | "dropoff" | "pickupAt" | "carsNeeded", string>
 >;
 
+// Defines what any form that uses the shared type "RequestForm.tsx" should provide and the types of each
 type RequestFormProps = {
   requestType: RequestType;
   title: string;
@@ -33,18 +35,17 @@ type RequestFormProps = {
   showCarsNeeded?: boolean;
 };
 
+// makes quote draft align with the types in "NormalizedRequest" under lib/requestValidation
 type QuoteDraft = NormalizedRequest;
 
 // Basic input sanity checks for MVP validation.
 function isAllDigits(s: string) {
   return /^\d+$/.test(s.trim());
 }
-
 function isTooShort(s: string) {
   return s.trim().length < 3;
 }
-
-// Shared text field validator for pickup/dropoff.
+// Validates entries to the "pickup" and "dropoff" fields. Currently, validates > 3 items and not all digits 
 function validateTextLocation(label: string) {
   const trimmed = label.trim();
   if (!trimmed) return "Required.";
@@ -54,6 +55,7 @@ function validateTextLocation(label: string) {
 }
 
 export default function RequestForm({
+  // Basically says use the default fields as attributes OR replace with the RequestFormProps for a given request flow if different
   requestType,
   title,
   description,
@@ -74,7 +76,7 @@ export default function RequestForm({
     []
   );
 
-  // Form inputs.
+  // Defines form inputs.
   const [partySize, setPartySize] = useState<number>(1);
   const [pickup, setPickup] = useState<string>("");
   const [pickupNotes, setPickupNotes] = useState<string>("");

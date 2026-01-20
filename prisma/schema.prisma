@@ -41,6 +41,7 @@ model User {
   campus     Campus      @relation(fields: [campusId], references: [id])
   driverInfo DriverInfo?
   sessions   Session[]
+  notifications Notification[]
 }
 
 model DriverInfo {
@@ -68,6 +69,22 @@ model Session {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String
+  message       String
+  rideRequestId String?
+  createdAt     DateTime @default(now())
+  readAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Campus {

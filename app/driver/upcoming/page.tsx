@@ -34,6 +34,7 @@ const bodyFont = Work_Sans({
 });
 
 export default function DriverUpcomingPage() {
+  // Driver/session info and upcoming rides state.
   const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,7 @@ export default function DriverUpcomingPage() {
   useEffect(() => {
     let ignore = false;
 
+    // Identify the signed-in driver so we can fetch their rides.
     async function fetchSession() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
@@ -76,6 +78,7 @@ export default function DriverUpcomingPage() {
   useEffect(() => {
     let ignore = false;
 
+    // Load MATCHED rides for this driver.
     async function fetchUpcoming() {
       setError("");
       try {
@@ -99,6 +102,7 @@ export default function DriverUpcomingPage() {
       }
     }
 
+    // Only fetch once a driver ID is known.
     if (driverId) {
       fetchUpcoming();
     }
@@ -108,6 +112,7 @@ export default function DriverUpcomingPage() {
     };
   }, [driverId]);
 
+  // Add display-friendly fields (formatted time and pay estimate).
   const formatted = useMemo(
     () =>
       requests.map((request) => ({
@@ -123,6 +128,7 @@ export default function DriverUpcomingPage() {
     [requests]
   );
 
+  // Mark a ride as completed and show a confirmation.
   async function handleComplete(requestId: string, pay: number) {
     setCompleteNotice("");
     setCompletingId(requestId);
@@ -154,6 +160,7 @@ export default function DriverUpcomingPage() {
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
     >
       <div className="mx-auto w-full max-w-5xl">
+        {/* Page header with back button, title, and upcoming count. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/driver/dashboard"
@@ -177,6 +184,7 @@ export default function DriverUpcomingPage() {
           </span>
         </header>
 
+        {/* Upcoming list with completion modal + loading/error/empty states. */}
         <section className="mt-8 space-y-4">
           {completeNotice ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
