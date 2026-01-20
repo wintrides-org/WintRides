@@ -27,9 +27,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 
 const displayFont = Playfair_Display({
@@ -44,6 +45,7 @@ const bodyFont = Work_Sans({
 
 export default function RegisterPage() {
   const router = useRouter();
+  const googleButtonRef = useRef<HTMLDivElement | null>(null); // Hold the GIS button mount node.
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,6 +59,68 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false); // Track GIS script readiness.
+  const [googleError, setGoogleError] = useState(""); // Track Google sign-in errors.
+
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // Read the Google client ID.
+
+  async function handleGoogleCredentialResponse(response: { credential?: string }) { // Handle GIS credential response.
+    setGoogleError(""); // Clear any previous Google error message.
+    const idToken = response?.credential; // Extract the ID token from the response.
+    if (!idToken) { // Guard against missing credentials.
+      setGoogleError("Google sign-in failed. Please try again."); // Show a user-friendly error.
+      return; // Stop processing without a token.
+    }
+
+    try { // Wrap the request in a try/catch for errors.
+      const res = await fetch("/api/auth/google", { // Exchange the ID token for a session.
+        method: "POST", // Use POST for token exchange.
+        headers: { "Content-Type": "application/json" }, // Send JSON payload.
+        body: JSON.stringify({ idToken }) // Include the ID token in the request body.
+      });
+
+      const data = await res.json(); // Parse the server response.
+      if (!res.ok) { // Handle non-200 responses.
+        throw new Error(data.error || "Google sign-in failed"); // Surface the server error.
+      }
+
+      if (data.sessionToken) { // Persist the session token when provided.
+        localStorage.setItem("sessionToken", data.sessionToken); // Store the token for MVP flows.
+      }
+
+      router.push("/dashboard"); // Redirect to the dashboard on success.
+    } catch (e: any) { // Catch and display errors from the exchange.
+      setGoogleError(e?.message || "Google sign-in failed"); // Show a fallback error message.
+    }
+  }
+
+  useEffect(() => { // Initialize GIS once the script is loaded.
+    if (!googleReady) { // Exit early until the GIS script is ready.
+      return; // Prevent initializing before the script loads.
+    }
+    if (!googleClientId) { // Ensure the client ID is configured.
+      setGoogleError("Google sign-in is not configured."); // Show a configuration error.
+      return; // Stop initialization without a client ID.
+    }
+
+    const google = (window as any)?.google; // Access the global GIS object.
+    if (!google?.accounts?.id || !googleButtonRef.current) { // Verify GIS and the button ref.
+      return; // Exit if the GIS library or button ref is missing.
+    }
+
+    google.accounts.id.initialize({ // Initialize the GIS client.
+      client_id: googleClientId, // Provide the OAuth client ID.
+      callback: handleGoogleCredentialResponse // Handle credential responses.
+    });
+
+    googleButtonRef.current.innerHTML = ""; // Clear any previous button renders.
+    google.accounts.id.renderButton(googleButtonRef.current, { // Render the Google sign-in button.
+      theme: "outline", // Use the outline button style.
+      size: "large", // Render a large button.
+      text: "signin_with", // Use the "Sign in with Google" text.
+      shape: "pill" // Use a pill-shaped button.
+    });
+  }, [googleReady, googleClientId]); // Re-run when the script or config changes.
 
   /**
    * Client-side form validation
@@ -202,6 +266,12 @@ export default function RegisterPage() {
     <main
       className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className}`}
     >
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer
+        onLoad={() => setGoogleReady(true)}
+      />
       <div className="mx-auto max-w-xl">
       <Link
         href="/"
@@ -340,6 +410,20 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
+
+        <div className="mt-4 grid gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-neutral-300" />
+            <span className="text-xs text-neutral-500">or</span>
+            <span className="h-px flex-1 bg-neutral-300" />
+          </div>
+          <div ref={googleButtonRef} className="flex justify-center" />
+          {googleError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {googleError}
+            </div>
+          )}
+        </div>
       </form>
       </div>
     </main>

@@ -69,8 +69,8 @@ export interface DriverInfo {
  */
 export interface User {
   id: string; // Unique user identifier
-  email: string; // Campus email (must be .edu, .ac.uk, or .edu.au)
-  passwordHash: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
+  email: string; // Campus email (must be .edu)
+  passwordHash?: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
   campusId: string; // Assigned campus based on email domain (permanent assignment)
   
   // Identity

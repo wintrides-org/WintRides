@@ -10,6 +10,10 @@ import { updateLicenseDetails } from "@/lib/licenseExpiration";
 import { prisma } from "@/lib/prisma";
 
 const SALT_ROUNDS = 10; // Number of bcrypt salt rounds for password hashing.
+const allowedCampusDomains = (process.env.ALLOWED_CAMPUS_DOMAINS ?? "smith.edu") // Read allowed domains or default to Smith.
+  .split(",") // Split comma-separated domains into an array.
+  .map(domain => domain.trim().toLowerCase()) // Normalize whitespace and casing.
+  .filter(Boolean); // Remove any empty entries.
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -24,15 +28,28 @@ function generatePseudonym(): string {
   return `${adj}${noun}${num}`;
 }
 
-function isValidCampusEmail(email: string): boolean {
-  const domain = email.split("@")[1]?.toLowerCase();
-  return domain?.endsWith(".edu");
+function getEmailDomain(email: string): string { // Extract the email domain.
+  const domain = email.split("@")[1]?.toLowerCase(); // Split at "@" and normalize.
+  if (!domain) { // Guard against malformed emails.
+    throw new Error("Invalid email format"); // Surface a clear validation error.
+  }
+  return domain; // Return the domain portion.
 }
 
-async function getCampusFromEmail(email: string) {
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) {
-    throw new Error("Invalid email format");
+function isAllowedCampusDomain(domain: string): boolean { // Check if domain is in allowlist.
+  return allowedCampusDomains.includes(domain); // Return true only for configured domains.
+}
+
+function isValidCampusEmail(email: string): boolean { // Validate email against campus allowlist.
+  const domain = getEmailDomain(email); // Derive the domain from the email.
+  return isAllowedCampusDomain(domain); // Allow only configured campus domains.
+}
+
+async function getCampusFromEmail(email: string) { // Resolve a campus record for the email domain.
+  const domain = getEmailDomain(email); // Extract the email domain.
+  if (!isAllowedCampusDomain(domain)) { // Block domains outside the allowlist.
+    throw new Error("Invalid email domain. WintRides is yet to arrive at your campus!"); // Explain why registration fails.
+  }
 
   const existing = await prisma.campus.findUnique({ where: { emailDomain: domain } }); // Look up campus by domain.
   if (existing) { // If already configured, reuse it.
@@ -77,7 +94,7 @@ export async function createUser(data: {
   issuingState?: string;
 }): Promise<{ user: any; verificationToken: string }> {
   if (!isValidCampusEmail(data.email)) {
-    throw new Error("Email must be from a valid campus domain (.edu)");
+    throw new Error("Email must be from an allowed campus domain");
   }
 
   const email = data.email.toLowerCase();
@@ -183,6 +200,10 @@ export async function authenticateUser(email: string, password: string) {
     return null;
   }
 
+  if (!user.passwordHash) { // Prevent password sign-in for Google-only accounts.
+    return null; // Treat as invalid credentials for this flow.
+  }
+
   const isValid = await bcrypt.compare(password, user.passwordHash);
   if (!isValid) {
     return null;
@@ -196,6 +217,49 @@ export async function authenticateUser(email: string, password: string) {
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
     include: { driverInfo: true }
+  });
+}
+
+export async function findOrCreateGoogleUser(email: string) { // Find or create a user from Google sign-in.
+  const normalizedEmail = email.trim().toLowerCase(); // Normalize the email for lookup and storage.
+  if (!isValidCampusEmail(normalizedEmail)) { // Enforce the campus allowlist.
+    throw new Error("Email must be from an allowed campus domain"); // Explain why sign-in fails.
+  }
+
+  const existing = await getUserByEmail(normalizedEmail); // Look up an existing account by email.
+  if (existing) { // If the user already exists, update their verification/login metadata.
+    const now = new Date(); // Capture the login time.
+    return prisma.user.update({ // Update verification state and login timestamp.
+      where: { id: existing.id }, // Match the existing user by ID.
+      data: { // Persist updated fields.
+        emailVerified: true, // Mark email as verified via Google.
+        emailVerifiedAt: existing.emailVerifiedAt ?? now, // Preserve prior verification time if it exists.
+        emailVerificationToken: null, // Clear any pending verification token.
+        lastLoginAt: now // Record the latest login timestamp.
+      },
+      include: { driverInfo: true } // Keep driver info in the response.
+    });
+  }
+
+  const campus = await getCampusFromEmail(normalizedEmail); // Resolve campus from the email domain.
+  const now = new Date(); // Use a consistent timestamp for creation fields.
+  const pseudonym = generatePseudonym(); // Generate a display pseudonym for the user.
+
+  return prisma.user.create({ // Create a new Google-authenticated user.
+    data: { // Populate user fields for Google sign-in.
+      email: normalizedEmail, // Store the normalized email.
+      passwordHash: undefined, // Omit password for Google-only accounts (nullable column).
+      campusId: campus.id, // Assign the resolved campus.
+      pseudonym, // Store the generated pseudonym.
+      isDriverAvailable: false, // Default driver availability to false.
+      emailVerified: true, // Mark email verified via Google.
+      emailVerifiedAt: now, // Record verification time.
+      emailVerificationToken: null, // Ensure no verification token remains.
+      ridesCompleted: 0, // Initialize rides completed count.
+      noShowCount: 0, // Initialize no-show count.
+      lastLoginAt: now // Record the initial login time.
+    },
+    include: { driverInfo: true } // Keep driver info in the response.
   });
 }
 
