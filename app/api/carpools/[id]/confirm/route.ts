@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { confirmParticipant, unconfirmParticipant } from "@/lib/mockCarpools";
+import { confirmParticipant, unconfirmParticipant, getCarpoolById } from "@/lib/carpools";
+import { getSessionUser } from "@/lib/sessionAuth";
 
 // POST /api/carpools/[id]/confirm - Confirm participation in a carpool
 export async function POST(
@@ -7,23 +8,37 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await getSessionUser(request);
+    if (!auth.user) {
+      return NextResponse.json(
+        { error: auth.error },
+        { status: auth.status }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
-    const { userId, action = "confirm" } = body;
+    const { action = "confirm" } = body;
 
-    if (!userId) {
+    const existing = await getCarpoolById(id);
+    if (!existing) {
       return NextResponse.json(
-        { error: "userId is required" },
+        { error: "Carpool not found" },
+        { status: 404 }
+      );
+    }
+
+    if (["CANCELED", "COMPLETED", "EXPIRED"].includes(existing.status)) {
+      return NextResponse.json(
+        { error: "Carpool is not accepting confirmations." },
         { status: 400 }
       );
     }
 
-    let carpool;
-    if (action === "unconfirm") {
-      carpool = unconfirmParticipant(id, userId);
-    } else {
-      carpool = confirmParticipant(id, userId);
-    }
+    const carpool =
+      action === "unconfirm"
+        ? await unconfirmParticipant(id, auth.user.id)
+        : await confirmParticipant(id, auth.user.id);
 
     if (!carpool) {
       return NextResponse.json(
@@ -41,4 +56,3 @@ export async function POST(
     );
   }
 }
-

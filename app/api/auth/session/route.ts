@@ -99,7 +99,6 @@ export async function GET(request: NextRequest) {
           id: user.id,
           email: user.email,
           userName: user.userName,
-          pseudonym: user.pseudonym,
           campusId: user.campusId,
           driverLegalName: user.driverInfo?.legalName || null,
           isDriver: !!user.driverInfo, // Whether user has driver capability

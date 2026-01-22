@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addParticipant } from "@/lib/mockCarpools";
+import { addParticipant, getCarpoolById } from "@/lib/carpools";
+import { getSessionUser } from "@/lib/sessionAuth";
 
 // POST /api/carpools/[id]/join - Join a carpool as a participant
 export async function POST(
@@ -7,18 +8,32 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const body = await request.json();
-    const { userId } = body;
-
-    if (!userId) {
+    const auth = await getSessionUser(request);
+    if (!auth.user) {
       return NextResponse.json(
-        { error: "userId is required" },
+        { error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const { id } = await params;
+    const existing = await getCarpoolById(id);
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Carpool not found" },
+        { status: 404 }
+      );
+    }
+
+    if (existing.status !== "OPEN" && existing.status !== "PENDING_CONFIRMATIONS") {
+      return NextResponse.json(
+        { error: "Carpool is not open for joining." },
         { status: 400 }
       );
     }
 
-    const carpool = addParticipant(id, userId);
+    const carpool = await addParticipant(id, auth.user.id);
 
     if (!carpool) {
       return NextResponse.json(
@@ -36,4 +51,3 @@ export async function POST(
     );
   }
 }
-

@@ -26,9 +26,8 @@ export default function CarpoolThreadPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<string>("");
-
-  // MVP: placeholder userId. Replace with real auth later.
-  const userId = "user_placeholder";
+  const [userId, setUserId] = useState<string>("");
+  const [sessionError, setSessionError] = useState<string>("");
 
   useEffect(() => {
     fetchCarpool();
@@ -36,6 +35,24 @@ export default function CarpoolThreadPage() {
     const interval = setInterval(fetchCarpool, 5000);
     return () => clearInterval(interval);
   }, [carpoolId]);
+
+  useEffect(() => {
+    fetchSession();
+  }, []);
+
+  async function fetchSession() {
+    try {
+      const res = await fetch("/api/auth/session");
+      if (!res.ok) {
+        throw new Error("Sign in to access carpool actions.");
+      }
+      const data = await res.json();
+      setUserId(data?.user?.id || "");
+      setSessionError("");
+    } catch (e: any) {
+      setSessionError(e?.message || "Sign in to access carpool actions.");
+    }
+  }
 
   async function fetchCarpool() {
     try {
@@ -52,12 +69,15 @@ export default function CarpoolThreadPage() {
   }
 
   async function handleJoin() {
+    if (!userId) {
+      setError("Sign in to join this carpool.");
+      return;
+    }
+
     setActionLoading("join");
     try {
       const res = await fetch(`/api/carpools/${carpoolId}/join`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        method: "POST"
       });
 
       if (!res.ok) throw new Error("Failed to join carpool");
@@ -71,12 +91,17 @@ export default function CarpoolThreadPage() {
   }
 
   async function handleConfirm() {
+    if (!userId) {
+      setError("Sign in to confirm participation.");
+      return;
+    }
+
     setActionLoading("confirm");
     try {
       const res = await fetch(`/api/carpools/${carpoolId}/confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, action: "confirm" }),
+        body: JSON.stringify({ action: "confirm" }),
       });
 
       if (!res.ok) throw new Error("Failed to confirm participation");
@@ -90,12 +115,17 @@ export default function CarpoolThreadPage() {
   }
 
   async function handleUnconfirm() {
+    if (!userId) {
+      setError("Sign in to update confirmation.");
+      return;
+    }
+
     setActionLoading("unconfirm");
     try {
       const res = await fetch(`/api/carpools/${carpoolId}/confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, action: "unconfirm" }),
+        body: JSON.stringify({ action: "unconfirm" }),
       });
 
       if (!res.ok) throw new Error("Failed to unconfirm");
@@ -109,6 +139,11 @@ export default function CarpoolThreadPage() {
   }
 
   async function handleLock() {
+    if (!userId) {
+      setError("Sign in to lock this carpool.");
+      return;
+    }
+
     if (!confirm("Lock this carpool? Once locked, it will move to Confirmed status and no longer be discoverable in the feed.")) {
       return;
     }
@@ -116,9 +151,7 @@ export default function CarpoolThreadPage() {
     setActionLoading("lock");
     try {
       const res = await fetch(`/api/carpools/${carpoolId}/lock`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ creatorId: userId }),
+        method: "POST"
       });
 
       if (!res.ok) throw new Error("Failed to lock carpool");
@@ -132,6 +165,11 @@ export default function CarpoolThreadPage() {
   }
 
   async function handleCancel() {
+    if (!userId) {
+      setError("Sign in to cancel this carpool.");
+      return;
+    }
+
     if (!confirm("Cancel this carpool? This action cannot be undone.")) {
       return;
     }
@@ -141,7 +179,7 @@ export default function CarpoolThreadPage() {
       const res = await fetch(`/api/carpools/${carpoolId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "CANCELED", canceledAt: new Date().toISOString() }),
+        body: JSON.stringify({ status: "CANCELED" }),
       });
 
       if (!res.ok) throw new Error("Failed to cancel carpool");
@@ -299,6 +337,12 @@ export default function CarpoolThreadPage() {
         </div>
       )}
 
+      {sessionError && !userId && (
+        <div className="mb-4 p-3 rounded-xl bg-yellow-50 text-yellow-700 text-sm">
+          {sessionError}
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="mb-6 flex flex-wrap gap-3">
         {!isJoined && carpool.status === "OPEN" && (
@@ -332,7 +376,7 @@ export default function CarpoolThreadPage() {
           </>
         )}
 
-        {isJoined && isConfirmed && carpool.status == "CONFIRMED" && (
+        {isJoined && isConfirmed && carpool.status === "CONFIRMED" && (
           <button
             type="button"
             onClick={handleUnconfirm}

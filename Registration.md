@@ -31,13 +31,12 @@ Driver capability: optional toggle (“I can drive”), with driver-specific pro
 A user can be both at once, and can switch availability day-to-day.
 
 *A3. Identity in chat (privacy + trust balance)*
-Hybrid: pseudonym publicly, real identity revealed only after a driver accepts / group confirms.
 From users perspective: 
 Sign Up (once)
 .edu email (campus-gated)
 email verification
 create password
-system assigns pseudonym + internal ID
+system assigns internal ID
 Option to sign up as a driver: 
 Ask for license upload/manual entry of deatils 
 Verify name matches provided legal name 
@@ -47,7 +46,7 @@ email + password
 session persistence
 Inside the App
 users see:
-pseudonym
+display name
 reliability indicators (MVP+): 
 rides completed 
 no show count 

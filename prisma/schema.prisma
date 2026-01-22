@@ -22,13 +22,21 @@ enum RequestStatus {
   EXPIRED
 }
 
+enum CarpoolStatus {
+  OPEN
+  PENDING_CONFIRMATIONS
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  EXPIRED
+}
+
 model User {
   id                     String     @id @default(uuid())
   email                  String     @unique
   userName               String     @unique
-  passwordHash           String
+  passwordHash           String?
   campusId               String
-  pseudonym              String
   isDriverAvailable      Boolean    @default(false)
   emailVerified          Boolean    @default(false)
   emailVerifiedAt        DateTime?
@@ -118,4 +126,62 @@ model RideRequest {
 
   @@index([status])
   @@index([pickupAt])
+}
+
+
+model Carpool {
+  id              String        @id @default(uuid())
+  creatorId       String
+  destination     String
+  date            String
+  timeStart       String
+  timeEnd         String
+  pickupArea      String
+  seatsNeeded     Int
+  targetGroupSize Int
+  status          CarpoolStatus @default(OPEN)
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lockedAt        DateTime?
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  expiredAt       DateTime?
+
+  participants    CarpoolParticipant[]
+  messages        CarpoolMessage[]
+
+  @@index([status])
+  @@index([date])
+  @@index([destination])
+  @@index([creatorId])
+}
+
+model CarpoolParticipant {
+  id          String   @id @default(uuid())
+  carpoolId   String
+  userId      String
+  joinedAt    DateTime @default(now())
+  confirmedAt DateTime?
+  isCreator   Boolean  @default(false)
+
+  carpool     Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+
+  @@unique([carpoolId, userId])
+  @@index([userId])
+  @@index([carpoolId])
+}
+
+model CarpoolMessage {
+  id        String   @id @default(uuid())
+  carpoolId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  carpool   Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+
+  @@index([carpoolId])
+  @@index([createdAt])
 }

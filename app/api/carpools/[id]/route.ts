@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCarpoolById, updateCarpool } from "@/lib/mockCarpools";
+import { getCarpoolById, cancelCarpool } from "@/lib/carpools";
+import { getSessionUser } from "@/lib/sessionAuth";
 
 // GET /api/carpools/[id] - Get a single carpool
 export async function GET(
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const carpool = getCarpoolById(id);
+    const carpool = await getCarpoolById(id);
 
     if (!carpool) {
       return NextResponse.json(
@@ -27,21 +28,50 @@ export async function GET(
   }
 }
 
-// PATCH /api/carpools/[id] - Update a carpool
+// PATCH /api/carpools/[id] - Cancel a carpool (creator only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await getSessionUser(request);
+    if (!auth.user) {
+      return NextResponse.json(
+        { error: auth.error },
+        { status: auth.status }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
 
-    const carpool = updateCarpool(id, body);
+    if (body?.status !== "CANCELED") {
+      return NextResponse.json(
+        { error: "Only cancellation is supported." },
+        { status: 400 }
+      );
+    }
 
-    if (!carpool) {
+    const existing = await getCarpoolById(id);
+    if (!existing) {
       return NextResponse.json(
         { error: "Carpool not found" },
         { status: 404 }
+      );
+    }
+
+    if (existing.creatorId !== auth.user.id) {
+      return NextResponse.json(
+        { error: "Only the creator can cancel this carpool." },
+        { status: 403 }
+      );
+    }
+
+    const carpool = await cancelCarpool(id, auth.user.id);
+    if (!carpool) {
+      return NextResponse.json(
+        { error: "Failed to cancel carpool" },
+        { status: 500 }
       );
     }
 
@@ -54,4 +84,3 @@ export async function PATCH(
     );
   }
 }
-

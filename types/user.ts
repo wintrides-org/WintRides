@@ -69,14 +69,13 @@ export interface DriverInfo {
  */
 export interface User {
   id: string; // Unique user identifier
-  email: string; // Campus email (must be .edu, .ac.uk, or .edu.au)
-  passwordHash: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
+  email: string; // Campus email (must be .edu)
+  passwordHash?: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
   campusId: string; // Assigned campus based on email domain (permanent assignment)
   
   // Identity
   userName: string; // Public username chosen during signup
-  pseudonym: string; // Public display name (auto-generated, shown in public chats)
-  realName?: string; // Only revealed in confirmed rides (for trust/safety)
+  realName?: string; // Real name shows up as display name (for trust/safety)
   
   // Capabilities
   // Everyone is a rider by default. Driver is an optional add-on capability.
