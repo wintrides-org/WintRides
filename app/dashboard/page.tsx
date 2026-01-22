@@ -57,6 +57,8 @@ export default function DashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   // Whether the signed-in user has driver privileges.
   const [isDriver, setIsDriver] = useState<boolean | null>(null);
+  // Username displayed in the welcome header.
+  const [userName, setUserName] = useState<string>("");
   // Controls the "Loading..." UI while auth is being verified.
   const [isLoading, setIsLoading] = useState(true);
   // Controls whether the alert list is expanded.
@@ -108,6 +110,7 @@ export default function DashboardPage() {
           const data = await res.json().catch(() => null);
           setIsAuthenticated(true);
           setIsDriver(Boolean(data?.user?.isDriver));
+          setUserName(data?.user?.userName || "");
         } else {
           // Invalid session: clear token and redirect to sign-in.
           setIsAuthenticated(false);
@@ -274,7 +277,7 @@ export default function DashboardPage() {
             <h1
               className={`${displayFont.className} text-3xl sm:text-4xl`}
             >
-              Welcome, Chioma👋🏽
+              Welcome, {userName || "there"}👋🏽
             </h1>
             <p className="mt-1 text-sm text-[#6b5f52]">
               Ready for your next ride?

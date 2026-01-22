@@ -8,6 +8,7 @@ import {
 } from "@/lib/licenseValidation";
 import { updateLicenseDetails } from "@/lib/licenseExpiration";
 import { prisma } from "@/lib/prisma";
+import { normalizeUserName } from "@/lib/usernameValidation";
 
 const SALT_ROUNDS = 10; // Number of bcrypt salt rounds for password hashing.
 
@@ -60,6 +61,15 @@ export async function getUserById(id: string) {
   });
 }
 
+// returns full user record of the user with userName
+// the 'include' keyword here says "Also include the driverInfo of the user (if they have one) in the record"
+export async function getUserByUserName(userName: string) {
+  return prisma.user.findUnique({
+    where: { userName: userName.toLowerCase() },
+    include: { driverInfo: true }
+  });
+}
+
 export async function getUserByEmail(email: string) {
   return prisma.user.findUnique({
     where: { email: email.toLowerCase() },
@@ -68,6 +78,7 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function createUser(data: {
+  userName: string;
   email: string;
   password: string;
   wantsToDrive?: boolean;
@@ -81,6 +92,7 @@ export async function createUser(data: {
   }
 
   const email = data.email.toLowerCase();
+  const userName = normalizeUserName(data.userName);
   const existing = await getUserByEmail(email);
   if (existing) {
     throw new Error("User with this email already exists");
@@ -139,6 +151,7 @@ export async function createUser(data: {
   const user = await prisma.user.create({
     data: {
       email,
+      userName,
       passwordHash,
       campusId: campus.id,
       pseudonym,

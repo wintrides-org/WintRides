@@ -63,6 +63,7 @@ const confettiPieces = [
 export default function DriverDashboardPage() {
   // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
+  const [driverName, setDriverName] = useState<string>("");
   const [isAvailable, setIsAvailable] = useState(true);
   const [pingsOpen, setPingsOpen] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(true);
@@ -116,6 +117,7 @@ export default function DriverDashboardPage() {
         if (!ignore) {
           // Store driver ID to use in later API calls.
           setDriverId(data?.user?.id || "");
+          setDriverName(data?.user?.driverLegalName || "");
         }
       } catch {
         if (!ignore) {
@@ -362,7 +364,7 @@ export default function DriverDashboardPage() {
                 </span>
               </div>
               <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
-                Olohi John
+                {driverName || "Driver"}
               </h2>
               <div className="mt-3 flex items-center justify-center gap-1 text-[#f0b429]">
                 {Array.from({ length: 5 }).map((_, index) => (

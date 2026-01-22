@@ -27,7 +27,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
@@ -46,6 +46,7 @@ export default function RegisterPage() {
   const router = useRouter();
   
   const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [wantsToDrive, setWantsToDrive] = useState(false);
@@ -57,6 +58,55 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [userNameError, setUserNameError] = useState("");
+  const [userNameChecking, setUserNameChecking] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    // empty entries will be handled when the user tries to submit
+    // validateForm() will show the error. While typing, ignore it
+    if (!userName.trim()) {
+      setUserNameError("");
+      setUserNameChecking(false);
+      return;
+    }
+
+    setUserNameChecking(true);
+    timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/auth/username-available?userName=${encodeURIComponent(userName)}`
+        );
+        const data = await res.json().catch(() => null);
+        if (ignore) return;
+        if (data?.available) {
+          setUserNameError("");
+        } else {
+          setUserNameError(
+            data?.error ||
+              "This username has been taken. Choose a new username or sign in if you already created an account"
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setUserNameError("Unable to check username right now.");
+        }
+      } finally {
+        if (!ignore) {
+          setUserNameChecking(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      ignore = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [userName]);
 
   /**
    * Client-side form validation
@@ -68,7 +118,7 @@ export default function RegisterPage() {
    * - Driver intent (if wantsToDrive is true)
    * 
    * MVP: Basic validation
-   * Production: Add more robust validation, password strength checking
+   * Production: Add more robust server-side validation, password strength checking
    */
   function validateForm(): boolean {
     const next: Record<string, string> = {};
@@ -90,6 +140,14 @@ export default function RegisterPage() {
       next.password = "Password is required";
     } else if (password.length < 8) {
       next.password = "Password must be at least 8 characters long";
+    }
+
+    // Username validation here only checks if user entered a value
+    // instead of re-checking the database for uniqueness (auth/username-available did that already)
+    if (!userName.trim()) {
+      next.userName = "Username is required";
+    } else if (userNameError) {
+      next.userName = userNameError;
     }
 
     // Confirm password
@@ -144,6 +202,11 @@ export default function RegisterPage() {
     setSubmitError("");
     setSubmitSuccess(false);
 
+    if (userNameChecking) {
+      setSubmitError("Please wait for username validation to finish.");
+      return;
+    }
+
     if (!validateForm()) return;
 
     setSubmitting(true);
@@ -163,6 +226,7 @@ export default function RegisterPage() {
       // Build payload with driver intent only (details collected later).
       const payload = {
         email: email.trim().toLowerCase(),
+        userName,
         password,
         wantsToDrive: wantsToDrive || undefined
       };
@@ -241,6 +305,34 @@ export default function RegisterPage() {
               Must be a .edu email address 
             </p>
           )}
+        </div>
+
+        {/* Username */}
+        <div className="grid gap-1">
+          <label htmlFor="userName" className="text-sm font-medium">
+            Username
+          </label>
+          <input
+            id="userName"
+            type="text"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder="Enter a username"
+            className="rounded-xl border p-3"
+            disabled={submitting}
+          />
+          {errors.userName || userNameError ? (
+            <p className="text-sm text-red-600">
+              {errors.userName || userNameError}
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              3-15 characters, starts with 3 letters, and can include _, @, -.
+            </p>
+          )}
+          {userNameChecking ? (
+            <p className="text-xs text-neutral-500">Checking availability...</p>
+          ) : null}
         </div>
 
         {/* Password */}

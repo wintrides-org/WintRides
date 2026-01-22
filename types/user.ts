@@ -74,6 +74,7 @@ export interface User {
   campusId: string; // Assigned campus based on email domain (permanent assignment)
   
   // Identity
+  userName: string; // Public username chosen during signup
   pseudonym: string; // Public display name (auto-generated, shown in public chats)
   realName?: string; // Only revealed in confirmed rides (for trust/safety)
   
@@ -110,6 +111,7 @@ export interface User {
  */
 export interface RegisterRequest {
   email: string;
+  userName: string;
   password: string;
   wantsToDrive?: boolean; // If true, capture intent and redirect to driver form after signup
   legalName?: string; // Optional: only used if registering as a driver immediately
@@ -135,8 +137,10 @@ export interface SignInRequest {
 export interface Session {
   userId: string;
   email: string;
+  userName: string;
   pseudonym: string;
   campusId: string;
+  driverLegalName?: string;
   isDriver: boolean; // Whether user has driver capability (computed from driverInfo existence)
   expiresAt: string; // ISO timestamp when session expires
 }

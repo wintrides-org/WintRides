@@ -11,25 +11,27 @@ export async function GET(request: NextRequest) {
     const driverId = searchParams.get("driverId");
 
     if (status === "OPEN") {
+      // gets the session token
       const sessionToken =
         request.cookies.get("sessionToken")?.value ||
         request.headers.get("authorization")?.replace("Bearer ", "");
-
+      // if no token, then user not signed in, make them sign in
       if (!sessionToken) {
         return NextResponse.json(
           { error: "Authentication required." },
           { status: 401 }
         );
       }
-
+      // if session token, get the session
       const session = await getSession(sessionToken);
+      // if no session, then session token might have been fake or expired
       if (!session) {
         return NextResponse.json(
           { error: "Invalid or expired session." },
           { status: 401 }
         );
       }
-
+      // if session, get the user on that session
       const user = await getUserById(session.userId);
       if (!user) {
         return NextResponse.json(
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-
+      // if the user is not a driver, don't show them the ride requests
       if (!user.driverInfo) {
         return NextResponse.json(
           { error: "Driver capability is required to view open requests." },

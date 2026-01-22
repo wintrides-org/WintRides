@@ -29,12 +29,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createUser, getUserByEmail } from "@/lib/mockUsers";
+import { createUser, getUserByEmail, getUserByUserName } from "@/lib/mockUsers";
 import { validateDriverLicenseInput } from "@/lib/licenseValidation";
+import { validateUserName } from "@/lib/usernameValidation";
 
 function getRegistrationErrorStatus(message: string): number {
   if (message.includes("already exists")) {
     return 409;
+  }
+  if (message.includes("Username")) {
+    return 400;
   }
   if (
     message.includes("Email must be from a valid campus domain") ||
@@ -60,6 +64,7 @@ export async function POST(request: NextRequest) {
     const {
       email,
       password,
+      userName,
       wantsToDrive,
       legalName,
       licenseNumber,
@@ -72,9 +77,9 @@ export async function POST(request: NextRequest) {
     // ========================================================================
     
     // Check required fields
-    if (!email || !password) {
+    if (!email || !password || !userName) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Email, username, and password are required" },
         { status: 400 }
       );
     }
@@ -96,6 +101,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "User with this email already exists" },
         { status: 409 } // 409 Conflict
+      );
+    }
+
+    // Validates the user name by calling validateUserName from lib/usernameValidation
+    const { normalized: normalizedUserName, error: userNameError } =
+      validateUserName(userName);
+    if (userNameError || !normalizedUserName) {
+      return NextResponse.json(
+        { error: userNameError || "Invalid username" },
+        { status: 400 }
+      );
+    }
+
+    // Validates that the user name hasn't been taken
+    if (await getUserByUserName(normalizedUserName)) {
+      return NextResponse.json(
+        {
+          error:
+            "This username has been taken. Choose a new username or sign in if you already created an account"
+        },
+        { status: 409 }
       );
     }
 
@@ -141,6 +167,7 @@ export async function POST(request: NextRequest) {
     const { user, verificationToken } = await createUser({
       email,
       password,
+      userName: normalizedUserName,
       wantsToDrive: wantsToDrive || false,
       legalName,
       licenseNumber,
