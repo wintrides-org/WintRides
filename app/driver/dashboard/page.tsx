@@ -63,7 +63,9 @@ const confettiPieces = [
 export default function DriverDashboardPage() {
   // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [isAvailabilityUpdating, setIsAvailabilityUpdating] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
   const [pingsOpen, setPingsOpen] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
@@ -116,10 +118,13 @@ export default function DriverDashboardPage() {
         if (!ignore) {
           // Store driver ID to use in later API calls.
           setDriverId(data?.user?.id || "");
+          // Seed availability from the server so UI matches persisted state.
+          setIsAvailable(Boolean(data?.user?.isDriverAvailable));
         }
       } catch {
         if (!ignore) {
           setDriverId("");
+          setIsAvailable(false);
         }
       }
     }
@@ -232,6 +237,40 @@ export default function DriverDashboardPage() {
       setConfirmCard(err?.message || "Failed to accept request.");
     } finally {
       setAcceptingId(null);
+    }
+  }
+
+  /**
+   * Toggle driver availability in the backend and sync local UI state.
+   * Throws a readable error when the server rejects the update.
+   */
+  async function toggleAvailability(nextValue: boolean) {
+    setAvailabilityError("");
+    setIsAvailabilityUpdating(true);
+
+    try {
+      const sessionToken = localStorage.getItem("sessionToken");
+      // Authorization header mirrors the session fetch to identify the driver.
+      const res = await fetch("/api/auth/driver/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+        },
+        body: JSON.stringify({ isAvailable: nextValue, verifyLicense: true }),
+      });
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to update availability.");
+      }
+
+      // Sync UI with persisted availability state.
+      setIsAvailable(Boolean(body?.user?.isDriverAvailable));
+    } catch (err: any) {
+      setAvailabilityError(err?.message || "Failed to update availability.");
+    } finally {
+      setIsAvailabilityUpdating(false);
     }
   }
 
@@ -396,25 +435,27 @@ export default function DriverDashboardPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsAvailable(false)}
-                    className={`rounded-full px-4 py-1 text-sm font-semibold transition ${
+                    onClick={() => toggleAvailability(false)}
+                    disabled={isAvailabilityUpdating || isAvailable === false}
+                    className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
                         ? "bg-transparent text-[#0a3570]"
                         : "bg-[#ff2d2d] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
                     }`}
                   >
-                    OFF
+                    {isAvailabilityUpdating && isAvailable === false ? "Updating..." : "OFF"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsAvailable(true)}
-                    className={`rounded-full px-4 py-1 text-sm font-semibold transition ${
+                    onClick={() => toggleAvailability(true)}
+                    disabled={isAvailabilityUpdating || isAvailable === true}
+                    className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
                         ? "bg-[#12b861] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
                         : "bg-transparent text-[#0a3570]"
                     }`}
                   >
-                    ON
+                    {isAvailabilityUpdating && isAvailable === true ? "Updating..." : "ON"}
                   </button>
                 </div>
               </div>
@@ -423,6 +464,11 @@ export default function DriverDashboardPage() {
                   ? "You are set to available. Expect pings for ride updates."
                   : "You are currently set to unavailable. Change status to receive request pings."}
               </p>
+              {availabilityError ? (
+                <p className="mt-2 text-xs font-semibold text-[#b42318]">
+                  {availabilityError}
+                </p>
+              ) : null}
             </div>
           </aside>
 

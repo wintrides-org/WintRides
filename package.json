@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test --loader ./scripts/ts-test-loader.mjs",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed:carpools": "node scripts/seed-carpools.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",

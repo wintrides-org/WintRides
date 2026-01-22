@@ -74,8 +74,7 @@ export interface User {
   campusId: string; // Assigned campus based on email domain (permanent assignment)
   
   // Identity
-  pseudonym: string; // Public display name (auto-generated, shown in public chats)
-  realName?: string; // Only revealed in confirmed rides (for trust/safety)
+  realName?: string; // Real name shows up as display name (for trust/safety)
   
   // Capabilities
   // Everyone is a rider by default. Driver is an optional add-on capability.
@@ -126,17 +125,3 @@ export interface SignInRequest {
   password: string;
 }
 
-/**
- * Session information
- * 
- * MVP: Sessions stored in-memory (lost on server restart)
- * Production: Store sessions in Redis or database with proper expiration
- */
-export interface Session {
-  userId: string;
-  email: string;
-  pseudonym: string;
-  campusId: string;
-  isDriver: boolean; // Whether user has driver capability (computed from driverInfo existence)
-  expiresAt: string; // ISO timestamp when session expires
-}

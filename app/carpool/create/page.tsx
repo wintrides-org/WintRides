@@ -123,16 +123,12 @@ export default function CreateCarpoolPage() {
     setSubmitting(true);
 
     try {
-      // MVP: placeholder userId. Replace with real auth later.
-      const userId = "user_placeholder";
-
       const timeWindow: TimeWindow = {
         start: timeStart,
         end: timeEnd
       };
 
       const payload = {
-        creatorId: userId,
         destination: destination.trim(),
         date,
         timeWindow,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMessagesByCarpoolId, addMessage } from "@/lib/mockCarpools";
+import { getMessagesByCarpoolId, addMessage } from "@/lib/carpools";
+import { getSessionUser } from "@/lib/sessionAuth";
 
 // GET /api/carpools/[id]/messages - Get messages for a carpool
 export async function GET(
@@ -7,8 +8,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await getSessionUser(request);
+    if (!auth.user) {
+      return NextResponse.json(
+        { error: auth.error },
+        { status: auth.status }
+      );
+    }
+
     const { id } = await params;
-    const messages = getMessagesByCarpoolId(id);
+    const messages = await getMessagesByCarpoolId(id);
 
     return NextResponse.json({ messages }, { status: 200 });
   } catch (error) {
@@ -26,13 +35,21 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await getSessionUser(request);
+    if (!auth.user) {
+      return NextResponse.json(
+        { error: auth.error },
+        { status: auth.status }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
-    const { userId, content } = body;
+    const { content } = body;
 
-    if (!userId || !content) {
+    if (!content) {
       return NextResponse.json(
-        { error: "userId and content are required" },
+        { error: "content is required" },
         { status: 400 }
       );
     }
@@ -44,7 +61,7 @@ export async function POST(
       );
     }
 
-    const message = addMessage(id, userId, content);
+    const message = await addMessage(id, auth.user.id, content);
 
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
@@ -55,4 +72,3 @@ export async function POST(
     );
   }
 }
-

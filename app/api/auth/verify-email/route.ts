@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
         user: {
           id: user.id,
           email: user.email,
-          pseudonym: user.pseudonym,
           campusId: user.campusId,
           isDriver: !!user.driverInfo // Whether user has driver capability
         }

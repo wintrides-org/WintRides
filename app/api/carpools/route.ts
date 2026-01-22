@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { 
-  getAllCarpools, 
-  createCarpool, 
-  filterCarpools, 
-  sortCarpoolsBySoonest 
-} from "@/lib/mockCarpools";
-import type { CarpoolThread, CarpoolStatus } from "@/types/carpool";
+import {
+  getAllCarpools,
+  createCarpool,
+  filterCarpools,
+  sortCarpoolsBySoonest
+} from "@/lib/carpools";
+import type { CarpoolStatus } from "@/types/carpool";
+import { getSessionUser } from "@/lib/sessionAuth";
 
 // GET /api/carpools - List carpools with optional filters
 export async function GET(request: NextRequest) {
@@ -15,9 +16,8 @@ export async function GET(request: NextRequest) {
     const destination = searchParams.get("destination");
     const date = searchParams.get("date");
 
-    let carpools = getAllCarpools();
+    let carpools = await getAllCarpools();
 
-    // Apply filters
     const filters: {
       status?: CarpoolStatus[];
       destination?: string;
@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       carpools = filterCarpools(carpools, filters);
     }
 
-    // Sort by soonest departure (default)
     carpools = sortCarpoolsBySoonest(carpools);
 
     return NextResponse.json({ carpools }, { status: 200 });
@@ -54,9 +53,16 @@ export async function GET(request: NextRequest) {
 // POST /api/carpools - Create a new carpool
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getSessionUser(request);
+    if (!auth.user) {
+      return NextResponse.json(
+        { error: auth.error },
+        { status: auth.status }
+      );
+    }
+
     const body = await request.json();
     const {
-      creatorId,
       destination,
       date,
       timeWindow,
@@ -66,10 +72,16 @@ export async function POST(request: NextRequest) {
       status
     } = body;
 
-    // Validation
-    if (!creatorId || !destination || !date || !timeWindow || !pickupArea || seatsNeeded === undefined) {
+    if (!destination || !date || !timeWindow || !pickupArea || seatsNeeded === undefined) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    if (!timeWindow?.start || !timeWindow?.end) {
+      return NextResponse.json(
+        { error: "Time window start and end are required" },
         { status: 400 }
       );
     }
@@ -81,10 +93,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const targetGroupSize = seatsNeeded + 1; // +1 for creator
+    const targetGroupSize = seatsNeeded + 1;
 
-    const carpool = createCarpool({
-      creatorId,
+    const carpool = await createCarpool({
+      creatorId: auth.user.id,
       destination: destination.trim(),
       date,
       timeWindow,
@@ -92,7 +104,7 @@ export async function POST(request: NextRequest) {
       seatsNeeded,
       targetGroupSize,
       notes: notes?.trim(),
-      status: (status as CarpoolStatus) || "OPEN"
+      status: status as CarpoolStatus
     });
 
     return NextResponse.json({ carpool }, { status: 201 });
@@ -104,4 +116,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

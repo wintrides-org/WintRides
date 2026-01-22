@@ -134,7 +134,6 @@ export async function POST(request: NextRequest) {
     // This will:
     // - Validate email domain
     // - Hash password
-    // - Generate pseudonym
     // - Create campus assignment
     // - If wantsToDrive: validate license details and create driverInfo
     // - Generate email verification token

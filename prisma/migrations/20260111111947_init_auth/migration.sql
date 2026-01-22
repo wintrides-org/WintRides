@@ -6,7 +6,6 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "campusId" TEXT NOT NULL,
-    "pseudonym" TEXT NOT NULL,
     "isDriverAvailable" BOOLEAN NOT NULL DEFAULT false,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "emailVerifiedAt" TIMESTAMP(3),

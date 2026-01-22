@@ -1,33 +1,37 @@
-import bcrypt from "bcrypt";
-import crypto from "crypto";
-import type { DriverInfo } from "@/types/user";
+/*
+* This file was initially created as a mock in-memory placeholder before the data base was implemented, hence the name
+* It has now been updated to read from and write to the database where necessary 
+*/
+
+import bcrypt from "bcrypt"; // Allows for password hashing and verification.
+import crypto from "crypto"; // Crypto generates secure random vales for verification/session tokens
+import type { DriverInfo } from "@/types/user"; // Shared type for driver license records.
 import {
   isValidIssuingState,
   normalizeExpirationDate,
   validateDriverLicenseInput
-} from "@/lib/licenseValidation";
-import { updateLicenseDetails } from "@/lib/licenseExpiration";
-import { prisma } from "@/lib/prisma";
+} from "@/lib/licenseValidation"; // License input validation and normalization helpers.
+import { updateLicenseDetails } from "@/lib/licenseExpiration"; // Logic for alerts to update license details
+import { prisma } from "@/lib/prisma"; // Prisma client for database access.
 
 const SALT_ROUNDS = 10; // Number of bcrypt salt rounds for password hashing.
+// Read allowed domains from env (or default), normalize, and keep an allowlist array.
 const allowedCampusDomains = (process.env.ALLOWED_CAMPUS_DOMAINS ?? "smith.edu") // Read allowed domains or default to Smith.
   .split(",") // Split comma-separated domains into an array.
   .map(domain => domain.trim().toLowerCase()) // Normalize whitespace and casing.
   .filter(Boolean); // Remove any empty entries.
 
+/**
+ * Generate a random session/verification token.
+ */
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
-function generatePseudonym(): string {
-  const adjectives = ["Swift", "Bold", "Calm", "Bright", "Quick", "Wise", "Brave", "Kind"];
-  const nouns = ["Rider", "Traveler", "Explorer", "Pilot", "Navigator", "Wanderer"];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const num = Math.floor(Math.random() * 1000);
-  return `${adj}${noun}${num}`;
-}
-
+/**
+ * Extract the domain portion of an email address.
+ * Throws if the email is malformed.
+ */
 function getEmailDomain(email: string): string { // Extract the email domain.
   const domain = email.split("@")[1]?.toLowerCase(); // Split at "@" and normalize.
   if (!domain) { // Guard against malformed emails.
@@ -36,15 +40,28 @@ function getEmailDomain(email: string): string { // Extract the email domain.
   return domain; // Return the domain portion.
 }
 
+/**
+ * Pure allowlist check for a domain string
+ * Checks if an email domain is in the allowed campus list.
+ */
 function isAllowedCampusDomain(domain: string): boolean { // Check if domain is in allowlist.
   return allowedCampusDomains.includes(domain); // Return true only for configured domains.
 }
 
+/**
+ * Validate that an email belongs to an allowed campus domain.
+ * Extracts the domain from an email and then calls the allowlist check.
+ */
 function isValidCampusEmail(email: string): boolean { // Validate email against campus allowlist.
   const domain = getEmailDomain(email); // Derive the domain from the email.
   return isAllowedCampusDomain(domain); // Allow only configured campus domains.
 }
 
+/**
+ * Validates the email’s domain (using the same allowlist logic)
+ * Then fetches or creates a campus record in the database.
+ * Adds persistence and database lookups on top of validation.
+ */
 async function getCampusFromEmail(email: string) { // Resolve a campus record for the email domain.
   const domain = getEmailDomain(email); // Extract the email domain.
   if (!isAllowedCampusDomain(domain)) { // Block domains outside the allowlist.
@@ -70,6 +87,9 @@ async function getCampusFromEmail(email: string) { // Resolve a campus record fo
   });
 }
 
+/**
+ * Fetch a user by ID, including their driver info.
+ */
 export async function getUserById(id: string) {
   return prisma.user.findUnique({
     where: { id },
@@ -77,6 +97,9 @@ export async function getUserById(id: string) {
   });
 }
 
+/**
+ * Fetch a user by email (case-insensitive), including driver info.
+ */
 export async function getUserByEmail(email: string) {
   return prisma.user.findUnique({
     where: { email: email.toLowerCase() },
@@ -84,6 +107,10 @@ export async function getUserByEmail(email: string) {
   });
 }
 
+/**
+ * Create a new user and (optionally) persist driver license details.
+ * Returns the created user and an email verification token.
+ */
 export async function createUser(data: {
   email: string;
   password: string;
@@ -98,6 +125,7 @@ export async function createUser(data: {
   }
 
   const email = data.email.toLowerCase();
+  // Enforce uniqueness at the application level before attempting a create.
   const existing = await getUserByEmail(email);
   if (existing) {
     throw new Error("User with this email already exists");
@@ -106,8 +134,8 @@ export async function createUser(data: {
   const campus = await getCampusFromEmail(email);
   const now = new Date();
   const verificationToken = generateToken();
-  const pseudonym = generatePseudonym();
 
+  // Determine whether the request includes any driver-related fields.
   const hasDriverDetails =
     data.legalName || data.licenseNumber || data.licenseExpirationDate || data.issuingState;
 
@@ -125,6 +153,7 @@ export async function createUser(data: {
     | undefined;
 
   if (hasDriverDetails) {
+    // Validate the driver input as a cohesive set before persisting anything.
     const licenseErrors = validateDriverLicenseInput({
       legalName: data.legalName,
       licenseNumber: data.licenseNumber,
@@ -139,6 +168,7 @@ export async function createUser(data: {
 
     const normalizedExpiration = normalizeExpirationDate(data.licenseExpirationDate);
 
+    // Build driver info with normalized, trimmed inputs.
     driverInfoData = {
       legalName: data.legalName?.trim() || "",
       licenseNumber: data.licenseNumber?.trim() || null,
@@ -151,6 +181,7 @@ export async function createUser(data: {
     };
   }
 
+  // Hash the password before storing.
   const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
 
   const user = await prisma.user.create({
@@ -158,12 +189,12 @@ export async function createUser(data: {
       email,
       passwordHash,
       campusId: campus.id,
-      pseudonym,
       isDriverAvailable: Boolean(driverInfoData),
       emailVerified: false,
       emailVerificationToken: verificationToken,
       ridesCompleted: 0,
       noShowCount: 0,
+      // If driver details were supplied, create the related row in the same transaction.
       driverInfo: driverInfoData ? { create: driverInfoData } : undefined
     },
     include: { driverInfo: true }
@@ -172,6 +203,10 @@ export async function createUser(data: {
   return { user, verificationToken };
 }
 
+/**
+ * Verify a user's email using a verification token.
+ * Returns the updated user or null if the token is invalid.
+ */
 export async function verifyEmail(token: string) {
   const user = await prisma.user.findFirst({
     where: { emailVerificationToken: token },
@@ -194,6 +229,10 @@ export async function verifyEmail(token: string) {
   });
 }
 
+/**
+ * Authenticate a user with email + password.
+ * Returns the updated user with login metadata, or null for invalid credentials.
+ */
 export async function authenticateUser(email: string, password: string) {
   const user = await getUserByEmail(email);
   if (!user) {
@@ -204,6 +243,7 @@ export async function authenticateUser(email: string, password: string) {
     return null; // Treat as invalid credentials for this flow.
   }
 
+  // Compare the provided password against the stored hash.
   const isValid = await bcrypt.compare(password, user.passwordHash);
   if (!isValid) {
     return null;
@@ -220,10 +260,15 @@ export async function authenticateUser(email: string, password: string) {
   });
 }
 
+/**
+ * Find a user by Google-authenticated email or create them if missing.
+ * Marks the account as verified and updates login metadata.
+ * (auth/google/route.ts imports and uses findOrCreateGoogleUser after verifying a Google ID token.)
+ */
 export async function findOrCreateGoogleUser(email: string) { // Find or create a user from Google sign-in.
   const normalizedEmail = email.trim().toLowerCase(); // Normalize the email for lookup and storage.
   if (!isValidCampusEmail(normalizedEmail)) { // Enforce the campus allowlist.
-    throw new Error("Email must be from an allowed campus domain"); // Explain why sign-in fails.
+    throw new Error("Oops! Wintirdes is not yet on your campus."); // Explain why sign-in fails.
   }
 
   const existing = await getUserByEmail(normalizedEmail); // Look up an existing account by email.
@@ -243,14 +288,12 @@ export async function findOrCreateGoogleUser(email: string) { // Find or create 
 
   const campus = await getCampusFromEmail(normalizedEmail); // Resolve campus from the email domain.
   const now = new Date(); // Use a consistent timestamp for creation fields.
-  const pseudonym = generatePseudonym(); // Generate a display pseudonym for the user.
 
   return prisma.user.create({ // Create a new Google-authenticated user.
     data: { // Populate user fields for Google sign-in.
       email: normalizedEmail, // Store the normalized email.
       passwordHash: undefined, // Omit password for Google-only accounts (nullable column).
       campusId: campus.id, // Assign the resolved campus.
-      pseudonym, // Store the generated pseudonym.
       isDriverAvailable: false, // Default driver availability to false.
       emailVerified: true, // Mark email verified via Google.
       emailVerifiedAt: now, // Record verification time.
@@ -263,6 +306,9 @@ export async function findOrCreateGoogleUser(email: string) { // Find or create 
   });
 }
 
+/**
+ * Create a session token for a user with an expiration window (default 24h).
+ */
 export async function createSession(userId: string, expiresInHours: number = 24): Promise<string> {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
@@ -278,6 +324,10 @@ export async function createSession(userId: string, expiresInHours: number = 24)
   return token;
 }
 
+/**
+ * Fetch a session by token and prune it if expired.
+ * Returns the session or null when missing/expired.
+ */
 export async function getSession(sessionToken: string) {
   const session = await prisma.session.findUnique({ where: { token: sessionToken } });
   if (!session) {
@@ -285,6 +335,7 @@ export async function getSession(sessionToken: string) {
   }
 
   if (session.expiresAt.getTime() < Date.now()) {
+    // Clean up expired session records to avoid reuse.
     await prisma.session.delete({ where: { token: sessionToken } });
     return null;
   }
@@ -292,18 +343,31 @@ export async function getSession(sessionToken: string) {
   return session;
 }
 
+/**
+ * Remove a session token from persistence.
+ */
 export async function deleteSession(sessionToken: string): Promise<void> {
   await prisma.session.delete({ where: { token: sessionToken } });
 }
 
+/**
+ * Fetch a campus by ID.
+ */
 export async function getCampusById(id: string) {
   return prisma.campus.findUnique({ where: { id } });
 }
 
+/**
+ * List all campuses.
+ */
 export async function getAllCampuses() {
   return prisma.campus.findMany();
 }
 
+/**
+ * Enable driver capability for a user by creating driver info.
+ * Validates license data before persisting.
+ */
 export async function enableDriverCapability(
   userId: string,
   legalName: string,
@@ -320,6 +384,7 @@ export async function enableDriverCapability(
     throw new Error("User already has driver capability enabled");
   }
 
+  // Validate the submitted license info as a cohesive set.
   const licenseErrors = validateDriverLicenseInput({
     legalName,
     licenseNumber,
@@ -335,6 +400,7 @@ export async function enableDriverCapability(
   const normalizedExpiration = normalizeExpirationDate(licenseExpirationDate);
   const now = new Date();
 
+  // Store the driver info and mark it as verified at creation time.
   await prisma.driverInfo.create({
     data: {
       userId,
@@ -349,6 +415,7 @@ export async function enableDriverCapability(
     }
   });
 
+  // Flip driver availability once driver info exists.
   return prisma.user.update({
     where: { id: userId },
     data: { isDriverAvailable: true },
@@ -356,6 +423,9 @@ export async function enableDriverCapability(
   });
 }
 
+/**
+ * Update a user's stored driver license details and verification metadata.
+ */
 export async function updateDriverLicenseDetails(
   userId: string,
   legalName: string,
@@ -368,6 +438,7 @@ export async function updateDriverLicenseDetails(
     return null;
   }
 
+  // Validate the new license fields before applying updates.
   const licenseErrors = validateDriverLicenseInput({
     legalName,
     licenseNumber,
@@ -383,6 +454,7 @@ export async function updateDriverLicenseDetails(
   const normalizedExpiration = normalizeExpirationDate(licenseExpirationDate);
   const normalizedState = isValidIssuingState(issuingState) ? issuingState : undefined;
 
+  // Normalize the existing driver record into the DriverInfo shape required by updateLicenseDetails.
   const driverInfoForUpdate: DriverInfo = {
     legalName: legalName.trim(),
     licenseNumber: user.driverInfo.licenseNumber ?? undefined,
@@ -394,6 +466,7 @@ export async function updateDriverLicenseDetails(
     expirationAlertsSent: (user.driverInfo.expirationAlertsSent ?? undefined) as DriverInfo["expirationAlertsSent"]
   };
 
+  // Use shared license update logic to handle status transitions and timestamps.
   const updatedDriverInfo = updateLicenseDetails(
     driverInfoForUpdate,
     licenseNumber.trim(),
@@ -401,6 +474,7 @@ export async function updateDriverLicenseDetails(
     normalizedState
   );
 
+  // Persist the merged driver info back to the database.
   await prisma.driverInfo.update({
     where: { userId },
     data: {
@@ -421,6 +495,9 @@ export async function updateDriverLicenseDetails(
   });
 }
 
+/**
+ * Re-verify an existing license (if not expired) and update the lastVerifiedAt timestamp.
+ */
 export async function verifyStoredLicense(userId: string) {
   const user = await getUserById(userId);
   if (!user || !user.driverInfo) {
@@ -443,6 +520,9 @@ export async function verifyStoredLicense(userId: string) {
   });
 }
 
+/**
+ * Toggle driver availability while ensuring license state is still valid.
+ */
 export async function updateDriverAvailability(userId: string, isAvailable: boolean) {
   const user = await getUserById(userId);
   if (!user) {
@@ -454,6 +534,7 @@ export async function updateDriverAvailability(userId: string, isAvailable: bool
   }
 
   if (isAvailable && user.driverInfo) {
+    // Ensure the stored license has not expired before enabling availability.
     const verifiedUser = await verifyStoredLicense(userId);
     if (!verifiedUser) {
       throw new Error("Your driver's license has expired. Please re-enter your license details to continue driving.");
@@ -467,6 +548,9 @@ export async function updateDriverAvailability(userId: string, isAvailable: bool
   });
 }
 
+/**
+ * Determine whether a license expiration date has already passed.
+ */
 function isLicenseExpired(licenseExpirationDate?: string): boolean {
   if (!licenseExpirationDate) {
     return false;
@@ -481,6 +565,9 @@ function isLicenseExpired(licenseExpirationDate?: string): boolean {
   return expiration < today;
 }
 
+/**
+ * Check if a license will expire within a given number of days (default 7).
+ */
 function isLicenseExpiringWithin(licenseExpirationDate?: string, days: number = 7): boolean {
   if (!licenseExpirationDate) {
     return false;
@@ -496,6 +583,9 @@ function isLicenseExpiringWithin(licenseExpirationDate?: string, days: number = 
   return daysUntilExpiration >= 0 && daysUntilExpiration <= days;
 }
 
+/**
+ * Compute license expiration status and which alerts should be sent.
+ */
 export function getLicenseExpirationStatus(driverInfo?: {
   licenseExpirationDate?: string;
   expirationAlertsSent?: {
@@ -524,6 +614,7 @@ export function getLicenseExpirationStatus(driverInfo?: {
     };
   }
 
+  // Normalize dates to midnight so comparisons are day-accurate.
   const expirationDate = driverInfo.licenseExpirationDate;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -536,6 +627,7 @@ export function getLicenseExpirationStatus(driverInfo?: {
 
   const alertsSent = driverInfo.expirationAlertsSent || {};
 
+  // Determine which alerts are due based on remaining days and prior sends.
   const alertsNeeded = {
     oneWeek: daysUntilExpiration <= 7 && daysUntilExpiration > 3 && !alertsSent.oneWeek,
     threeDays: daysUntilExpiration <= 3 && daysUntilExpiration > 1 && !alertsSent.threeDays,

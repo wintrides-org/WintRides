@@ -167,7 +167,7 @@ C4. Driver response flow
 Step 1: Driver expresses interest
 Driver taps: “I can take this.”
 The request enters a Pending phase for the rider:
-Rider sees a list of responding drivers (names/pseudonyms + rating later)
+Rider sees a list of responding drivers (names + rating later)
 Rider selects one driver to proceed (for V1,  “first accept wins”)
 Step 2: Create a private DM
 Once rider selects a driver:
