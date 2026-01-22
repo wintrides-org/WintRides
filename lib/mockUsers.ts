@@ -98,14 +98,6 @@ export async function getUserById(id: string) {
   });
 }
 
-// returns full user record of the user with userName
-// the 'include' keyword here says "Also include the driverInfo of the user (if they have one) in the record"
-export async function getUserByUserName(userName: string) {
-  return prisma.user.findUnique({
-    where: { userName: userName.toLowerCase() },
-    include: { driverInfo: true }
-  });
-}
 
 // returns full user record of the user with userName
 // the 'include' keyword here says "Also include the driverInfo of the user (if they have one) in the record"
