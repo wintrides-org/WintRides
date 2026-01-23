@@ -74,9 +74,8 @@ export interface User {
   campusId: string; // Assigned campus based on email domain (permanent assignment)
   
   // Identity
-  userName: string; // Public username chosen during signup
-  realName?: string; // Real name shows up as display name (for trust/safety)
-  
+  userName: string; // Public username 
+ 
   // Capabilities
   // Everyone is a rider by default. Driver is an optional add-on capability.
   isDriverAvailable: boolean; // Day-to-day toggle for driver availability
