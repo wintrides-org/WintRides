@@ -185,6 +185,9 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
                       : "bg-neutral-100 text-neutral-900"
                   }`}
                 >
+                  <p className={`text-xs font-semibold ${isOwn ? "text-blue-100" : "text-neutral-600"}`}>
+                    {message.userName}
+                  </p>
                   <p className="text-sm whitespace-pre-wrap break-words">
                     {message.content}
                   </p>

@@ -67,6 +67,9 @@ export default function DriverDashboardPage() {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isAvailabilityUpdating, setIsAvailabilityUpdating] = useState(false);
   const [availabilityError, setAvailabilityError] = useState("");
+  const [licenseStatus, setLicenseStatus] = useState<"valid" | "expiringSoon" | "expired" | "missing" | null>(null); // Track current license state for reminders.
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null); // Cache days remaining so UI can show "Expires in X days".
+  const [showExpiredModal, setShowExpiredModal] = useState(false); // Show modal when an expired driver tries to toggle ON.
   const [pingsOpen, setPingsOpen] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
@@ -135,6 +138,55 @@ export default function DriverDashboardPage() {
 
     return () => {
       ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    let interval: NodeJS.Timeout | null = null;
+
+    async function fetchLicenseStatus() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken");
+        if (!sessionToken) return;
+        const res = await fetch("/api/driver/license-status", {
+          headers: { Authorization: `Bearer ${sessionToken}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!ignore) {
+          setLicenseStatus(data?.licenseStatus ?? null);
+          setDaysRemaining(
+            typeof data?.daysRemaining === "number" ? data.daysRemaining : null
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setLicenseStatus(null);
+          setDaysRemaining(null);
+        }
+      }
+    }
+
+    fetchLicenseStatus(); // Initial fetch on mount.
+    interval = setInterval(fetchLicenseStatus, 4 * 60 * 60 * 1000); // Periodic refresh (every 4 hours).
+
+    // Refresh when the tab/window regains focus so the banner is always up to date.
+    function handleFocus() {
+      if (document.visibilityState === "visible") {
+        fetchLicenseStatus();
+      }
+    }
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, []);
 
@@ -251,6 +303,10 @@ export default function DriverDashboardPage() {
     setIsAvailabilityUpdating(true);
 
     try {
+      if (nextValue && licenseStatus === "expired") {
+        setShowExpiredModal(true); // Intercept ON toggle and prompt for update.
+        return;
+      }
       const sessionToken = localStorage.getItem("sessionToken");
       // Authorization header mirrors the session fetch to identify the driver.
       const res = await fetch("/api/auth/driver/toggle", {
@@ -451,11 +507,12 @@ export default function DriverDashboardPage() {
                     type="button"
                     onClick={() => toggleAvailability(true)}
                     disabled={isAvailabilityUpdating || isAvailable === true}
+                    aria-disabled={licenseStatus === "expired"}
                     className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
                         ? "bg-[#12b861] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
                         : "bg-transparent text-[#0a3570]"
-                    }`}
+                    } ${licenseStatus === "expired" ? "cursor-not-allowed bg-[#d3d3d3] text-[#7a6f63] shadow-none" : ""}`}
                   >
                     {isAvailabilityUpdating && isAvailable === true ? "Updating..." : "ON"}
                   </button>
@@ -466,6 +523,43 @@ export default function DriverDashboardPage() {
                   ? "You are set to available. Expect pings for ride updates."
                   : "You are currently set to unavailable. Change status to receive request pings."}
               </p>
+              {/* Inline chip reminder sits under the availability toggle. */}
+              {(licenseStatus === "expiringSoon" || licenseStatus === "expired") ? (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#0a3570] bg-[#ffe9d1] px-3 py-1 text-xs text-[#0a3570]">
+                  {/* Badge icon draws attention to the reminder. */}
+                  <span
+                    className="grid h-4 w-4 place-items-center rounded-full bg-[#ff4b4b] text-[10px] font-semibold text-white badge-pulse"
+                    aria-hidden="true"
+                  >
+                    !
+                  </span>
+                  <span>
+                    {licenseStatus === "expired"
+                      ? "License expired"
+                      : `License expires in ${daysRemaining ?? "a few"} days`}
+                  </span>
+                  <Link href="/driver/enable?mode=update" className="font-semibold underline">
+                    Update
+                  </Link>
+                  {/* Soft pulse on the badge to keep the reminder visible without being noisy. */}
+                  <style jsx>{`
+                    .badge-pulse {
+                      animation: badgePulse 3.2s ease-in-out infinite;
+                    }
+                    @keyframes badgePulse {
+                      0%,
+                      100% {
+                        transform: scale(1);
+                        box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.35);
+                      }
+                      50% {
+                        transform: scale(1.06);
+                        box-shadow: 0 0 0 8px rgba(255, 75, 75, 0);
+                      }
+                    }
+                  `}</style>
+                </div>
+              ) : null}
               {availabilityError ? (
                 <p className="mt-2 text-xs font-semibold text-[#b42318]">
                   {availabilityError}
@@ -690,6 +784,33 @@ export default function DriverDashboardPage() {
             >
               ✕
             </button>
+          </div>
+        </div>
+      ) : null}
+      {showExpiredModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+          <div className="w-full max-w-md rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.25)]">
+            <h3 className={`${displayFont.className} text-xl text-[#0a3570]`}>
+              License expired
+            </h3>
+            <p className="mt-2 text-sm text-[#6b5f52]">
+              Update your license details to continue accepting rides.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/driver/enable?mode=update"
+                className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)]"
+              >
+                Update details
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowExpiredModal(false)}
+                className="rounded-full border-2 border-[#0a3570] px-5 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#e9dcc9]"
+              >
+                Not now
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

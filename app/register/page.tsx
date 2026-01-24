@@ -114,6 +114,12 @@ export default function RegisterPage() {
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // Read the Google client ID.
 
+  useEffect(() => { // Handle client-side navigation when GIS is already loaded.
+    if ((window as any)?.google?.accounts?.id) { // Detect the loaded GIS script.
+      setGoogleReady(true); // Mark Google as ready without waiting for onLoad.
+    }
+  }, []);
+
   async function handleGoogleCredentialResponse(response: { credential?: string }) { // Handle GIS credential response.
     setGoogleError(""); // Clear any previous Google error message.
     const idToken = response?.credential; // Extract the ID token from the response.
@@ -131,11 +137,12 @@ export default function RegisterPage() {
 
       const data = await res.json(); // Parse the server response.
       if (!res.ok) { // Handle non-200 responses.
-        throw new Error(data.error || "Google sign-in failed"); // Surface the server error.
-      }
-
-      if (data.sessionToken) { // Persist the session token when provided.
-        localStorage.setItem("sessionToken", data.sessionToken); // Store the token for MVP flows.
+        const message = String(data?.error || "Google sign-in failed"); // Normalize the backend error message.
+        if (message.toLowerCase().includes("campus")) { // Translate domain errors into a friendlier message.
+          setGoogleError("This app currently supports Smith emails only. Please use your smith.edu account."); // Show a clearer domain error.
+          return; // Stop here after showing the message.
+        }
+        throw new Error(message); // Surface other errors.
       }
 
       router.push("/dashboard"); // Redirect to the dashboard on success.

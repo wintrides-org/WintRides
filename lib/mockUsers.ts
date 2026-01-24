@@ -13,6 +13,7 @@ import {
 } from "@/lib/licenseValidation"; // License input validation and normalization helpers.
 import { updateLicenseDetails } from "@/lib/licenseExpiration"; // Logic for alerts to update license details
 import { prisma } from "@/lib/prisma"; // Prisma client for database access.
+import type { Prisma } from "@prisma/client"; // Prisma type helpers for payload typing.
 import { normalizeUserName } from "@/lib/usernameValidation";
 
 const SALT_ROUNDS = 10; // Number of bcrypt salt rounds for password hashing.
@@ -22,11 +23,43 @@ const allowedCampusDomains = (process.env.ALLOWED_CAMPUS_DOMAINS ?? "smith.edu")
   .map(domain => domain.trim().toLowerCase()) // Normalize whitespace and casing.
   .filter(Boolean); // Remove any empty entries.
 
+type UserWithDriverInfo = Prisma.UserGetPayload<{ include: { driverInfo: true } }>;
+
 /**
  * Generate a random session/verification token.
  */
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
+}
+
+/**
+ * Generate a candidate username from an email address.
+ */
+function buildUserNameFromEmail(email: string): string { // Build a username base from the email.
+  const localPart = email.split("@")[0] ?? ""; // Use the local part before the @ symbol.
+  const cleaned = localPart.replace(/[^a-zA-Z0-9]+/g, ""); // Remove non-alphanumeric characters.
+  const fallback = cleaned || "rider"; // Provide a fallback if nothing remains.
+  return normalizeUserName(fallback); // Normalize to your username rules.
+}
+
+/**
+ * Ensure a username is unique by checking existing users.
+ */
+async function generateUniqueUserName(email: string): Promise<string> { // Build a unique username for Google users.
+  const base = buildUserNameFromEmail(email); // Start from the email local part.
+  let candidate = base; // Initialize the candidate with the base username.
+  let attempt = 0; // Track how many suffix attempts have been made.
+
+  while (await getUserByUserName(candidate)) { // Loop until an unused username is found.
+    attempt += 1; // Increment the attempt counter.
+    const suffix = crypto.randomBytes(2).toString("hex"); // Generate a short random suffix.
+    candidate = normalizeUserName(`${base}${suffix}`); // Append suffix and normalize again.
+    if (attempt > 10) { // Avoid an infinite loop in the unlikely case of collisions.
+      candidate = normalizeUserName(`${base}${Date.now().toString().slice(-4)}`); // Fallback to a time-based suffix.
+    }
+  }
+
+  return candidate; // Return the unique username.
 }
 
 /**
@@ -279,7 +312,7 @@ export async function authenticateUser(email: string, password: string) {
  * Marks the account as verified and updates login metadata.
  * (auth/google/route.ts imports and uses findOrCreateGoogleUser after verifying a Google ID token.)
  */
-export async function findOrCreateGoogleUser(email: string) { // Find or create a user from Google sign-in.
+export async function findOrCreateGoogleUser(email: string): Promise<UserWithDriverInfo> { // Find or create a user from Google sign-in.
   const normalizedEmail = email.trim().toLowerCase(); // Normalize the email for lookup and storage.
   if (!isValidCampusEmail(normalizedEmail)) { // Enforce the campus allowlist.
     throw new Error("Oops! Wintirdes is not yet on your campus."); // Explain why sign-in fails.
@@ -302,10 +335,12 @@ export async function findOrCreateGoogleUser(email: string) { // Find or create 
 
   const campus = await getCampusFromEmail(normalizedEmail); // Resolve campus from the email domain.
   const now = new Date(); // Use a consistent timestamp for creation fields.
+  const userName = await generateUniqueUserName(normalizedEmail); // Generate a unique username for the new user.
 
   return prisma.user.create({ // Create a new Google-authenticated user.
     data: { // Populate user fields for Google sign-in.
       email: normalizedEmail, // Store the normalized email.
+      userName, // Store the generated unique username.
       passwordHash: undefined, // Omit password for Google-only accounts (nullable column).
       campusId: campus.id, // Assign the resolved campus.
       isDriverAvailable: false, // Default driver availability to false.

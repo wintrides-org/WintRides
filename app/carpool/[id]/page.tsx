@@ -430,7 +430,7 @@ export default function CarpoolThreadPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">
-                    {p.isCreator ? "👑 " : ""}User {p.userId.slice(-6)}
+                    {p.isCreator ? "👑 " : ""}{p.userName}
                   </span>
                   {p.isCreator && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">

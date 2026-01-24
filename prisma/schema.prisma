@@ -47,10 +47,12 @@ model User {
   ridesCompleted         Int        @default(0)
   noShowCount            Int        @default(0)
 
-  campus     Campus      @relation(fields: [campusId], references: [id])
-  driverInfo DriverInfo?
-  sessions   Session[]
-  notifications Notification[]
+  campus              Campus               @relation(fields: [campusId], references: [id])
+  driverInfo          DriverInfo?
+  sessions            Session[]
+  notifications       Notification[]
+  carpoolParticipants CarpoolParticipant[]
+  carpoolMessages     CarpoolMessage[]
 }
 
 model DriverInfo {
@@ -167,6 +169,7 @@ model CarpoolParticipant {
   isCreator   Boolean  @default(false)
 
   carpool     Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([carpoolId, userId])
   @@index([userId])
@@ -181,6 +184,7 @@ model CarpoolMessage {
   createdAt DateTime @default(now())
 
   carpool   Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([carpoolId])
   @@index([createdAt])
