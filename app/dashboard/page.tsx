@@ -284,10 +284,10 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Profile icon keeps users on the dashboard for MVP */}
+            {/* Account icon links to the account profile hub */}
             <Link
-              href="/dashboard"
-              aria-label="Profile"
+              href="/account/profile"
+              aria-label="Account"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
             >
               <svg
