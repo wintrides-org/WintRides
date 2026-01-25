@@ -475,7 +475,7 @@ export default function DriverDashboardPage() {
               </div>
               <p className="mt-2 text-sm text-[#6b5f52]">Ratings & reviews</p>
               <Link
-                href="/in-progress"
+                href={driverId ? `/drivers/${driverId}/reviews` : "/in-progress"}
                 className="mt-4 inline-flex rounded-full bg-[#9aa7b9] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
               >
                 View all reviews

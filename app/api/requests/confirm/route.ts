@@ -6,6 +6,9 @@ import {
   type QuoteInput,
 } from "@/lib/requestValidation";
 
+// Defines how long after a ride request is confirmed before a rider can place another request
+const OVERLAP_WINDOW_MINUTES = 30;
+
 // POST /api/requests/confirm - re-validate input and persist the request.
 export async function POST(request: NextRequest) {
   // looks for the session in the server to determine if it's valid
@@ -47,6 +50,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Invalid request", details: errors },
         { status: 400 }
+      );
+    }
+
+    // Defines the full day-time window, from when the day begins to when it ends
+    const pickupAt = new Date(data.pickupAt);
+    const dayStart = new Date(pickupAt);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = new Date(pickupAt);
+    dayEnd.setUTCHours(23, 59, 59, 999);
+
+    // Gets all upcoming rides placed by the rider
+    const existing = await prisma.rideRequest.findMany({
+      where: {
+        riderId: user.id,
+        status: { in: ["OPEN", "MATCHED"] },
+        pickupAt: {
+          gte: dayStart,
+          lte: dayEnd,
+        },
+      },
+      select: { id: true, pickupAt: true, status: true },
+    });
+
+    // Checks if there's an overlap between any upcoming ride and the ride to be requested
+    const overlapMs = OVERLAP_WINDOW_MINUTES * 60 * 1000;
+    const hasOverlap = existing.some((request) => {
+      const diff = Math.abs(request.pickupAt.getTime() - pickupAt.getTime());
+      return diff <= overlapMs;
+    });
+    // Throws an error if ride to be requested overlaps with an upcoming ride
+    if (hasOverlap) {
+      return NextResponse.json(
+        {
+          error:
+            "This request overlaps another upcoming ride. Please choose a different time.",
+        },
+        { status: 409 }
       );
     }
 

@@ -44,6 +44,38 @@ const bodyFont = Work_Sans({
   weight: ["400", "500", "600"],
 });
 
+type StoredReview = {
+  id: string;
+  driverId: string;
+  rideRequestId?: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+};
+
+// MVP review persistence helper (localStorage-backed).
+function loadReviews(): StoredReview[] {
+  try {
+    const stored = localStorage.getItem("driverReviews");
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? (parsed as StoredReview[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getDriverReviewStats(driverId: string) {
+  // Calculate review stats for a driver confirmation card.
+  const reviews = loadReviews().filter((review) => review.driverId === driverId);
+  if (reviews.length === 0) return null;
+  const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+  return {
+    average: total / reviews.length,
+    count: reviews.length,
+  };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -63,14 +95,27 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   // Controls whether the alert list is expanded.
   const [alertsOpen, setAlertsOpen] = useState(true);
-  // Last ride request shown in the dashboard (stored client-side for MVP).
-  const [lastRide, setLastRide] = useState<{
-    pickupLabel: string;
-    dropoffLabel: string;
-    pickupAt: string;
-    partySize: number;
-    type: string;
-  } | null>(null);
+  // Rider's upcoming rides shown in the Ride Status section of the dashboard (OPEN/MATCHED rides only).
+  const [riderId, setRiderId] = useState<string>("");
+  const [upcomingRides, setUpcomingRides] = useState<
+    {
+      id: string;
+      status: "OPEN" | "MATCHED";
+      acceptedDriverId?: string | null;
+      pickupLabel: string;
+      dropoffLabel: string;
+      pickupAt: string;
+      partySize: number;
+      carsNeeded: number;
+    }[]
+  >([]);
+  const [ridesLoading, setRidesLoading] = useState(false);
+  const [ridesError, setRidesError] = useState("");
+  const [cancelingRideId, setCancelingRideId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState("");
+  const [driverProfiles, setDriverProfiles] = useState<
+    Record<string, { id: string; name: string; rating: number; reviewsCount: number }>
+  >({});
   // Controls the modal that tells drivers they already have access.
   const [showDriverModal, setShowDriverModal] = useState(false);
   // Tracks the delayed redirect so it can be canceled on unmount.
@@ -88,6 +133,7 @@ export default function DashboardPage() {
    * MVP: Client-side check on page load
    * Production: Use server-side middleware for better security
    */
+  // Load the signed-in rider ID to scope upcoming ride queries.
   useEffect(() => {
     async function checkAuthentication() {
       try {
@@ -111,6 +157,7 @@ export default function DashboardPage() {
           setIsAuthenticated(true);
           setIsDriver(Boolean(data?.user?.isDriver));
           setUserName(data?.user?.userName || "");
+          setRiderId(data?.user?.id || "");
         } else {
           // Invalid session: clear token and redirect to sign-in.
           setIsAuthenticated(false);
@@ -137,6 +184,7 @@ export default function DashboardPage() {
   checkAuthentication();
   }, [router]);
 
+  // Fetch upcoming rides for the Ride Status banner.
   useEffect(() => {
     let ignore = false;
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -202,16 +250,151 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    try {
-      // MVP: "last ride" data is stored in localStorage by the request flow.
-      const stored = localStorage.getItem("lastRideRequest");
-      if (stored) {
-        setLastRide(JSON.parse(stored));
+    let ignore = false;
+    // Fetches all OPEN & MATCHED rides for the rider
+    async function fetchUpcomingRides() {
+      setRidesError("");
+      setRidesLoading(true);
+      try {
+        if (!riderId) return;
+        const sessionToken = localStorage.getItem("sessionToken");
+        const res = await fetch(
+          `/api/requests?status=OPEN,MATCHED&riderId=${riderId}`,
+          {
+            headers: sessionToken
+              ? {
+                  Authorization: `Bearer ${sessionToken}`,
+                }
+              : {},
+          }
+        );
+        if (!res.ok) {
+          throw new Error("Failed to load ride status.");
+        }
+        const data = await res.json();
+        if (!ignore) {
+          setUpcomingRides(data.requests || []);
+        }
+      } catch (err: any) {
+        if (!ignore) {
+          setRidesError(err?.message || "Failed to load ride status.");
+        }
+      } finally {
+        if (!ignore) {
+          setRidesLoading(false);
+        }
       }
-    } catch {
-      setLastRide(null);
     }
-  }, []);
+
+    if (riderId) {
+      fetchUpcomingRides();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [riderId]);
+
+  // Load driver details for matched rides (name + rating + reviews count).
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchDriverProfiles(driverIds: string[]) {
+      if (driverIds.length === 0) return;
+      const sessionToken = localStorage.getItem("sessionToken");
+
+      // Fetch minimal driver profiles for confirmation cards.
+      const entries = await Promise.all(
+        driverIds.map(async (id) => {
+          try {
+            const res = await fetch(`/api/users/${id}`, {
+              headers: sessionToken
+                ? {
+                    Authorization: `Bearer ${sessionToken}`,
+                  }
+                : {},
+            });
+            if (!res.ok) return null;
+            const data = await res.json().catch(() => null);
+            if (!data?.user) return null;
+            return [
+              id,
+              {
+                id,
+                name: data.user.name,
+                rating: data.user.rating,
+                reviewsCount: data.user.reviewsCount,
+              },
+            ] as const;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Skip state updates if the effect has been cleaned up.
+      if (ignore) return;
+      const next = entries.filter(Boolean) as Array<
+        readonly [string, { id: string; name: string; rating: number; reviewsCount: number }]
+      >;
+      // No new profiles fetched, so nothing to merge.
+      if (next.length === 0) return;
+      // Merge fetched driver profiles into the existing cache.
+      setDriverProfiles((prev) => {
+        const updated = { ...prev };
+        next.forEach(([id, profile]) => {
+          updated[id] = profile;
+        });
+        return updated;
+      });
+    }
+
+    // Build a list of matched drivers that we haven't fetched yet.
+    const missingDriverIds = upcomingRides
+      .filter((ride) => ride.status === "MATCHED" && ride.acceptedDriverId)
+      .map((ride) => ride.acceptedDriverId as string)
+      .filter((id) => !driverProfiles[id]);
+
+    // Only fetch driver details we don't already have cached.
+    if (missingDriverIds.length > 0) {
+      fetchDriverProfiles(Array.from(new Set(missingDriverIds)));
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [upcomingRides, driverProfiles]);
+
+  // Cancel an upcoming ride and remove it from the Ride Status list.
+  async function handleCancelRide(requestId: string) {
+    setCancelError("");
+    if (!confirm("Cancel this ride request?")) return;
+
+    setCancelingRideId(requestId);
+    try {
+      // Call the API route that updates the ride status to CANCEL in the database.
+      const sessionToken = localStorage.getItem("sessionToken");
+      const res = await fetch("/api/requests/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(sessionToken
+            ? { Authorization: `Bearer ${sessionToken}` }
+            : {}),
+        },
+        body: JSON.stringify({ requestId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to cancel ride.");
+      }
+      setUpcomingRides((prev) => prev.filter((ride) => ride.id !== requestId));
+    } catch (err: any) {
+      setCancelError(err?.message || "Failed to cancel ride.");
+    } finally {
+      setCancelingRideId(null);
+    }
+  }
 
   // Loading state while auth check runs.
   if (isLoading) {
@@ -411,23 +594,174 @@ export default function DashboardPage() {
           ) : null}
         </section>
 
-        {lastRide ? (
-          <section className="mt-6 rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
-            <h2 className="text-lg font-semibold text-[#0a3570]">Your Rides</h2>
-            <p className="mt-2 text-sm text-[#6b5f52]">
-              {lastRide.dropoffLabel} •{" "}
-              {new Date(lastRide.pickupAt).toLocaleString([], {
-                month: "short",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
-            <p className="mt-1 text-sm text-[#6b5f52]">
-              Pickup: {lastRide.pickupLabel} • Party size: {lastRide.partySize}
-            </p>
-          </section>
-        ) : null}
+        {/* Ride Status banner with upcoming rides and cancel actions. */}
+        <section className="mt-6">
+          <div className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-[#0a3570]">
+                  Ride Status
+                </h2>
+                <p className="mt-2 text-sm text-[#6b5f52]">
+                  Shows upcoming rides and active requests.
+                </p>
+              </div>
+              <span className="rounded-full border border-[#0a3570] bg-[#f6efe6] px-4 py-2 text-xs font-semibold text-[#0a3570]">
+                {upcomingRides.length} upcoming
+              </span>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              {ridesLoading && (
+                <div className="rounded-2xl border border-dashed border-[#0a3570] bg-white/70 p-6 text-center text-sm text-[#6b5f52]">
+                  Loading ride status...
+                </div>
+              )}
+
+              {!ridesLoading && ridesError && (
+                <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-6 text-center">
+                  <p className="text-sm text-red-600">{ridesError}</p>
+                </div>
+              )}
+
+              {!ridesLoading && !ridesError && upcomingRides.length === 0 && (
+                <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-6 text-center text-sm text-[#6b5f52]">
+                  No upcoming rides yet.
+                </div>
+              )}
+
+              {!ridesLoading && !ridesError && cancelError && (
+                <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-4 text-center">
+                  <p className="text-sm text-red-600">{cancelError}</p>
+                </div>
+              )}
+
+              {!ridesLoading && !ridesError && upcomingRides.length > 0 && (
+                <div className="space-y-4">
+              {upcomingRides.map((ride) => (
+                <div
+                  key={ride.id}
+                  className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5"
+                >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-[#0a3570]">
+                            {ride.dropoffLabel}
+                          </h3>
+                          <p className="mt-1 text-sm text-[#6b5f52]">
+                            {new Date(ride.pickupAt).toLocaleString([], {
+                              month: "short",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            ride.status === "MATCHED"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {ride.status}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-[#6b5f52]">
+                        Pickup: {ride.pickupLabel}
+                      </p>
+                  <p className="mt-1 text-sm text-[#6b5f52]">
+                    Party size: {ride.partySize} • Cars needed: {ride.carsNeeded}
+                  </p>
+                  {/* Driver confirmation card only appears once a driver is matched. */}
+                  {ride.status === "MATCHED" && ride.acceptedDriverId ? (
+                    <div className="mt-4 rounded-2xl border border-[#0a3570] bg-white/80 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6b5f52]">
+                        Driver confirmation
+                      </p>
+                      {(() => {
+                        const stats = getDriverReviewStats(ride.acceptedDriverId as string);
+                        const rating =
+                          stats?.average ??
+                          driverProfiles[ride.acceptedDriverId]?.rating ??
+                          5.0;
+                        const reviewsCount =
+                          stats?.count ??
+                          driverProfiles[ride.acceptedDriverId]?.reviewsCount ??
+                          0;
+                        return (
+                          <>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-[#0a3570]">
+                            {driverProfiles[ride.acceptedDriverId]?.name || "Driver"}
+                          </p>
+                          <div className="mt-2 flex items-center gap-2 text-sm text-[#6b5f52]">
+                            <div className="flex items-center gap-1 text-[#f0b429]">
+                              {Array.from({ length: 5 }).map((_, index) => (
+                                <svg
+                                  key={`driver-star-${ride.id}-${index}`}
+                                  viewBox="0 0 24 24"
+                                  className="h-4 w-4"
+                                  fill="currentColor"
+                                >
+                                  <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
+                                </svg>
+                              ))}
+                            </div>
+                            <span>
+                              {rating.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right text-xs text-[#6b5f52]">
+                          <p>
+                            {reviewsCount} reviews
+                          </p>
+                          <Link
+                            href={`/drivers/${ride.acceptedDriverId}/reviews`}
+                            className="mt-2 inline-flex rounded-full border border-[#0a3570] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#e9dcc9]"
+                          >
+                            View reviews
+                          </Link>
+                        </div>
+                      </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : null}
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => handleCancelRide(ride.id)}
+                          disabled={cancelingRideId === ride.id}
+                          className="rounded-full border border-[#b35656] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b35656] transition hover:bg-[#f7e9e7] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {cancelingRideId === ride.id ? "Canceling..." : "Cancel ride"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Ride History entry point (separate page). */}
+        <section className="mt-6 rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
+          <h2 className="text-lg font-semibold text-[#0a3570]">Ride History</h2>
+          <p className="mt-2 text-sm text-[#6b5f52]">
+            Review completed and canceled rides.
+          </p>
+          <Link
+            href="/dashboard/ride-history"
+            className="mt-4 inline-flex items-center rounded-full border border-[#0a3570] bg-[#e9dcc9] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a1b3f] hover:bg-[#dbc8ad]"
+          >
+            View history
+          </Link>
+        </section>
 
         {/* Primary prompt */}
         <h2

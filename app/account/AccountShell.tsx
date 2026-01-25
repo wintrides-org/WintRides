@@ -198,6 +198,18 @@ export default function AccountShell({
 
         <main className="flex-1 px-8 py-10 text-[var(--account-ink)]">
           <div className="mx-auto w-full max-w-5xl">
+            {/* Back button for account pages, styled like the driver dashboard back control. */}
+            <div className="mb-6">
+              <Link
+                href="/dashboard"
+                className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+                aria-label="Back to dashboard"
+              >
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </Link>
+            </div>
             <div className={displayFont.className}>{children}</div>
           </div>
         </main>
