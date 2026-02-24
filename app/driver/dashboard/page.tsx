@@ -63,6 +63,7 @@ const confettiPieces = [
 export default function DriverDashboardPage() {
   // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
+  const [driverUserName, setDriverUserName] = useState<string>("");
   const [driverName, setDriverName] = useState<string>("");
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isAvailabilityUpdating, setIsAvailabilityUpdating] = useState(false);
@@ -122,6 +123,7 @@ export default function DriverDashboardPage() {
         if (!ignore) {
           // Store driver ID to use in later API calls.
           setDriverId(data?.user?.id || "");
+          setDriverUserName(data?.user?.userName || "");
           setDriverName(data?.user?.driverLegalName || "");
           // Seed availability from the server so UI matches persisted state.
           setIsAvailable(Boolean(data?.user?.isDriverAvailable));
@@ -129,6 +131,7 @@ export default function DriverDashboardPage() {
       } catch {
         if (!ignore) {
           setDriverId("");
+          setDriverUserName("");
           setIsAvailable(false);
         }
       }
@@ -355,7 +358,7 @@ export default function DriverDashboardPage() {
               ))}
             </div>
             <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
-              Thank you, Olohi, for delivering safe rides to other students!
+              Thank you, {driverUserName || "Driver"}, for delivering safe rides to other students!
             </p>
             <p className="mt-3 text-sm text-[#6b5f52]">
               Loading your driver dashboard...
@@ -734,7 +737,9 @@ export default function DriverDashboardPage() {
                   <div className="grid gap-3 text-sm text-[#0a1b3f]">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="w-24 font-semibold">Name</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">Olohi John</span>
+                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">
+                        {driverName || driverUserName || "Driver"}
+                      </span>
                       <button type="button" className="text-[#0a3570]" aria-label="Edit name">
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 20h9" />
