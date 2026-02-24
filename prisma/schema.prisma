@@ -123,6 +123,8 @@ model RideRequest {
   pickupAt      DateTime
   carsNeeded    Int
   matchedAt     DateTime?
+  canceledAt    DateTime?
+  canceledBy    String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

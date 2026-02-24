@@ -110,13 +110,14 @@ export default function RiderRideHistoryPage() {
   useEffect(() => {
     let ignore = false;
 
-    // Load COMPLETED + CANCELED rides scoped to the rider session.
+    // Load COMPLETED + CANCELED rides for the rider on the Ride History page
     async function fetchHistory() {
       setError("");
       try {
         if (!riderId) return;
-        // Pass the session token so the API can authorize rider-scoped access.
-        const sessionToken = localStorage.getItem("sessionToken");
+        // Pass the session token so the API can authorize rider-scoped access -- replace with real DB
+        const sessionToken = localStorage.getItem("sessionToken"); 
+        // fetches all rides marked as COMPLETED or CANCELED
         const res = await fetch(
           `/api/requests?status=COMPLETED,CANCELED&riderId=${riderId}`,
           {

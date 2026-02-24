@@ -136,7 +136,6 @@ export interface Session {
   userId: string;
   email: string;
   userName: string;
-  pseudonym: string;
   campusId: string;
   driverLegalName?: string;
   isDriver: boolean; // Whether user has driver capability (computed from driverInfo existence)

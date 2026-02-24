@@ -366,11 +366,19 @@ export default function DashboardPage() {
   }, [upcomingRides, driverProfiles]);
 
   // Cancel an upcoming ride and remove it from the Ride Status list.
-  async function handleCancelRide(requestId: string) {
+  async function handleCancelRide(ride: {
+    id: string;
+    status: "OPEN" | "MATCHED";
+  }) {
     setCancelError("");
-    if (!confirm("Cancel this ride request?")) return;
+    const confirmMessage =
+      ride.status === "MATCHED"
+        ? 'Are you sure you want to cancel?\n\nYou\'ll be charged 50% of the transaction.' // if MATCHED
+        : "Are you sure you want to cancel?"; // if OPEN
 
-    setCancelingRideId(requestId);
+    if (!confirm(confirmMessage)) return;
+
+    setCancelingRideId(ride.id);
     try {
       // Call the API route that updates the ride status to CANCEL in the database.
       const sessionToken = localStorage.getItem("sessionToken");
@@ -382,15 +390,18 @@ export default function DashboardPage() {
             ? { Authorization: `Bearer ${sessionToken}` }
             : {}),
         },
-        body: JSON.stringify({ requestId }),
+        body: JSON.stringify({ requestId: ride.id }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(body?.error || "Failed to cancel ride.");
       }
-      setUpcomingRides((prev) => prev.filter((ride) => ride.id !== requestId));
-    } catch (err: any) {
-      setCancelError(err?.message || "Failed to cancel ride.");
+      // updates the Upcoming Rides list to exclude the canceled ride
+      setUpcomingRides((prev) => prev.filter((item) => item.id !== ride.id));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to cancel ride.";
+      setCancelError(message);
     } finally {
       setCancelingRideId(null);
     }
@@ -734,7 +745,7 @@ export default function DashboardPage() {
                   <div className="mt-4">
                     <button
                       type="button"
-                      onClick={() => handleCancelRide(ride.id)}
+                      onClick={() => handleCancelRide(ride)}
                           disabled={cancelingRideId === ride.id}
                           className="rounded-full border border-[#b35656] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b35656] transition hover:bg-[#f7e9e7] disabled:cursor-not-allowed disabled:opacity-70"
                         >

@@ -122,7 +122,7 @@ async function getCampusFromEmail(email: string) { // Resolve a campus record fo
 }
 
 /**
- * Fetch a user by ID, including their driver info.
+ * Fetch a user by ID and include their driver info in your return
  */
 export async function getUserById(id: string) {
   return prisma.user.findUnique({

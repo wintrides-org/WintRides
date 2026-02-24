@@ -111,7 +111,7 @@ export default function DriverRequestsPage() {
     // Initial load + repeat every 10 seconds.
     setLoading(true);
     fetchRequests();
-    interval = setInterval(fetchRequests, 10000);
+    interval = setInterval(fetchRequests, 10000); // Calls fetchRequests every 10s
 
     return () => {
       ignore = true;

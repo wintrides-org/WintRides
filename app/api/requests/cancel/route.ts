@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserById } from "@/lib/mockUsers";
+import { RequestStatus } from "@prisma/client";
 
-// POST /api/requests/cancel - cancel a rider request if it's still OPEN or MATCHED.
+// Defines the statuses for which a rider can cancel
+const RIDER_CANCELABLE_STATUSES: RequestStatus[] = ["OPEN", "MATCHED", "EXPIRED"] as const;
+
+// POST /api/requests/cancel - cancel a rider request if it's still rider-cancelable.
 export async function POST(request: NextRequest) {
   try {
+    // Ensures user is signed into a valid session
     const sessionToken =
       request.cookies.get("sessionToken")?.value ||
       request.headers.get("authorization")?.replace("Bearer ", "");
@@ -39,13 +44,20 @@ export async function POST(request: NextRequest) {
 
     const existingRequest = await prisma.rideRequest.findUnique({
       where: { id: body.requestId },
-      select: { id: true, riderId: true, status: true },
+      select: {
+        id: true,
+        riderId: true,
+        status: true,
+        acceptedDriverId: true,
+        dropoffLabel: true,
+      },
     });
 
     if (!existingRequest) {
       return NextResponse.json({ error: "Request not found." }, { status: 404 });
     }
 
+    // check to ensure the cancel request was placed by a valid signed-in user
     if (existingRequest.riderId !== user.id) {
       return NextResponse.json(
         { error: "Only the rider can cancel this request." },
@@ -53,33 +65,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!(["OPEN", "MATCHED"] as const).includes(existingRequest.status)) {
+    // One-time cancel safety check: treat repeated cancel on the same request as a safe no-op.
+    if (existingRequest.status === "CANCELED") {
       return NextResponse.json(
-        { error: "Only OPEN or MATCHED requests can be canceled." },
+        { ok: true, alreadyCanceled: true, message: "Request already canceled." },
+        { status: 200 }
+      );
+    }
+
+    // Confirm that the status of the request is either open, expired, or matched (Completed and Drafted rides can't be canceled)
+    if (!RIDER_CANCELABLE_STATUSES.includes(existingRequest.status)) {
+      return NextResponse.json(
+        { error: "Only OPEN, EXPIRED, or MATCHED requests can be canceled." },
         { status: 400 }
       );
     }
 
+    const previousStatus = existingRequest.status;
+    // update the status to CANCELED and stores information of who canceled it and when
     const updated = await prisma.rideRequest.updateMany({
       where: {
         id: existingRequest.id,
         riderId: user.id,
-        status: { in: ["OPEN", "MATCHED"] },
+        status: { in: [...RIDER_CANCELABLE_STATUSES] },
       },
       data: {
         status: "CANCELED",
+        canceledAt: new Date(),
+        canceledBy: user.id,
       },
     });
 
     if (updated.count === 0) {
+      const latest = await prisma.rideRequest.findUnique({
+        where: { id: existingRequest.id },
+        select: { status: true },
+      });
+
+      if (latest?.status === "CANCELED") {
+        return NextResponse.json(
+          { ok: true, alreadyCanceled: true, message: "Request already canceled." },
+          { status: 200 }
+        );
+      }
+
       return NextResponse.json(
         { error: "Request status changed. Please refresh and try again." },
         { status: 409 }
       );
     }
 
+    // MVP placeholder for the driver ping required by the cancellation spec when canceling a matched ride.
+    if (previousStatus === "MATCHED" && existingRequest.acceptedDriverId) {
+      await prisma.notification.create({
+        data: {
+          userId: existingRequest.acceptedDriverId,
+          type: "RIDE_CANCELED",
+          message: `Ride to ${existingRequest.dropoffLabel} has been CANCELED.`,
+          rideRequestId: existingRequest.id,
+        },
+      });
+    }
+
     return NextResponse.json(
-      { ok: true, message: "Request canceled." },
+      {
+        ok: true,
+        message: "Request canceled.",
+        canceledFromStatus: previousStatus,
+      },
       { status: 200 }
     );
   } catch (error) {
