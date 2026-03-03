@@ -60,6 +60,9 @@ const confettiPieces = [
   { left: "88%", top: "-14%", delay: "0.25s", duration: "1.9s" },
 ];
 
+// determines how long a confirmation card should persist for after the ride is canceled by the driver 
+const CANCELED_CARD_VISIBILITY_MS = 30 * 60 * 1000;
+
 export default function DriverDashboardPage() {
   // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
@@ -90,10 +93,12 @@ export default function DriverDashboardPage() {
   const [upcomingRequests, setUpcomingRequests] = useState<
     {
       id: string;
+      status: "MATCHED" | "CANCELED"; // displays rides matched with the driver, including ones that just got canceled
       pickupLabel: string;
       dropoffLabel: string;
       pickupAt: string;
       partySize: number;
+      canceledAt?: string | null;
     }[]
   >([]);
 
@@ -195,19 +200,36 @@ export default function DriverDashboardPage() {
 
   useEffect(() => {
     let ignore = false;
+    let interval: NodeJS.Timeout | null = null;
 
     // Fetch upcoming rides for this driver after we know their ID.
     async function fetchUpcoming() {
       try {
         if (!driverId) return;
         const res = await fetch(
-          `/api/requests?status=MATCHED&driverId=${driverId}`
+          `/api/requests?status=MATCHED,CANCELED&driverId=${driverId}`
         );
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
+          const recentDriverRides = Array.isArray(data?.requests)
+            // fetches information on all rides MATCHED to the driver (including ones that were canceled by rider)
+            ? data.requests.filter(
+                (request: {
+                  status: "MATCHED" | "CANCELED";
+                  canceledAt?: string | null;
+                }) =>
+                  // displays all MATCHED rides for the driver and CANCELED rides if duration since cancellation <=30m
+                  request.status === "MATCHED" ||
+                  (request.status === "CANCELED" && 
+                    request.canceledAt &&
+                    Date.now() - new Date(request.canceledAt).getTime() <=
+                      CANCELED_CARD_VISIBILITY_MS)
+              )
+            : [];
+
           // Update the "Your Rides" list.
-          setUpcomingRequests(data.requests || []);
+          setUpcomingRequests(recentDriverRides);
         }
       } catch {
         if (!ignore) {
@@ -219,10 +241,14 @@ export default function DriverDashboardPage() {
     // Only fetch when a valid driverId exists.
     if (driverId) {
       fetchUpcoming();
+      interval = setInterval(fetchUpcoming, 30000);
     }
 
     return () => {
       ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
     };
   }, [driverId]);
 
@@ -691,7 +717,11 @@ export default function DriverDashboardPage() {
                   upcomingRequests.slice(0, 2).map((request) => (
                     <div
                       key={request.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-3"
+                      className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
+                        request.status === "CANCELED"
+                          ? "driver-canceled-card border-[#b42318] bg-[#fde9e7]"
+                          : "border-[#0a3570] bg-[#f4ecdf]"
+                      }`}
                     >
                       <div className="text-sm text-[#0a1b3f]">
                         <span className="font-semibold">{request.dropoffLabel}</span>
@@ -700,12 +730,22 @@ export default function DriverDashboardPage() {
                         <span className="mx-2 text-[#0a3570]">•</span>
                         <span className="font-semibold">Pickup:</span> {request.pickupLabel}
                       </div>
-                      <span className="rounded-full bg-[#d9e8ff] px-3 py-1 text-xs font-semibold text-[#0a3570]">
-                        UPCOMING
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          request.status === "CANCELED"
+                            ? "bg-[#f7c7c3] text-[#8a1c17]"
+                            : "bg-[#d9e8ff] text-[#0a3570]"
+                        }`}
+                      >
+                        {request.status === "CANCELED" ? "CANCELED" : "UPCOMING"}
                       </span>
                       <Link
                         href="/driver/upcoming"
-                        className="rounded-full border border-[#0a3570] bg-white px-3 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                        className={`rounded-full border bg-white px-3 py-1 text-xs font-semibold hover:bg-[#efe3d2] ${
+                          request.status === "CANCELED"
+                            ? "border-[#b42318] text-[#8a1c17]"
+                            : "border-[#0a3570] text-[#0a3570]"
+                        }`}
                       >
                         View
                       </Link>
@@ -713,6 +753,27 @@ export default function DriverDashboardPage() {
                   ))
                 )}
               </div>
+              <style jsx>{`
+                .driver-canceled-card {
+                  animation: driver-cancel-vibrate 0.95s ease-in-out infinite;
+                }
+
+                @keyframes driver-cancel-vibrate {
+                  0%,
+                  100% {
+                    transform: scale(1);
+                  }
+                  50% {
+                    transform: scale(1.02);
+                  }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                  .driver-canceled-card {
+                    animation: none;
+                  }
+                }
+              `}</style>
             </section>
 
 
