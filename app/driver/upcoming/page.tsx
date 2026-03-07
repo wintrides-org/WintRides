@@ -164,6 +164,7 @@ export default function DriverUpcomingPage() {
     }
   }
 
+  // Cancels a ride for the driver and informs the rider
   async function handleDriverCancel() {
     if (!cancelModalRequest) return;
 
@@ -171,10 +172,10 @@ export default function DriverUpcomingPage() {
     setCancelingId(cancelModalRequest.id);
 
     try {
+      // authenticates the users' signin to enusr ethey are valid users (and drivers)
       if (!driverId) {
         throw new Error("Unable to confirm driver. Please sign in again.");
       }
-
       const sessionToken = localStorage.getItem("sessionToken");
       const res = await fetch("/api/requests/driver-cancel", {
         method: "POST",

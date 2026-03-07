@@ -113,6 +113,10 @@ export default function DashboardPage() {
   const [ridesError, setRidesError] = useState("");
   const [cancelingRideId, setCancelingRideId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState("");
+  const [cancelModalRide, setCancelModalRide] = useState<{
+    id: string;
+    status: "OPEN" | "MATCHED";
+  } | null>(null);
   const [driverProfiles, setDriverProfiles] = useState<
     Record<string, { id: string; name: string; rating: number; reviewsCount: number }>
   >({});
@@ -365,24 +369,24 @@ export default function DashboardPage() {
     };
   }, [upcomingRides, driverProfiles]);
 
-  // Cancel an upcoming ride and remove it from the Ride Status list.
-  async function handleCancelRide(ride: {
+  // Open the rider cancellation modal from the confirmation card.
+  function handleCancelRideClick(ride: {
     id: string;
     status: "OPEN" | "MATCHED";
   }) {
     setCancelError("");
-    const confirmMessage =
-      ride.status === "MATCHED"
-        ? 'Are you sure you want to cancel?\n\nYou\'ll be charged 50% of the transaction.' // if MATCHED
-        : "Are you sure you want to cancel?"; // if OPEN
+    setCancelModalRide(ride);
+  }
 
-    if (!confirm(confirmMessage)) return;
-
-    setCancelingRideId(ride.id);
+  // Confirm cancellation from the inline modal and remove from Upcoming.
+  async function handleCancelRideConfirm() {
+    if (!cancelModalRide) return;
+``
+    setCancelingRideId(cancelModalRide.id);
     try {
       // Call the API route that updates the ride status to CANCEL in the database.
       const sessionToken = localStorage.getItem("sessionToken");
-      const res = await fetch("/api/requests/cancel", {
+      const res = await fetch("/api/requests/rider-cancel", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -390,14 +394,17 @@ export default function DashboardPage() {
             ? { Authorization: `Bearer ${sessionToken}` }
             : {}),
         },
-        body: JSON.stringify({ requestId: ride.id }),
+        body: JSON.stringify({ requestId: cancelModalRide.id }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(body?.error || "Failed to cancel ride.");
       }
       // updates the Upcoming Rides list to exclude the canceled ride
-      setUpcomingRides((prev) => prev.filter((item) => item.id !== ride.id));
+      setUpcomingRides((prev) =>
+        prev.filter((item) => item.id !== cancelModalRide.id)
+      );
+      setCancelModalRide(null);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to cancel ride.";
@@ -455,6 +462,39 @@ export default function DashboardPage() {
     <main
       className={`min-h-screen bg-[#f4ecdf] bg-[radial-gradient(circle_at_top,_#f9f2e8,_#f4ecdf_60%)] ${bodyFont.className}`}
     >
+      {cancelModalRide ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
+          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+            <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+              Are you sure you want to cancel?
+            </h2>
+            {cancelModalRide.status === "MATCHED" ? (
+              <p className="mt-3 text-sm text-[#6b5f52]">
+                You&apos;ll be charged 50% of the transaction.
+              </p>
+            ) : null}
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setCancelModalRide(null)}
+                className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelRideConfirm}
+                disabled={cancelingRideId === cancelModalRide.id}
+                className="rounded-full border border-[#b35656] bg-[#b35656] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#a54c4c] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {cancelingRideId === cancelModalRide.id
+                  ? "Canceling..."
+                  : "Cancel Ride"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {showDriverModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
           <div className="relative w-full max-w-xl rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-8 text-center shadow-[0_20px_50px_rgba(10,27,63,0.35)]">
@@ -745,7 +785,7 @@ export default function DashboardPage() {
                   <div className="mt-4">
                     <button
                       type="button"
-                      onClick={() => handleCancelRide(ride)}
+                      onClick={() => handleCancelRideClick(ride)}
                           disabled={cancelingRideId === ride.id}
                           className="rounded-full border border-[#b35656] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b35656] transition hover:bg-[#f7e9e7] disabled:cursor-not-allowed disabled:opacity-70"
                         >

@@ -6,7 +6,7 @@ import { RequestStatus } from "@prisma/client";
 // Defines the statuses for which a rider can cancel
 const RIDER_CANCELABLE_STATUSES: RequestStatus[] = ["OPEN", "MATCHED", "EXPIRED"] as const;
 
-// POST /api/requests/cancel - cancel a rider request if it's still rider-cancelable.
+// POST /api/requests/rider-cancel - cancel a rider request if it's still rider-cancelable.
 export async function POST(request: NextRequest) {
   try {
     // Ensures user is signed into a valid session

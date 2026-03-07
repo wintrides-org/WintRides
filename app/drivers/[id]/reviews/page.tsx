@@ -86,7 +86,7 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
   const canceledRidePercentage =
     acceptedRidesCount === 0
       ? 0
-      : (canceledRidesCount / acceptedRidesCount) * 100;
+      : (canceledRidesCount /(acceptedRidesCount + canceledRidesCount)) * 100;
 
   return (
     <main className="min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f]">
@@ -116,7 +116,7 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
               <p className="text-sm font-semibold text-[#0a3570]">Overall rating</p>
               <p className="mt-1 text-xs text-[#6b5f52]">{summary.count} reviews</p>
               <p className="mt-2 text-xs text-[#6b5f52]">
-                Canceled rides: {canceledRidesCount} ({canceledRidePercentage.toFixed(1)}% of accepted rides)
+                Canceled rides: {canceledRidesCount} ({canceledRidePercentage.toFixed(1)}% of all rides)
               </p>
             </div>
             <div className="flex items-center gap-2 text-[#f0b429]">

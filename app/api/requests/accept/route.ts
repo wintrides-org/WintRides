@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // keeps track of the number of rides accepted by the driver
     await prisma.driverInfo.update({
       where: { userId: user.id },
       data: {

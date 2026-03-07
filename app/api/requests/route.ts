@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Query ride requests with status filters and optional driver/rider scoping, sorted by pickup time, selecting fields for the UI.
+    // sorts (prioritizes) ride placements based on its update and pickup time
     const orderBy =
       statusFilters.includes("OPEN") && !driverId && !riderId
         ? { updatedAt: "desc" as const }

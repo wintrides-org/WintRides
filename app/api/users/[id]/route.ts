@@ -33,7 +33,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // MVP: Use static rating + ridesCompleted as a stand-in for review count.
+    // Temporary: Use ridesCompleted and a static rating to represent "review count"
     return NextResponse.json(
       {
         user: {
