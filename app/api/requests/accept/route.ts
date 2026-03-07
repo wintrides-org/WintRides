@@ -100,6 +100,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await prisma.driverInfo.update({
+      where: { userId: user.id },
+      data: {
+        acceptedRidesCount: {
+          increment: 1,
+        },
+      },
+    });
+
     // creates a new row in the "Notification" table on the database
     await prisma.notification.create({
       data: {

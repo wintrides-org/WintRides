@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type StoredReview = {
@@ -30,7 +29,8 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
   const router = useRouter();
   const driverId = params.id;
   const [driverName, setDriverName] = useState<string>("Driver");
-  const [reviews, setReviews] = useState<StoredReview[]>([]);
+  const [acceptedRidesCount, setAcceptedRidesCount] = useState(0);
+  const [canceledRidesCount, setCanceledRidesCount] = useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -50,10 +50,14 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
         const data = await res.json().catch(() => null);
         if (!ignore) {
           setDriverName(data?.user?.name || "Driver");
+          setAcceptedRidesCount(data?.user?.acceptedRidesCount || 0);
+          setCanceledRidesCount(data?.user?.canceledRidesCount || 0);
         }
       } catch {
         if (!ignore) {
           setDriverName("Driver");
+          setAcceptedRidesCount(0);
+          setCanceledRidesCount(0);
         }
       }
     }
@@ -65,11 +69,10 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
     };
   }, [driverId]);
 
-  useEffect(() => {
-    // Load and filter reviews for this driver only.
-    const all = loadReviews();
-    setReviews(all.filter((review) => review.driverId === driverId));
-  }, [driverId]);
+  const reviews = useMemo(
+    () => loadReviews().filter((review) => review.driverId === driverId),
+    [driverId]
+  );
 
   const summary = useMemo(() => {
     // Compute average rating and review count for the header card.
@@ -79,6 +82,11 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
     const total = reviews.reduce((sum, review) => sum + review.rating, 0);
     return { average: total / reviews.length, count: reviews.length };
   }, [reviews]);
+
+  const canceledRidePercentage =
+    acceptedRidesCount === 0
+      ? 0
+      : (canceledRidesCount / acceptedRidesCount) * 100;
 
   return (
     <main className="min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f]">
@@ -107,6 +115,9 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
             <div>
               <p className="text-sm font-semibold text-[#0a3570]">Overall rating</p>
               <p className="mt-1 text-xs text-[#6b5f52]">{summary.count} reviews</p>
+              <p className="mt-2 text-xs text-[#6b5f52]">
+                Canceled rides: {canceledRidesCount} ({canceledRidePercentage.toFixed(1)}% of accepted rides)
+              </p>
             </div>
             <div className="flex items-center gap-2 text-[#f0b429]">
               {Array.from({ length: 5 }).map((_, index) => (

@@ -41,6 +41,8 @@ export async function GET(
           name: user.userName || "Driver",
           rating: 4.9,
           reviewsCount: user.ridesCompleted ?? 0,
+          acceptedRidesCount: user.driverInfo?.acceptedRidesCount ?? 0,
+          canceledRidesCount: user.driverInfo?.canceledRidesCount ?? 0,
         },
       },
       { status: 200 }

@@ -67,6 +67,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Query ride requests with status filters and optional driver/rider scoping, sorted by pickup time, selecting fields for the UI.
+    const orderBy =
+      statusFilters.includes("OPEN") && !driverId && !riderId
+        ? { updatedAt: "desc" as const }
+        : { pickupAt: "asc" as const };
+
     const requests = await prisma.rideRequest.findMany({
       where: {
         status:
@@ -76,7 +81,7 @@ export async function GET(request: NextRequest) {
         ...(driverId ? { acceptedDriverId: driverId } : {}),
         ...(riderId ? { riderId } : {}),
       },
-      orderBy: { pickupAt: "asc" },
+      orderBy,
       select: {
         id: true,
         status: true,
@@ -88,6 +93,8 @@ export async function GET(request: NextRequest) {
         carsNeeded: true,
         acceptedDriverId: true,
         matchedAt: true,
+        canceledAt: true,
+        driverCancelReason: true,
       },
     });
 

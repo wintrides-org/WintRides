@@ -115,17 +115,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // MVP placeholder for the driver ping required by the cancellation spec when canceling a matched ride.
-    if (previousStatus === "MATCHED" && existingRequest.acceptedDriverId) {
-      await prisma.notification.create({
-        data: {
-          userId: existingRequest.acceptedDriverId,
-          type: "RIDE_CANCELED",
-          message: `Ride to ${existingRequest.dropoffLabel} has been CANCELED.`,
-          rideRequestId: existingRequest.id,
-        },
-      });
-    }
 
     return NextResponse.json(
       {
