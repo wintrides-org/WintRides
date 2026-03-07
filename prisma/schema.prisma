@@ -53,6 +53,8 @@ model User {
   notifications       Notification[]
   carpoolParticipants CarpoolParticipant[]
   carpoolMessages     CarpoolMessage[]
+  stripeConnectedAccount StripeConnectedAccount?
+  stripeProductsCreated  StripeProductMapping[]
 }
 
 model DriverInfo {
@@ -190,4 +192,31 @@ model CarpoolMessage {
 
   @@index([carpoolId])
   @@index([createdAt])
+}
+
+model StripeConnectedAccount {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  stripeAccountId String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products StripeProductMapping[]
+}
+
+model StripeProductMapping {
+  id                 String   @id @default(uuid())
+  stripeProductId    String   @unique
+  stripePriceId      String
+  connectedAccountId String
+  createdByUserId    String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  connectedAccount StripeConnectedAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Cascade)
+  createdByUser    User                   @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([connectedAccountId])
+  @@index([createdByUserId])
 }
