@@ -55,6 +55,8 @@ model User {
   carpoolMessages     CarpoolMessage[]
   stripeConnectedAccount StripeConnectedAccount?
   stripeProductsCreated  StripeProductMapping[]
+  reviewsWritten        DriverReview[]         @relation("ReviewsWritten")
+  reviewsReceived       DriverReview[]         @relation("ReviewsReceived")
 }
 
 model DriverInfo {
@@ -63,6 +65,9 @@ model DriverInfo {
   legalName              String
   acceptedRidesCount     Int      @default(0)
   canceledRidesCount     Int      @default(0)
+  ratingCount            Int      @default(0)
+  ratingSum              Int      @default(0)
+  averageRating          Float    @default(0)
   licenseNumber          String?
   issuingState           String?
   licenseExpirationDate  String?
@@ -127,11 +132,13 @@ model RideRequest {
   pickupAt      DateTime
   carsNeeded    Int
   matchedAt     DateTime?
+  completedAt   DateTime?
   canceledAt    DateTime?
   canceledBy    String?
   driverCancelReason String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  driverReview  DriverReview?
 
   @@index([status])
   @@index([pickupAt])
@@ -222,4 +229,23 @@ model StripeProductMapping {
 
   @@index([connectedAccountId])
   @@index([createdByUserId])
+}
+
+model DriverReview {
+  id            String   @id @default(uuid())
+  rideRequestId String   @unique
+  riderId       String
+  driverId      String
+  stars         Int
+  reviewText    String?
+  isVisible     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rideRequest RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  rider       User        @relation("ReviewsWritten", fields: [riderId], references: [id], onDelete: Cascade)
+  driver      User        @relation("ReviewsReceived", fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, createdAt])
+  @@index([riderId, createdAt])
 }

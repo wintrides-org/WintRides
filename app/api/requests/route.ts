@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
         carsNeeded: true,
         acceptedDriverId: true,
         matchedAt: true,
+        completedAt: true,
         canceledAt: true,
         driverCancelReason: true,
       },

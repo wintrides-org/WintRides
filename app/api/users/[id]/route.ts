@@ -33,14 +33,16 @@ export async function GET(
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // MVP: Use static rating + ridesCompleted as a stand-in for review count.
+    const rating = user.driverInfo?.averageRating ?? 0;
+    const reviewsCount = user.driverInfo?.ratingCount ?? 0;
+
     return NextResponse.json(
       {
         user: {
           id: user.id,
           name: user.userName || "Driver",
-          rating: 4.9,
-          reviewsCount: user.ridesCompleted ?? 0,
+          rating,
+          reviewsCount,
           acceptedRidesCount: user.driverInfo?.acceptedRidesCount ?? 0,
           canceledRidesCount: user.driverInfo?.canceledRidesCount ?? 0,
         },

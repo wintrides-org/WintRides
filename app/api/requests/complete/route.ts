@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const now = new Date();
+
     const updated = await prisma.rideRequest.updateMany({
       where: {
         id: body.requestId,
@@ -24,6 +26,7 @@ export async function POST(request: NextRequest) {
       },
       data: {
         status: "COMPLETED",
+        completedAt: now,
       },
     });
 
