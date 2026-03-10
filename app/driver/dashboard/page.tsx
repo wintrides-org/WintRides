@@ -603,12 +603,20 @@ export default function DriverDashboardPage() {
                 <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
                   You earned $320 in the past week
                 </p>
-                <Link
-                  href="/in-progress"
-                  className="rounded-full bg-[#9aa7b9] px-6 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
-                >
-                  View My Insights
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/driver/connect"
+                    className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
+                  >
+                    Connect payouts
+                  </Link>
+                  <Link
+                    href="/driver/connect/products"
+                    className="rounded-full bg-[#9aa7b9] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
+                  >
+                    Manage products
+                  </Link>
+                </div>
               </div>
 
             {/* Collapsible list of new/open ride requests. */}

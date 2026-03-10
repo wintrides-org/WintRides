@@ -1,87 +1,77 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type StoredReview = {
+type ApiReview = {
   id: string;
-  driverId: string;
-  riderId?: string;
-  rideRequestId?: string;
-  rating: number;
-  text: string;
+  stars: number;
+  reviewText: string | null;
   createdAt: string;
 };
-
-// Read reviews from localStorage for MVP storage.
-function loadReviews(): StoredReview[] {
-  try {
-    const stored = localStorage.getItem("driverReviews");
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? (parsed as StoredReview[]) : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function DriverReviewsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const driverId = params.id;
+
   const [driverName, setDriverName] = useState<string>("Driver");
   const [acceptedRidesCount, setAcceptedRidesCount] = useState(0);
   const [canceledRidesCount, setCanceledRidesCount] = useState(0);
 
+  const [averageRating, setAverageRating] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [reviews, setReviews] = useState<ApiReview[]>([]);
+
   useEffect(() => {
     let ignore = false;
 
-    // Fetch the driver's display name for the review header.
-    async function fetchDriver() {
+    async function fetchDriverAndReviews() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
-        const res = await fetch(`/api/users/${driverId}`, {
-          headers: sessionToken
-            ? {
-                Authorization: `Bearer ${sessionToken}`,
-              }
-            : {},
-        });
-        if (!res.ok) return;
-        const data = await res.json().catch(() => null);
-        if (!ignore) {
+
+        // We fetch profile metadata and public reviews together to reduce UI wait time.
+        const [driverRes, reviewsRes] = await Promise.all([
+          fetch(`/api/users/${driverId}`, {
+            headers: sessionToken
+              ? {
+                  Authorization: `Bearer ${sessionToken}`,
+                }
+              : {},
+          }),
+          fetch(`/api/drivers/${driverId}/reviews`),
+        ]);
+
+        if (!ignore && driverRes.ok) {
+          const data = await driverRes.json().catch(() => null);
           setDriverName(data?.user?.name || "Driver");
           setAcceptedRidesCount(data?.user?.acceptedRidesCount || 0);
           setCanceledRidesCount(data?.user?.canceledRidesCount || 0);
+        }
+
+        if (!ignore && reviewsRes.ok) {
+          const data = await reviewsRes.json().catch(() => null);
+          setAverageRating(Number(data?.summary?.averageRating || 0));
+          setRatingCount(Number(data?.summary?.ratingCount || 0));
+          setReviews(Array.isArray(data?.reviews) ? data.reviews : []);
         }
       } catch {
         if (!ignore) {
           setDriverName("Driver");
           setAcceptedRidesCount(0);
           setCanceledRidesCount(0);
+          setAverageRating(0);
+          setRatingCount(0);
+          setReviews([]);
         }
       }
     }
 
-    fetchDriver();
+    fetchDriverAndReviews();
 
     return () => {
       ignore = true;
     };
   }, [driverId]);
-
-  const reviews = useMemo(
-    () => loadReviews().filter((review) => review.driverId === driverId),
-    [driverId]
-  );
-
-  const summary = useMemo(() => {
-    // Compute average rating and review count for the header card.
-    if (reviews.length === 0) {
-      return { average: 0, count: 0 };
-    }
-    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return { average: total / reviews.length, count: reviews.length };
-  }, [reviews]);
 
   const canceledRidePercentage =
     acceptedRidesCount === 0
@@ -114,7 +104,7 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-[#0a3570]">Overall rating</p>
-              <p className="mt-1 text-xs text-[#6b5f52]">{summary.count} reviews</p>
+              <p className="mt-1 text-xs text-[#6b5f52]">{ratingCount} reviews</p>
               <p className="mt-2 text-xs text-[#6b5f52]">
                 Canceled rides: {canceledRidesCount} ({canceledRidePercentage.toFixed(1)}% of all rides)
               </p>
@@ -131,7 +121,8 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
                 </svg>
               ))}
               <span className="text-sm font-semibold text-[#0a3570]">
-                {summary.count === 0 ? "No ratings yet" : summary.average.toFixed(1)}
+                {/* Product decision: no ratings => show "New driver". */}
+                {ratingCount === 0 ? "New driver" : averageRating.toFixed(1)}
               </span>
             </div>
           </div>
@@ -151,7 +142,7 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-[#f0b429]">
-                  {Array.from({ length: review.rating }).map((_, index) => (
+                  {Array.from({ length: review.stars }).map((_, index) => (
                     <svg
                       key={`review-${review.id}-star-${index}`}
                       viewBox="0 0 24 24"
@@ -166,7 +157,9 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
                   {new Date(review.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <p className="mt-3 text-sm text-[#0a1b3f]">{review.text}</p>
+              {review.reviewText ? (
+                <p className="mt-3 text-sm text-[#0a1b3f]">{review.reviewText}</p>
+              ) : null}
             </div>
           ))}
         </section>
