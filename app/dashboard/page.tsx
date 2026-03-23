@@ -1019,28 +1019,6 @@ export default function DashboardPage() {
         </h2>
 
         <div className="mt-10 grid gap-10">
-          {/* Demo Stripe Connect entry points for rider checkout + driver onboarding. */}
-          <section className="rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
-            <h3 className="text-lg font-semibold text-[#0a3570]">Payments demo</h3>
-            <p className="mt-2 text-sm text-[#6b5f52]">
-              Try the sample Connect storefront flow where riders pay and drivers receive transfers.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href="/storefront"
-                className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
-              >
-                Open rider storefront
-              </Link>
-              <Link
-                href="/driver/connect"
-                className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
-              >
-                Driver payout onboarding
-              </Link>
-            </div>
-          </section>
-
           {/* Request a ride row */}
           <div className="grid gap-6 md:grid-cols-[220px_auto] md:items-center">
             <RequestButton
