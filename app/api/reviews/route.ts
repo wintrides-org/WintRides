@@ -127,6 +127,8 @@ export async function POST(request: NextRequest) {
     try {
       // 4) Write review + update driver rating aggregates in one transaction
       //    so the summary always matches raw reviews.
+      //    The same transaction also creates a notification for the driver,
+      //    which lets the driver dashboard alert feed show the new review.
       const created = await prisma.$transaction(async (tx) => {
         const review = await tx.driverReview.create({
           data: {
@@ -159,6 +161,15 @@ export async function POST(request: NextRequest) {
             ratingCount: nextRatingCount,
             ratingSum: nextRatingSum,
             averageRating: nextAverageRating,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: ride.acceptedDriverId as string,
+            type: "REVIEW_RECEIVED",
+            message: `A rider left you a ${stars}-star review.`,
+            rideRequestId: ride.id,
           },
         });
 

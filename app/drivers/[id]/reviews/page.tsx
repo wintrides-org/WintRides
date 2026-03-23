@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Playfair_Display, Work_Sans } from "next/font/google";
+
+// Match the rider dashboard typography so the review flow feels consistent.
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 type ApiReview = {
   id: string;
@@ -10,9 +22,10 @@ type ApiReview = {
   createdAt: string;
 };
 
-export default function DriverReviewsPage({ params }: { params: { id: string } }) {
+export default function DriverReviewsPage() {
   const router = useRouter();
-  const driverId = params.id;
+  const routeParams = useParams<{ id: string }>();
+  const driverId = routeParams.id;
 
   const [driverName, setDriverName] = useState<string>("Driver");
   const [acceptedRidesCount, setAcceptedRidesCount] = useState(0);
@@ -24,7 +37,10 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
 
   useEffect(() => {
     let ignore = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
+    // Poll for fresh reviews so a driver can see new reviews appear without
+    // manually refreshing the page after a rider submits one.
     async function fetchDriverAndReviews() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
@@ -67,9 +83,24 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
     }
 
     fetchDriverAndReviews();
+    interval = setInterval(fetchDriverAndReviews, 15000);
+
+    function handleFocus() {
+      if (document.visibilityState === "visible") {
+        fetchDriverAndReviews();
+      }
+    }
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
 
     return () => {
       ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, [driverId]);
 
@@ -79,14 +110,18 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
       : (canceledRidesCount /(acceptedRidesCount + canceledRidesCount)) * 100;
 
   return (
-    <main className="min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f]">
+    <main
+      className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
+    >
       <div className="mx-auto w-full max-w-4xl">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
               Driver
             </p>
-            <h1 className="mt-2 text-3xl font-semibold">{driverName}</h1>
+            <h1 className={`${displayFont.className} mt-2 text-3xl text-[#0a3570]`}>
+              {driverName}
+            </h1>
             <p className="mt-2 text-sm text-[#6b5f52]">
               Ratings and reviews from riders.
             </p>
@@ -109,22 +144,27 @@ export default function DriverReviewsPage({ params }: { params: { id: string } }
                 Canceled rides: {canceledRidesCount} ({canceledRidePercentage.toFixed(1)}% of all rides)
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[#f0b429]">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <svg
-                  key={`review-star-${index}`}
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="currentColor"
-                >
-                  <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
-                </svg>
-              ))}
+            {ratingCount === 0 ? (
               <span className="text-sm font-semibold text-[#0a3570]">
-                {/* Product decision: no ratings => show "New driver". */}
-                {ratingCount === 0 ? "New driver" : averageRating.toFixed(1)}
+                (no rating yet)
               </span>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2 text-[#f0b429]">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <svg
+                    key={`review-star-${index}`}
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="currentColor"
+                  >
+                    <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
+                  </svg>
+                ))}
+                <span className="text-sm font-semibold text-[#0a3570]">
+                  {averageRating.toFixed(1)}
+                </span>
+              </div>
+            )}
           </div>
         </section>
 

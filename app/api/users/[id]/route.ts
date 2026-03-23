@@ -4,9 +4,10 @@ import { getSession, getUserById } from "@/lib/mockUsers";
 // GET /api/users/:id - fetch minimal user profile details for rider confirmation cards.
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: userId } = await params;
     // Require an authenticated session to read user profile details.
     const sessionToken =
       request.cookies.get("sessionToken")?.value ||
@@ -28,7 +29,7 @@ export async function GET(
     }
 
     // Fetch the requested user to build a lightweight profile for the rider view.
-    const user = await getUserById(params.id);
+    const user = await getUserById(userId);
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }

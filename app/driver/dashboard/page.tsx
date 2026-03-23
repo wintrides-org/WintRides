@@ -63,11 +63,17 @@ const confettiPieces = [
 // determines how long a confirmation card should persist for after the ride is canceled by the driver 
 const CANCELED_CARD_VISIBILITY_MS = 30 * 60 * 1000;
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export default function DriverDashboardPage() {
   // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
   const [driverUserName, setDriverUserName] = useState<string>("");
   const [driverName, setDriverName] = useState<string>("");
+  const [driverRating, setDriverRating] = useState(0);
+  const [driverReviewsCount, setDriverReviewsCount] = useState(0);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isAvailabilityUpdating, setIsAvailabilityUpdating] = useState(false);
   const [availabilityError, setAvailabilityError] = useState("");
@@ -127,16 +133,40 @@ export default function DriverDashboardPage() {
         const data = await res.json();
         if (!ignore) {
           // Store driver ID to use in later API calls.
-          setDriverId(data?.user?.id || "");
+          const nextDriverId = data?.user?.id || "";
+          setDriverId(nextDriverId);
           setDriverUserName(data?.user?.userName || "");
           setDriverName(data?.user?.driverLegalName || "");
           // Seed availability from the server so UI matches persisted state.
           setIsAvailable(Boolean(data?.user?.isDriverAvailable));
+
+          // Load the driver's own public rating summary for the profile card.
+          if (nextDriverId) {
+            try {
+              const profileRes = await fetch(`/api/users/${nextDriverId}`, {
+                headers: sessionToken
+                  ? {
+                      Authorization: `Bearer ${sessionToken}`,
+                    }
+                  : {},
+              });
+              if (profileRes.ok) {
+                const profileData = await profileRes.json().catch(() => null);
+                setDriverRating(Number(profileData?.user?.rating || 0));
+                setDriverReviewsCount(Number(profileData?.user?.reviewsCount || 0));
+              }
+            } catch {
+              setDriverRating(0);
+              setDriverReviewsCount(0);
+            }
+          }
         }
       } catch {
         if (!ignore) {
           setDriverId("");
           setDriverUserName("");
+          setDriverRating(0);
+          setDriverReviewsCount(0);
           setIsAvailable(false);
         }
       }
@@ -316,8 +346,8 @@ export default function DriverDashboardPage() {
       // Remove accepted request from the open list and show confirmation.
       setOpenRequests((prev) => prev.filter((req) => req.id !== requestId));
       setConfirmCard("Request accepted and moved to Upcoming Rides.");
-    } catch (err: any) {
-      setConfirmCard(err?.message || "Failed to accept request.");
+    } catch (err: unknown) {
+      setConfirmCard(getErrorMessage(err, "Failed to accept request."));
     } finally {
       setAcceptingId(null);
     }
@@ -354,8 +384,8 @@ export default function DriverDashboardPage() {
 
       // Sync UI with persisted availability state.
       setIsAvailable(Boolean(body?.user?.isDriverAvailable));
-    } catch (err: any) {
-      setAvailabilityError(err?.message || "Failed to update availability.");
+    } catch (err: unknown) {
+      setAvailabilityError(getErrorMessage(err, "Failed to update availability."));
     } finally {
       setIsAvailabilityUpdating(false);
     }
@@ -490,19 +520,30 @@ export default function DriverDashboardPage() {
               <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
                 {driverName || "Driver"}
               </h2>
-              <div className="mt-3 flex items-center justify-center gap-1 text-[#f0b429]">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <svg
-                    key={`star-${index}`}
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4"
-                    fill="currentColor"
-                  >
-                    <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="mt-2 text-sm text-[#6b5f52]">Ratings & reviews</p>
+              {driverReviewsCount === 0 ? (
+                <p className="mt-3 text-sm font-semibold text-[#0a3570]">
+                  (no rating yet)
+                </p>
+              ) : (
+                <div className="mt-3 flex items-center justify-center gap-2 text-[#f0b429]">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <svg
+                      key={`star-${index}`}
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="currentColor"
+                    >
+                      <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
+                    </svg>
+                  ))}
+                  <span className="text-sm font-semibold text-[#0a3570]">
+                    {driverRating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              <p className="mt-2 text-sm text-[#6b5f52]">
+                Ratings & reviews{driverReviewsCount > 0 ? ` (${driverReviewsCount})` : ""}
+              </p>
               <Link
                 href={driverId ? `/drivers/${driverId}/reviews` : "/in-progress"}
                 className="mt-4 inline-flex rounded-full bg-[#9aa7b9] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
