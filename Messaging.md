@@ -1,3 +1,81 @@
+## Updated Carpool Flow
+
+WintRides carpool remains one feature, but it now has two subflows:
+
+- `RIDER` carpool
+- `DRIVER` carpool
+
+### Carpool Type Selection
+
+When a user clicks `Create Carpool Request`:
+
+- If the user has driver capability, show an inline modal asking:
+  - `Who are you requesting this carpool AS?`
+    - `Driver on the request`
+      - Subtext: `I'm a driver who wants to find riders to hop on my ride to XXX`
+    - `Rider on request`
+    - Subtext: `I am a rider who wants to find other riders to carpool with`
+- If the user does not have driver capability, the backend should automatically set `carpoolType = RIDER`.
+
+This means all carpool threads should carry a `carpoolType` field.
+
+### Shared Rules Across Both Carpool Types
+
+- Carpool remains one flow with two subflows, not two separate features.
+- The coordination chat remains after lock.
+- `targetGroupSize` represents rider seats only.
+- Confirmed riders are the riders counted toward the eventual ride payload.
+- Only the creator can lock the carpool.
+
+### Rider Carpool Subflow
+
+This follows the traditional carpool structure already used in WintRides.
+
+The main difference is what happens when the creator clicks `Lock`:
+
+- The app does not automatically create a ride request.
+- Instead, the creator is taken into the normal request flow.
+- The request form should be pre-populated from the carpool details so the creator does not repeat work.
+- The ride request is only created if the creator then clicks `Submit Request`.
+
+For the resulting ride:
+
+- The ride should represent the whole confirmed rider group, not just the creator.
+- All confirmed riders from the carpool should see the resulting ride status on their dashboards.
+
+### Driver Carpool Subflow
+
+This is the new addition.
+
+Goal:
+
+- Allow a driver to create a carpool request when they are already planning to drive to a destination and want riders to join them.
+
+How it works:
+
+- Only users with driver capability can create a `DRIVER` carpool.
+- The driver fills out the same carpool structure, but the thread is marked with `carpoolType = DRIVER`.
+
+If the creator locks a `DRIVER` carpool:
+
+- The app automatically creates a ride request from the carpool details.
+- `partySize` should equal confirmed riders only.
+- The normal accept flow is bypassed.
+- The driver who created the carpool is treated as the matched driver immediately.
+- The resulting ride should show up in the usual dashboard/status surfaces for the driver and all participating riders.
+
+### High-Level Product Consequence
+
+The current single-rider ride-request model is no longer enough for carpool-linked rides.
+
+Carpool-originated rides now need:
+
+- one ride to represent a full confirmed group
+- shared ride visibility across all participating riders
+- persistent linkage between the ride and its original carpool thread
+
+## Original Carpool Flow
+
 Big picture: 
 App is a closed ecosystem by campus
 Messaging Platform: After users are in the system, they have two main messaging spaces—one for group ride planning and one for on-the-fly requests.
@@ -242,6 +320,4 @@ Drivers respond
 Rider selects driver
 Create DM with pinned request details
 Close/expire requests cleanly
-
-
 

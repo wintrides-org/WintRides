@@ -3,6 +3,7 @@ import type { Location, RequestType } from "@/types/request";
 export type QuoteInput = {
   type: RequestType;
   partySize: number;
+  bookedForSelf?: boolean;
   pickup: Location | string;
   dropoff: Location | string;
   pickupNotes?: string;
@@ -13,6 +14,7 @@ export type QuoteInput = {
 export type NormalizedRequest = {
   type: RequestType;
   partySize: number;
+  bookedForSelf: boolean;
   pickup: Location;
   dropoff: Location;
   pickupNotes?: string;
@@ -147,6 +149,7 @@ export function buildQuote(
     data: {
       type: input.type,
       partySize: input.partySize,
+      bookedForSelf: input.bookedForSelf !== false,
       pickup: pickupResult.location as Location,
       dropoff: dropoffResult.location as Location,
       pickupNotes: input.pickupNotes?.trim() || undefined,

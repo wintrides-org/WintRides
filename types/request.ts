@@ -36,6 +36,7 @@ export interface RideRequest {
     id: string;
     riderId: string;
     acceptedDriverId?: string;
+    bookedForSelf: boolean;
 
     // Request lifecycle metadata.
     type: RequestType;

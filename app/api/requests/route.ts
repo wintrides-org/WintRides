@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
         : { pickupAt: "asc" as const };
 
     const requests = await prisma.rideRequest.findMany({
+      // for record with properties that match propeties in "where"
       where: {
         status:
           statusFilters.length > 1
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
         ...(riderId ? { riderId } : {}),
       },
       orderBy,
+      // gets and returns the following fields
       select: {
         id: true,
         status: true,
@@ -93,6 +95,8 @@ export async function GET(request: NextRequest) {
         carsNeeded: true,
         acceptedDriverId: true,
         matchedAt: true,
+        driverLocationSharingStartedAt: true,
+        driverLocationLastSharedAt: true,
         completedAt: true,
         canceledAt: true,
         driverCancelReason: true,

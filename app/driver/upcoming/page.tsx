@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
@@ -21,6 +21,8 @@ type RideRequestRow = {
   pickupAt: string;
   partySize: number;
   carsNeeded: number;
+  driverLocationSharingStartedAt?: string | null;
+  driverLocationLastSharedAt?: string | null;
 };
 
 const displayFont = Playfair_Display({
@@ -35,6 +37,7 @@ const bodyFont = Work_Sans({
 
 export default function DriverUpcomingPage() {
   const MIN_CANCEL_REASON_LENGTH = 15;
+  const LOCATION_SEND_INTERVAL_MS = 10_000;
   // Driver/session info and upcoming rides state.
   const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
@@ -46,6 +49,23 @@ export default function DriverUpcomingPage() {
   const [cancelNotice, setCancelNotice] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [cancelModalRequest, setCancelModalRequest] = useState<RideRequestRow | null>(null);
+  const [gpsPromptRequest, setGpsPromptRequest] = useState<RideRequestRow | null>(null);
+  const [sharingLocationId, setSharingLocationId] = useState<string | null>(null);
+  const [activeLocationRideId, setActiveLocationRideId] = useState<string | null>(null);
+  const [locationNotice, setLocationNotice] = useState("");
+  const [locationError, setLocationError] = useState("");
+  const locationWatchIdRef = useRef<number | null>(null);
+  const lastLocationPostAtRef = useRef<number>(0);
+  const lastLocationRequestIdRef = useRef<string | null>(null);
+
+  function clearDriverLocationWatch() {
+    if (locationWatchIdRef.current !== null && typeof window !== "undefined") {
+      window.navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      locationWatchIdRef.current = null;
+    }
+    setSharingLocationId(null);
+    setActiveLocationRideId(null);
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -79,6 +99,8 @@ export default function DriverUpcomingPage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => clearDriverLocationWatch, []);
 
   useEffect(() => {
     let ignore = false;
@@ -206,6 +228,97 @@ export default function DriverUpcomingPage() {
     }
   }
 
+  // function to get the driver's location
+  async function postDriverLocation(requestId: string, position: GeolocationPosition) {
+    const now = Date.now();
+    const isSameRideAsLastPost = lastLocationRequestIdRef.current === requestId;
+    if (isSameRideAsLastPost && now - lastLocationPostAtRef.current < LOCATION_SEND_INTERVAL_MS) {
+      return;
+    }
+
+    // fetch the location of the driver using api/requests/driver-location
+    const sessionToken = localStorage.getItem("sessionToken");
+    const res = await fetch("/api/requests/driver-location", { 
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+      },
+      body: JSON.stringify({
+        requestId,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyMeters: position.coords.accuracy, // margin of error
+      }),
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body?.error || "Failed to share location.");
+    }
+    // update timestamp if location posting was successful
+    lastLocationPostAtRef.current = now;
+    lastLocationRequestIdRef.current = requestId;
+
+    // updates ride request with driverLocation sharing status
+    setRequests((prev) =>
+      prev.map((request) =>
+        request.id === requestId
+          ? {
+              ...request,
+              driverLocationSharingStartedAt:
+                request.driverLocationSharingStartedAt || new Date().toISOString(),
+              driverLocationLastSharedAt: new Date().toISOString(),
+            }
+          : request
+      )
+    );
+  }
+
+  // handles tracking of driver's location from browser
+  function handleStartDriverGps(request: RideRequestRow) {
+    setLocationError("");
+    setLocationNotice("");
+
+    // checks .navigator property for geolocation feature
+    if (!("geolocation" in navigator)) {
+      setLocationError("This browser does not support device geolocation.");
+      setGpsPromptRequest(null);
+      return;
+    }
+
+    clearDriverLocationWatch();
+    setSharingLocationId(request.id);
+    setActiveLocationRideId(request.id);
+    setGpsPromptRequest(null);
+
+    // gets the position (from postDriverLocation()) of the driver and stores in watchId 
+    const watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        try {
+          await postDriverLocation(request.id, position);
+          setLocationNotice("Driver GPS sharing is live for this trip.");
+          setLocationError("");
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to share location.";
+          setLocationError(message);
+        }
+      },
+      (geoError) => {
+        setLocationError(geoError.message || "Unable to access your location.");
+        clearDriverLocationWatch();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 5000,
+      }
+    );
+
+    locationWatchIdRef.current = watchId;
+  }
+
   return (
     <main
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
@@ -287,9 +400,52 @@ export default function DriverUpcomingPage() {
               </div>
             </div>
           ) : null}
+          {gpsPromptRequest ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+              <div className="w-full max-w-2xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+                <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+                  Turn on driver GPS sharing?
+                </h2>
+                <p className="mt-3 text-sm text-[#6b5f52]">
+                  Your GPS location is shared with WintRides. Driver location is
+                  required on every trip for rider safety.
+                </p>
+                <p className="mt-3 text-sm text-[#6b5f52]">
+                  Sharing starts only for this matched ride and updates while this
+                  page remains open.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setGpsPromptRequest(null)}
+                    className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+                  >
+                    Not Now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStartDriverGps(gpsPromptRequest)}
+                    className="rounded-full border border-[#0a3570] bg-[#0a3570] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#092a59]"
+                  >
+                    Share My Location
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {cancelNotice ? (
             <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4 text-center">
               <p className="text-sm text-[#0a3570]">{cancelNotice}</p>
+            </div>
+          ) : null}
+          {locationNotice ? (
+            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4 text-center">
+              <p className="text-sm text-[#0a3570]">{locationNotice}</p>
+            </div>
+          ) : null}
+          {locationError ? (
+            <div className="rounded-2xl border border-[#b42318] bg-[#fff5f4] p-4 text-center">
+              <p className="text-sm text-[#b42318]">{locationError}</p>
             </div>
           ) : null}
           {completeNotice ? (
@@ -398,7 +554,38 @@ export default function DriverUpcomingPage() {
                       <span className="font-semibold">Pay:</span> ${request.pay}
                     </span>
                   </div>
+                  <div className="mt-3 rounded-2xl border border-[#d8d1cb] bg-white/70 p-3 text-sm text-[#6b5f52]">
+                    <p className="font-semibold text-[#0a3570]">Driver GPS</p>
+                    <p className="mt-1">
+                      {activeLocationRideId === request.id
+                        ? "Sharing live location now."
+                        : request.driverLocationLastSharedAt
+                          ? `Last shared ${new Date(
+                              request.driverLocationLastSharedAt
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}.`
+                          : "Location sharing has not started for this trip."}
+                    </p>
+                  </div>
                   <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocationError("");
+                        setLocationNotice("");
+                        setGpsPromptRequest(request);
+                      }}
+                      disabled={sharingLocationId === request.id}
+                      className="rounded-full border border-[#0a3570] bg-[#0a3570] px-4 py-1 text-xs font-semibold text-white hover:bg-[#092a59] disabled:opacity-60"
+                    >
+                      {activeLocationRideId === request.id
+                        ? "GPS Sharing Active"
+                        : sharingLocationId === request.id
+                          ? "Starting GPS..."
+                          : "Enable GPS"}
+                    </button>
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                         request.pickupLabel

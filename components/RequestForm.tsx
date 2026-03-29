@@ -78,6 +78,7 @@ export default function RequestForm({
 
   // Defines form inputs.
   const [partySize, setPartySize] = useState<number>(1);
+  const [bookedForSelf, setBookedForSelf] = useState(true);
   const [pickup, setPickup] = useState<string>("");
   const [pickupNotes, setPickupNotes] = useState<string>("");
   const [dropoff, setDropoff] = useState<string>("");
@@ -139,6 +140,7 @@ export default function RequestForm({
       type: requestType,
       pickup: pickup.trim(),
       dropoff: dropoff.trim(),
+      bookedForSelf,
       pickupNotes: pickupNotes.trim() || undefined,
       partySize,
       pickupAt: showPickupAt ? new Date(pickupAtInput).toISOString() : undefined,
@@ -176,8 +178,8 @@ export default function RequestForm({
       setQuoteDraft(quote.request as QuoteDraft);
       setQuoteEstimates(quote.estimates as QuoteEstimates);
       setQuoteOpen(true);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong.");
       setQuoteOpen(false);
       setQuoteDraft(null);
       setQuoteEstimates(null);
@@ -223,8 +225,8 @@ export default function RequestForm({
       setQuoteOpen(false);
       setQuoteDraft(null);
       setQuoteEstimates(null);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong.");
       setQuoteOpen(false);
     } finally {
       setSubmitting(false);
@@ -263,6 +265,42 @@ export default function RequestForm({
         <p className="mt-1 text-sm text-[#6b5f52]">{description}</p>
 
       <div className="mt-6 grid gap-4">
+        <div className="grid gap-1">
+          <label className="text-sm font-medium">Who is this ride for?</label>
+          <div className="grid gap-2 rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-3">
+            <label className="flex items-start gap-3">
+              <input
+                type="radio"
+                name="bookedForSelf"
+                checked={bookedForSelf}
+                onChange={() => setBookedForSelf(true)}
+                className="mt-1"
+              />
+              <span className="text-sm text-[#1e3a5f]">
+                <span className="font-medium">Myself</span>
+                <span className="block text-xs text-[#6b5f52]">
+                  GPS-based rider sharing can be requested later if you consent.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-3">
+              <input
+                type="radio"
+                name="bookedForSelf"
+                checked={!bookedForSelf}
+                onChange={() => setBookedForSelf(false)}
+                className="mt-1"
+              />
+              <span className="text-sm text-[#1e3a5f]">
+                <span className="font-medium">Someone else</span>
+                <span className="block text-xs text-[#6b5f52]">
+                  Pickup and drop-off pins stay authoritative for third-party bookings.
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div className="grid gap-1">
           <label className="text-sm font-medium">Number of riders</label>
           <input
@@ -429,6 +467,10 @@ export default function RequestForm({
               </div>
               <div>
                 <span className="font-medium">Riders:</span> {quoteDraft.partySize}
+              </div>
+              <div>
+                <span className="font-medium">Booking for:</span>{" "}
+                {quoteDraft.bookedForSelf ? "Myself" : "Someone else"}
               </div>
               {showPickupAt ? (
                 <div>

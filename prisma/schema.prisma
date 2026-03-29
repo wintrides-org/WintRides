@@ -119,6 +119,7 @@ model RideRequest {
   id            String        @id @default(uuid())
   riderId       String
   acceptedDriverId String?
+  bookedForSelf Boolean       @default(true)
   type          RequestType
   status        RequestStatus
   pickupLabel   String
@@ -130,6 +131,11 @@ model RideRequest {
   pickupAt      DateTime
   carsNeeded    Int
   matchedAt     DateTime?
+  driverLocationSharingStartedAt DateTime?
+  driverLocationLastLat Float?
+  driverLocationLastLng Float?
+  driverLocationAccuracyMeters Float?
+  driverLocationLastSharedAt DateTime?
   completedAt   DateTime?
   canceledAt    DateTime?
   canceledBy    String?

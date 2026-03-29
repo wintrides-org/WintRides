@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
     const created = await prisma.rideRequest.create({
       data: {
         riderId: user.id,
+        bookedForSelf: data.bookedForSelf,
         type: data.type,
         status: "OPEN",
         pickupLabel: data.pickup.label,
