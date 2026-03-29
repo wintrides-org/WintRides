@@ -43,6 +43,51 @@ The UI differs slightly per flow, but all flows send the same core data shape to
 
 ---
 
+# Request Success Page
+
+## Behavior
+- After a successful request (Immediate, Scheduled, Group), redirect to a success page.
+- Success page copy:
+  - Title: “Congratulations, your request has been successfully placed”
+  - Subtext: “We're finding a ride for you. Remember, WintRides gotchyu!”
+- Show rainbow-colored confetti on the success page.
+- Button: “Go to Home” → routes to `/dashboard`.
+- After returning to the dashboard, show a small “Your Rides” card summarizing the ride that was just placed.
+
+## Rider Ride Status & Ride History (MVP plan)
+- Rider-facing views mirror driver upcoming/history but filter by riderId.
+- Statuses shown: OPEN (pending), MATCHED, COMPLETED, CANCELED, EXPIRED (see next comment below).
+- EXPIRED exists in types but is not used for MVP because expiration timing is undefined.
+- Ride Status show upcoming rides (OPEN/MATCHED) with visible status label.
+- Ride History = completed/canceled rides.
+
+## Request overlap rule (MVP fixed window)
+- Prevent a rider from placing overlapping requests on the same day.
+- Use a fixed 30-minute window around pickupAt (30 minutes before/after).
+- Block new requests if they overlap any existing OPEN or MATCHED request for the rider.
+- Implement as a server-side check against all confirmed requests.
+
+## Rider confirmation card (MVP)
+- When a driver accepts, show driver name + star rating.
+- Provide a link to view driver reviews.
+
+## Rider reviews (MVP)
+- Rider can rate + write a review after a completed ride.
+- Reviews appear on the driver's bio review page.
+- Store reviews in local storage for MVP; move to backend in V2.
+
+## To consider for v2
+- Replace localStorage with a rider-scoped API fetch to pull the latest request from the database on the dashboard.
+- Reviews should be stored on the backend
+- Add an IN_PROGRESS status to track when the ride is in progress: will make more sense when there's a GPS integration to track the ride after pickup and before dropoff
+
+## Review flow implementation notes (files changed)
+- wintrides_next_js/app/drivers/[id]/reviews/page.tsx: driver reviews page (localStorage-backed reviews + average rating).
+- wintrides_next_js/app/dashboard/ride-history/page.tsx: review form + submit logic for COMPLETED rides; saves reviews to localStorage.
+- wintrides_next_js/app/dashboard/page.tsx: rider confirmation card now shows rating + review count + link to reviews page.
+- wintrides_next_js/app/api/users/[id]/route.ts: minimal profile API used by confirmation card and reviews page.
+
+
 ## Core principles
 
 ### 1) One request model, three UI variants
