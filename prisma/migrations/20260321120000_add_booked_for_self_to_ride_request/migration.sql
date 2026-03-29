@@ -1,0 +1,2 @@
+ALTER TABLE "RideRequest"
+ADD COLUMN "bookedForSelf" BOOLEAN NOT NULL DEFAULT true;
