@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Playfair_Display, Work_Sans } from "next/font/google";
@@ -52,7 +52,19 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export default function RiderRideHistoryPage() {
+function RideHistoryFallback() {
+  return (
+    <main className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}>
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
+          Loading ride history...
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function RiderRideHistoryContent() {
   const router = useRouter();
   // If the rider came from the dashboard review prompt, this query param tells
   // us which completed ride should be emphasized on the page.
@@ -509,5 +521,13 @@ export default function RiderRideHistoryPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function RiderRideHistoryPage() {
+  return (
+    <Suspense fallback={<RideHistoryFallback />}>
+      <RiderRideHistoryContent />
+    </Suspense>
   );
 }
