@@ -201,6 +201,66 @@ export async function confirmParticipant(carpoolId: string, userId: string): Pro
   return refreshed ? toCarpoolThread(refreshed) : null;
 }
 
+export async function removeParticipant(
+  carpoolId: string,
+  userId: string
+): Promise<CarpoolThread | null> {
+  const carpool = await prisma.carpool.findUnique({
+    where: { id: carpoolId },
+    include: { participants: true }
+  });
+
+  if (!carpool) return null;
+
+  const participant = carpool.participants.find((p) => p.userId === userId);
+  if (!participant || participant.isCreator) return null;
+
+  await prisma.carpoolParticipant.delete({
+    where: { carpoolId_userId: { carpoolId, userId } }
+  });
+
+  const refreshed = await prisma.carpool.findUnique({
+    where: { id: carpoolId },
+    include: { participants: { include: { user: { select: { userName: true } } } } }
+  });
+
+  if (!refreshed) return null;
+
+  if (["CANCELED", "COMPLETED", "EXPIRED"].includes(refreshed.status)) {
+    return toCarpoolThread(refreshed);
+  }
+
+  const nonCreators = refreshed.participants.filter((p) => !p.isCreator);
+  const confirmedCount = refreshed.participants.filter((p) => p.confirmedAt).length;
+
+  let nextStatus = refreshed.status as CarpoolStatus;
+
+  if (refreshed.status === "CONFIRMED" && confirmedCount < refreshed.targetGroupSize) {
+    nextStatus = "PENDING_CONFIRMATIONS";
+  }
+
+  if (nonCreators.length === 0 && nextStatus !== "CONFIRMED") {
+    nextStatus = "OPEN";
+  }
+
+  if (nextStatus !== refreshed.status) {
+    await prisma.carpool.update({
+      where: { id: carpoolId },
+      data: {
+        status: nextStatus,
+        ...(nextStatus !== "CONFIRMED" ? { lockedAt: null } : {})
+      }
+    });
+  }
+
+  const final = await prisma.carpool.findUnique({
+    where: { id: carpoolId },
+    include: { participants: { include: { user: { select: { userName: true } } } } }
+  });
+
+  return final ? toCarpoolThread(final) : null;
+}
+
 export async function unconfirmParticipant(carpoolId: string, userId: string): Promise<CarpoolThread | null> {
   const carpool = await prisma.carpool.findUnique({
     where: { id: carpoolId },

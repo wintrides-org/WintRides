@@ -181,11 +181,11 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
                 <div
                   className={`max-w-[70%] rounded-lg px-3 py-2 ${
                     isOwn
-                      ? "bg-blue-500 text-white"
-                      : "bg-neutral-100 text-neutral-900"
+                      ? "bg-[#0a3570] text-white"
+                      : "border border-[#e5d9c8] bg-[#efe3d2] text-neutral-900"
                   }`}
                 >
-                  <p className={`text-xs font-semibold ${isOwn ? "text-blue-100" : "text-neutral-600"}`}>
+                  <p className={`text-xs font-semibold ${isOwn ? "text-blue-100" : "text-[#6b5f52]"}`}>
                     {message.userName}
                   </p>
                   <p className="text-sm whitespace-pre-wrap break-words">
@@ -193,7 +193,7 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
                   </p>
                   <p
                     className={`text-xs mt-1 ${
-                      isOwn ? "text-blue-100" : "text-neutral-500"
+                      isOwn ? "text-blue-100" : "text-[#8a7a6a]"
                     }`}
                   >
                     {formatTime(message.createdAt)}
