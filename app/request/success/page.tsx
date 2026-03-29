@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 
+// Defines the fonts to be used on the success page
 const displayFont = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
-
 const bodyFont = Work_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
-
+// Defines the confetti for the page
 const confettiPieces = [
   { left: "8%", delay: "0s", duration: "2.4s", color: "#ff6b6b" },
   { left: "18%", delay: "0.1s", duration: "2.2s", color: "#ffd93d" },
@@ -25,6 +25,7 @@ const confettiPieces = [
   { left: "88%", delay: "0.1s", duration: "2.6s", color: "#9bdeac" },
 ];
 
+// HTML rendering of the success page
 export default function RequestSuccessPage() {
   return (
     <main
@@ -69,7 +70,8 @@ export default function RequestSuccessPage() {
         >
           Go to Home
         </Link>
-        <style jsx>{`
+        {/* Note that span is recognized by CSS. jsx maps them to DOM elements */}
+        <style jsx>{` 
           span {
             animation-name: confetti-fall;
             animation-timing-function: ease-in;

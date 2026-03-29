@@ -22,6 +22,7 @@ export type TimeWindow = {
 // Carpool participant tracking
 export interface CarpoolParticipant {
   userId: string;
+  userName: string;
   joinedAt: string;      // ISO timestamp
   confirmedAt?: string;  // ISO timestamp (only if confirmed)
   isCreator: boolean;
@@ -32,6 +33,7 @@ export interface CarpoolMessage {
   id: string;
   carpoolId: string;
   userId: string;
+  userName: string;
   content: string;
   createdAt: string;     // ISO timestamp
 }

@@ -8,18 +8,20 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test --loader ./scripts/ts-test-loader.mjs",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed:carpools": "node scripts/seed-carpools.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^7.3.0",
     "@vercel/speed-insights": "^1.3.1",
+    "anchor-pki": "^0.3.2",
     "bcrypt": "^5.1.1",
     "dotenv": "^17.2.3",
+    "google-auth-library": "^10.5.0",
     "next": "16.0.10",
     "pg": "^8.16.3",
-    "prisma": "^7.2.0",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
@@ -30,8 +32,10 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "prisma": "^7.3.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

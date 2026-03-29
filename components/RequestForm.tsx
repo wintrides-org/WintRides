@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 
+// Defines the fonts used on the page for consistency
 const displayFont = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
@@ -25,6 +26,7 @@ type FieldErrors = Partial<
   Record<"partySize" | "pickup" | "dropoff" | "pickupAt" | "carsNeeded", string>
 >;
 
+// Defines what any form that uses the shared type "RequestForm.tsx" should provide and the types of each
 type RequestFormProps = {
   requestType: RequestType;
   title: string;
@@ -33,18 +35,17 @@ type RequestFormProps = {
   showCarsNeeded?: boolean;
 };
 
+// makes quote draft align with the types in "NormalizedRequest" under lib/requestValidation
 type QuoteDraft = NormalizedRequest;
 
 // Basic input sanity checks for MVP validation.
 function isAllDigits(s: string) {
   return /^\d+$/.test(s.trim());
 }
-
 function isTooShort(s: string) {
   return s.trim().length < 3;
 }
-
-// Shared text field validator for pickup/dropoff.
+// Validates entries to the "pickup" and "dropoff" fields. Currently, validates > 3 items and not all digits 
 function validateTextLocation(label: string) {
   const trimmed = label.trim();
   if (!trimmed) return "Required.";
@@ -54,6 +55,7 @@ function validateTextLocation(label: string) {
 }
 
 export default function RequestForm({
+  // Basically says use the default fields as attributes OR replace with the RequestFormProps for a given request flow if different
   requestType,
   title,
   description,
@@ -74,8 +76,9 @@ export default function RequestForm({
     []
   );
 
-  // Form inputs.
+  // Defines form inputs.
   const [partySize, setPartySize] = useState<number>(1);
+  const [bookedForSelf, setBookedForSelf] = useState(true);
   const [pickup, setPickup] = useState<string>("");
   const [pickupNotes, setPickupNotes] = useState<string>("");
   const [dropoff, setDropoff] = useState<string>("");
@@ -137,6 +140,7 @@ export default function RequestForm({
       type: requestType,
       pickup: pickup.trim(),
       dropoff: dropoff.trim(),
+      bookedForSelf,
       pickupNotes: pickupNotes.trim() || undefined,
       partySize,
       pickupAt: showPickupAt ? new Date(pickupAtInput).toISOString() : undefined,
@@ -174,8 +178,8 @@ export default function RequestForm({
       setQuoteDraft(quote.request as QuoteDraft);
       setQuoteEstimates(quote.estimates as QuoteEstimates);
       setQuoteOpen(true);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong.");
       setQuoteOpen(false);
       setQuoteDraft(null);
       setQuoteEstimates(null);
@@ -221,8 +225,8 @@ export default function RequestForm({
       setQuoteOpen(false);
       setQuoteDraft(null);
       setQuoteEstimates(null);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong.");
       setQuoteOpen(false);
     } finally {
       setSubmitting(false);
@@ -261,6 +265,42 @@ export default function RequestForm({
         <p className="mt-1 text-sm text-[#6b5f52]">{description}</p>
 
       <div className="mt-6 grid gap-4">
+        <div className="grid gap-1">
+          <label className="text-sm font-medium">Who is this ride for?</label>
+          <div className="grid gap-2 rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-3">
+            <label className="flex items-start gap-3">
+              <input
+                type="radio"
+                name="bookedForSelf"
+                checked={bookedForSelf}
+                onChange={() => setBookedForSelf(true)}
+                className="mt-1"
+              />
+              <span className="text-sm text-[#1e3a5f]">
+                <span className="font-medium">Myself</span>
+                <span className="block text-xs text-[#6b5f52]">
+                  GPS-based rider sharing can be requested later if you consent.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-3">
+              <input
+                type="radio"
+                name="bookedForSelf"
+                checked={!bookedForSelf}
+                onChange={() => setBookedForSelf(false)}
+                className="mt-1"
+              />
+              <span className="text-sm text-[#1e3a5f]">
+                <span className="font-medium">Someone else</span>
+                <span className="block text-xs text-[#6b5f52]">
+                  Pickup and drop-off pins stay authoritative for third-party bookings.
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div className="grid gap-1">
           <label className="text-sm font-medium">Number of riders</label>
           <input
@@ -427,6 +467,10 @@ export default function RequestForm({
               </div>
               <div>
                 <span className="font-medium">Riders:</span> {quoteDraft.partySize}
+              </div>
+              <div>
+                <span className="font-medium">Booking for:</span>{" "}
+                {quoteDraft.bookedForSelf ? "Myself" : "Someone else"}
               </div>
               {showPickupAt ? (
                 <div>

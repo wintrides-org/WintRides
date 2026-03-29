@@ -29,18 +29,22 @@ const bodyFont = Work_Sans({
 export default function EnableDriverClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Read the mode from the query string (e.g., ?mode=update).
   const mode = searchParams.get("mode");
   const isUpdate = mode === "update";
 
+  // Form fields for the driver license details.
   const [legalName, setLegalName] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [licenseExpirationDate, setLicenseExpirationDate] = useState("");
   const [issuingState, setIssuingState] = useState("");
 
+  // Submission and validation feedback state.
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  // Update-only gate: checks if the current user is already a driver.
   const [updateCheck, setUpdateCheck] = useState<"idle" | "checking" | "allowed" | "denied">("idle");
   const [updateMessage, setUpdateMessage] = useState("");
 
@@ -54,6 +58,7 @@ export default function EnableDriverClient() {
       return;
     }
 
+    // Update mode requires a valid session token.
     const sessionToken = localStorage.getItem("sessionToken");
     if (!sessionToken) {
       setUpdateCheck("denied");
@@ -63,6 +68,7 @@ export default function EnableDriverClient() {
 
     setUpdateCheck("checking");
 
+    // Check session to confirm the user has driver capability.
     fetch("/api/auth/session", {
       method: "GET",
       headers: {
@@ -116,6 +122,7 @@ export default function EnableDriverClient() {
     setSubmitError("");
     setSubmitSuccess(false);
 
+    // If update is blocked, avoid submitting at all.
     if (isUpdate && updateCheck !== "allowed") {
       setSubmitError("Driver capability must be enabled before updating license details.");
       return;
@@ -135,6 +142,7 @@ export default function EnableDriverClient() {
       // Choose the endpoint based on form mode.
       const endpoint = isUpdate ? "/api/auth/driver/update" : "/api/auth/driver/enable";
 
+      // Send validated license data to the server.
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -173,6 +181,7 @@ export default function EnableDriverClient() {
       className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className}`}
     >
       <div className="mx-auto max-w-xl">
+      {/* Back link + page heading. */}
       <Link
         href="/dashboard"
         className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
@@ -191,6 +200,7 @@ export default function EnableDriverClient() {
           : "Enter your license details to enable driver capability."}
       </p>
 
+      {/* If updates are denied, show a guard message instead of the form. */}
       {isUpdate && updateCheck === "denied" ? (
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           {updateMessage}{" "}
@@ -200,6 +210,7 @@ export default function EnableDriverClient() {
           .
         </div>
       ) : (
+        /* Driver license form used for both enable and update flows. */
         <form onSubmit={onSubmit} className="mt-6 grid gap-4">
           {/* Legal Name */}
           <div className="grid gap-1">

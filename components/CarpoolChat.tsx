@@ -9,6 +9,7 @@ interface CarpoolChatProps {
 }
 
 export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
+  const isAuthenticated = Boolean(userId);
   const [messages, setMessages] = useState<CarpoolMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -48,11 +49,17 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
   }
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      setMessages([]);
+      return;
+    }
+
     fetchMessages(); // Initial load
     // Poll for new messages every 5 seconds (MVP)
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
-  }, [carpoolId]);
+  }, [carpoolId, isAuthenticated]);
 
   // Auto-scroll logic: scroll on initial load, when user sends message, or if user is near bottom
   /**
@@ -90,6 +97,10 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
   // Send message
   async function handleSend() {
     if (!newMessage.trim() || sending) return;
+    if (!isAuthenticated) {
+      setError("Sign in to send messages.");
+      return;
+    }
 
     setSending(true);
     setError("");
@@ -99,7 +110,6 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
           content: newMessage.trim()
         }),
       });
@@ -148,7 +158,11 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
         ref={messagesContainerRef} // scrollable chat area that holds all messages. The ref lets us check the scroll position to decide when to auto-scroll.
         className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]"
       >
-        {loading && messages.length === 0 ? (
+        {!isAuthenticated ? (
+          <div className="text-center text-neutral-600 py-8">
+            Sign in to view and send messages.
+          </div>
+        ) : loading && messages.length === 0 ? (
           <div className="text-center text-neutral-600 py-8">
             Loading messages...
           </div>
@@ -171,6 +185,9 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
                       : "bg-neutral-100 text-neutral-900"
                   }`}
                 >
+                  <p className={`text-xs font-semibold ${isOwn ? "text-blue-100" : "text-neutral-600"}`}>
+                    {message.userName}
+                  </p>
                   <p className="text-sm whitespace-pre-wrap break-words">
                     {message.content}
                   </p>
@@ -211,12 +228,12 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
             }}
             placeholder="Type a message..."
             className="flex-1 rounded-xl border p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={sending}
+            disabled={sending || !isAuthenticated}
           />
           <button
             type="button"
             onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={!newMessage.trim() || sending || !isAuthenticated}
             className="rounded-xl px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? "Sending..." : "Send"}

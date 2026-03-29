@@ -1,0 +1,10 @@
+[lcl-host]
+realm-apid = 'localhost'
+
+[org]
+apid = 'chistarr'
+
+[service]
+apid = 'wintrides'
+category = 'javascript'
+cert-style = 'acme'

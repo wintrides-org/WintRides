@@ -34,12 +34,14 @@ const bodyFont = Work_Sans({
 });
 
 export default function DriverRequestsPage() {
+  // Driver/session info and request list state.
   const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptNotice, setAcceptNotice] = useState<string>("");
+  // Filter inputs for narrowing the open-request list.
   const [dateFilter, setDateFilter] = useState("");
   const [timeStartFilter, setTimeStartFilter] = useState("");
   const [timeEndFilter, setTimeEndFilter] = useState("");
@@ -48,6 +50,7 @@ export default function DriverRequestsPage() {
   useEffect(() => {
     let ignore = false;
 
+    // Identify the signed-in driver so accept actions can be attributed.
     async function fetchSession() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
@@ -81,6 +84,7 @@ export default function DriverRequestsPage() {
     let ignore = false;
     let interval: NodeJS.Timeout | null = null;
 
+    // Poll open requests so the list stays fresh.
     async function fetchRequests() {
       setError("");
 
@@ -104,9 +108,10 @@ export default function DriverRequestsPage() {
       }
     }
 
+    // Initial load + repeat every 10 seconds.
     setLoading(true);
     fetchRequests();
-    interval = setInterval(fetchRequests, 10000);
+    interval = setInterval(fetchRequests, 10000); // Calls fetchRequests every 10s
 
     return () => {
       ignore = true;
@@ -116,6 +121,7 @@ export default function DriverRequestsPage() {
     };
   }, []);
 
+  // Accept a request and remove it from the open list.
   async function handleAccept(requestId: string) {
     setAcceptNotice("");
     setAcceptingId(requestId);
@@ -127,7 +133,7 @@ export default function DriverRequestsPage() {
       const res = await fetch("/api/requests/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, driverId }),
+        body: JSON.stringify({ requestId }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -142,6 +148,7 @@ export default function DriverRequestsPage() {
     }
   }
 
+  // Format pickup time for display on the request cards.
   const formatPickup = (pickupAt: string) =>
     new Date(pickupAt).toLocaleString([], {
       month: "short",
@@ -150,6 +157,7 @@ export default function DriverRequestsPage() {
       minute: "2-digit",
     });
 
+  // Precompute formatted values like pickup time and pay estimate.
   const formattedRequests = useMemo(
     () =>
       requests.map((request) => ({
@@ -160,6 +168,7 @@ export default function DriverRequestsPage() {
     [requests]
   );
 
+  // Apply date/time/pay filters on top of the formatted list.
   const filteredRequests = useMemo(() => {
     return formattedRequests.filter((request) => {
       const pickupDate = new Date(request.pickupAt);
@@ -209,6 +218,7 @@ export default function DriverRequestsPage() {
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
     >
       <div className="mx-auto w-full max-w-5xl">
+        {/* Page header with back button, title, and open count. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/driver/dashboard"
@@ -232,6 +242,7 @@ export default function DriverRequestsPage() {
           </span>
         </header>
 
+        {/* Filter controls for date/time/pay. */}
         <section className="mt-8 rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-5">
           <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
             <div className="grid gap-1">
@@ -303,6 +314,7 @@ export default function DriverRequestsPage() {
           )}
         </section>
 
+        {/* Requests list with loading/error/empty states. */}
         <section className="mt-8 space-y-4">
           {acceptNotice ? (
             <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 text-sm text-[#0a1b3f] shadow-[0_14px_30px_rgba(10,27,63,0.2)]">

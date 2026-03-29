@@ -69,14 +69,13 @@ export interface DriverInfo {
  */
 export interface User {
   id: string; // Unique user identifier
-  email: string; // Campus email (must be .edu, .ac.uk, or .edu.au)
-  passwordHash: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
+  email: string; // Campus email (must be .edu)
+  passwordHash?: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
   campusId: string; // Assigned campus based on email domain (permanent assignment)
   
   // Identity
-  pseudonym: string; // Public display name (auto-generated, shown in public chats)
-  realName?: string; // Only revealed in confirmed rides (for trust/safety)
-  
+  userName: string; // Public username 
+ 
   // Capabilities
   // Everyone is a rider by default. Driver is an optional add-on capability.
   isDriverAvailable: boolean; // Day-to-day toggle for driver availability
@@ -110,6 +109,7 @@ export interface User {
  */
 export interface RegisterRequest {
   email: string;
+  userName: string;
   password: string;
   wantsToDrive?: boolean; // If true, capture intent and redirect to driver form after signup
   legalName?: string; // Optional: only used if registering as a driver immediately
@@ -135,8 +135,9 @@ export interface SignInRequest {
 export interface Session {
   userId: string;
   email: string;
-  pseudonym: string;
+  userName: string;
   campusId: string;
+  driverLegalName?: string;
   isDriver: boolean; // Whether user has driver capability (computed from driverInfo existence)
   expiresAt: string; // ISO timestamp when session expires
 }

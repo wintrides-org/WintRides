@@ -7,14 +7,16 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 
 export default function SignInClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
+  const googleButtonRef = useRef<HTMLDivElement | null>(null); // Hold the GIS button mount node.
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +24,75 @@ export default function SignInClient() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [googleReady, setGoogleReady] = useState(false); // Track GIS script readiness.
+  const [googleError, setGoogleError] = useState(""); // Track Google sign-in errors.
+
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // Read the Google client ID.
+
+  useEffect(() => { // Handle client-side navigation when GIS is already loaded.
+    if ((window as any)?.google?.accounts?.id) { // Detect the loaded GIS script.
+      setGoogleReady(true); // Mark Google as ready without waiting for onLoad.
+    }
+  }, []);
+
+  async function handleGoogleCredentialResponse(response: { credential?: string }) { // Handle GIS credential response.
+    setGoogleError(""); // Clear any previous Google error message.
+    const idToken = response?.credential; // Extract the ID token from the response.
+    if (!idToken) { // Guard against missing credentials.
+      setGoogleError("Google sign-in failed. Please try again."); // Show a user-friendly error.
+      return; // Stop processing without a token.
+    }
+
+    try { // Wrap the request in a try/catch for errors.
+      const res = await fetch("/api/auth/google", { // Exchange the ID token for a session.
+        method: "POST", // Use POST for token exchange.
+        headers: { "Content-Type": "application/json" }, // Send JSON payload.
+        body: JSON.stringify({ idToken }) // Include the ID token in the request body.
+      });
+
+      const data = await res.json(); // Parse the server response.
+      if (!res.ok) { // Handle non-200 responses.
+        const message = String(data?.error || "Google sign-in failed"); // Normalize the backend error message.
+        if (message.toLowerCase().includes("campus")) { // Translate domain errors into a friendlier message.
+          setGoogleError("This app currently supports Smith emails only. Please use your smith.edu account."); // Show a clearer domain error.
+          return; // Stop here after showing the message.
+        }
+        throw new Error(message); // Surface other errors.
+      }
+
+      router.push(next && next.startsWith("/") ? next : "/dashboard"); // Redirect on success.
+    } catch (e: any) { // Catch and display errors from the exchange.
+      setGoogleError(e?.message || "Google sign-in failed"); // Show a fallback error message.
+    }
+  }
+
+  useEffect(() => { // Initialize GIS once the script is loaded.
+    if (!googleReady) { // Exit early until the GIS script is ready.
+      return; // Prevent initializing before the script loads.
+    }
+    if (!googleClientId) { // Ensure the client ID is configured.
+      setGoogleError("Google sign-in is not configured."); // Show a configuration error.
+      return; // Stop initialization without a client ID.
+    }
+
+    const google = (window as any)?.google; // Access the global GIS object.
+    if (!google?.accounts?.id || !googleButtonRef.current) { // Verify GIS and the button ref.
+      return; // Exit if the GIS library or button ref is missing.
+    }
+
+    google.accounts.id.initialize({ // Initialize the GIS client.
+      client_id: googleClientId, // Provide the OAuth client ID.
+      callback: handleGoogleCredentialResponse // Handle credential responses.
+    });
+
+    googleButtonRef.current.innerHTML = ""; // Clear any previous button renders.
+    google.accounts.id.renderButton(googleButtonRef.current, { // Render the Google sign-in button.
+      theme: "outline", // Use the outline button style.
+      size: "large", // Render a large button.
+      text: "signin_with", // Use the "Sign in with Google" text.
+      shape: "pill" // Use a pill-shaped button.
+    });
+  }, [googleReady, googleClientId]); // Re-run when the script or config changes.
 
   function validateForm(): boolean {
     const nextErrors: Record<string, string> = {};
@@ -86,6 +157,12 @@ export default function SignInClient() {
 
   return (
     <main className="min-h-screen bg-[#f4ecdf] p-6">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer
+        onLoad={() => setGoogleReady(true)}
+      />
       <div className="mx-auto max-w-xl">
       <Link
         href="/"
@@ -163,6 +240,20 @@ export default function SignInClient() {
             Create one
           </Link>
         </p>
+
+        <div className="mt-4 grid gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-neutral-300" />
+            <span className="text-xs text-neutral-500">or</span>
+            <span className="h-px flex-1 bg-neutral-300" />
+          </div>
+          <div ref={googleButtonRef} className="flex justify-center" />
+          {googleError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {googleError}
+            </div>
+          )}
+        </div>
       </form>
       </div>
     </main>

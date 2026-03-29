@@ -13,16 +13,16 @@ import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
 
+// Defines the fonts used throughout the page
 const displayFont = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
-
 const bodyFont = Work_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
-
+// Mock alerts on the driver's profile: has been replaced with real requests
 const mockPings = [
   {
     id: "ping-1",
@@ -47,6 +47,7 @@ const mockPings = [
   },
 ];
 
+// confetti pieces for the welcome intro page
 const confettiPieces = [
   { left: "8%", top: "-10%", delay: "0s", duration: "1.6s" },
   { left: "18%", top: "-15%", delay: "0.2s", duration: "1.9s" },
@@ -59,9 +60,26 @@ const confettiPieces = [
   { left: "88%", top: "-14%", delay: "0.25s", duration: "1.9s" },
 ];
 
+// determines how long a confirmation card should persist for after the ride is canceled by the driver 
+const CANCELED_CARD_VISIBILITY_MS = 30 * 60 * 1000;
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export default function DriverDashboardPage() {
+  // initializes driverId, Availability Status, Pings, Payment collapsible tabs, Requests status, and showIntro status
   const [driverId, setDriverId] = useState<string>("");
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [driverUserName, setDriverUserName] = useState<string>("");
+  const [driverName, setDriverName] = useState<string>("");
+  const [driverRating, setDriverRating] = useState(0);
+  const [driverReviewsCount, setDriverReviewsCount] = useState(0);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [isAvailabilityUpdating, setIsAvailabilityUpdating] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [licenseStatus, setLicenseStatus] = useState<"valid" | "expiringSoon" | "expired" | "missing" | null>(null); // Track current license state for reminders.
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null); // Cache days remaining so UI can show "Expires in X days".
+  const [showExpiredModal, setShowExpiredModal] = useState(false); // Show modal when an expired driver tries to toggle ON.
   const [pingsOpen, setPingsOpen] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
@@ -75,29 +93,35 @@ export default function DriverDashboardPage() {
       carsNeeded: number;
     }[]
   >([]);
+  // initializes accept status of a request, confirm status, and what upcoming requests should be shown as
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [confirmCard, setConfirmCard] = useState<string>("");
   const [upcomingRequests, setUpcomingRequests] = useState<
     {
       id: string;
+      status: "MATCHED" | "CANCELED"; // displays rides matched with the driver, including ones that just got canceled
       pickupLabel: string;
       dropoffLabel: string;
       pickupAt: string;
       partySize: number;
+      canceledAt?: string | null;
     }[]
   >([]);
 
+  // Shows intro page
   useEffect(() => {
     const timer = setTimeout(() => setShowIntro(false), 2000);
     return () => clearTimeout(timer);
   }, []);
-
+  
   useEffect(() => {
     let ignore = false;
 
+    // Load the current session to identify the signed-in driver.
     async function fetchSession() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
+        // Session API accepts the token via Authorization header for MVP.
         const res = await fetch("/api/auth/session", {
           headers: sessionToken
             ? {
@@ -108,11 +132,42 @@ export default function DriverDashboardPage() {
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
-          setDriverId(data?.user?.id || "");
+          // Store driver ID to use in later API calls.
+          const nextDriverId = data?.user?.id || "";
+          setDriverId(nextDriverId);
+          setDriverUserName(data?.user?.userName || "");
+          setDriverName(data?.user?.driverLegalName || "");
+          // Seed availability from the server so UI matches persisted state.
+          setIsAvailable(Boolean(data?.user?.isDriverAvailable));
+
+          // Load the driver's own public rating summary for the profile card.
+          if (nextDriverId) {
+            try {
+              const profileRes = await fetch(`/api/users/${nextDriverId}`, {
+                headers: sessionToken
+                  ? {
+                      Authorization: `Bearer ${sessionToken}`,
+                    }
+                  : {},
+              });
+              if (profileRes.ok) {
+                const profileData = await profileRes.json().catch(() => null);
+                setDriverRating(Number(profileData?.user?.rating || 0));
+                setDriverReviewsCount(Number(profileData?.user?.reviewsCount || 0));
+              }
+            } catch {
+              setDriverRating(0);
+              setDriverReviewsCount(0);
+            }
+          }
         }
       } catch {
         if (!ignore) {
           setDriverId("");
+          setDriverUserName("");
+          setDriverRating(0);
+          setDriverReviewsCount(0);
+          setIsAvailable(false);
         }
       }
     }
@@ -126,17 +181,85 @@ export default function DriverDashboardPage() {
 
   useEffect(() => {
     let ignore = false;
+    let interval: NodeJS.Timeout | null = null;
 
+    async function fetchLicenseStatus() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken");
+        if (!sessionToken) return;
+        const res = await fetch("/api/driver/license-status", {
+          headers: { Authorization: `Bearer ${sessionToken}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!ignore) {
+          setLicenseStatus(data?.licenseStatus ?? null);
+          setDaysRemaining(
+            typeof data?.daysRemaining === "number" ? data.daysRemaining : null
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setLicenseStatus(null);
+          setDaysRemaining(null);
+        }
+      }
+    }
+
+    fetchLicenseStatus(); // Initial fetch on mount.
+    interval = setInterval(fetchLicenseStatus, 4 * 60 * 60 * 1000); // Periodic refresh (every 4 hours).
+
+    // Refresh when the tab/window regains focus so the banner is always up to date.
+    function handleFocus() {
+      if (document.visibilityState === "visible") {
+        fetchLicenseStatus();
+      }
+    }
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    let interval: NodeJS.Timeout | null = null;
+
+    // Fetch upcoming rides for this driver after we know their ID.
     async function fetchUpcoming() {
       try {
         if (!driverId) return;
         const res = await fetch(
-          `/api/requests?status=MATCHED&driverId=${driverId}`
+          `/api/requests?status=MATCHED,CANCELED&driverId=${driverId}`
         );
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
-          setUpcomingRequests(data.requests || []);
+          const recentDriverRides = Array.isArray(data?.requests)
+            // fetches information on all rides MATCHED to the driver (including ones that were canceled by rider)
+            ? data.requests.filter(
+                (request: {
+                  status: "MATCHED" | "CANCELED";
+                  canceledAt?: string | null;
+                }) =>
+                  // displays all MATCHED rides for the driver and CANCELED rides if duration since cancellation <=30m
+                  request.status === "MATCHED" ||
+                  (request.status === "CANCELED" && 
+                    request.canceledAt &&
+                    Date.now() - new Date(request.canceledAt).getTime() <=
+                      CANCELED_CARD_VISIBILITY_MS)
+              )
+            : [];
+
+          // Update the "Your Rides" list.
+          setUpcomingRequests(recentDriverRides);
         }
       } catch {
         if (!ignore) {
@@ -145,12 +268,17 @@ export default function DriverDashboardPage() {
       }
     }
 
+    // Only fetch when a valid driverId exists.
     if (driverId) {
       fetchUpcoming();
+      interval = setInterval(fetchUpcoming, 30000);
     }
 
     return () => {
       ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
     };
   }, [driverId]);
 
@@ -158,12 +286,14 @@ export default function DriverDashboardPage() {
     let ignore = false;
     let interval: NodeJS.Timeout | null = null;
 
+    // Poll open ride requests so drivers see fresh requests.
     async function fetchOpenRequests() {
       try {
         const res = await fetch("/api/requests?status=OPEN");
         if (!res.ok) return;
         const data = await res.json();
         if (!ignore) {
+          // Show only the top 3 open requests on this page.
           setOpenRequests((data.requests || []).slice(0, 3));
         }
       } catch {
@@ -173,6 +303,7 @@ export default function DriverDashboardPage() {
       }
     }
 
+    // Initial load + periodic refresh every 10 seconds.
     fetchOpenRequests();
     interval = setInterval(fetchOpenRequests, 10000);
 
@@ -184,6 +315,7 @@ export default function DriverDashboardPage() {
     };
   }, []);
 
+  // Format a request's pickup time for display on cards.
   const formatPickupTime = (pickupAt: string) =>
     new Date(pickupAt).toLocaleString([], {
       month: "short",
@@ -192,6 +324,7 @@ export default function DriverDashboardPage() {
       minute: "2-digit",
     });
 
+  // Accept a request and move it from "open" to "upcoming" for this driver.
   async function handleAccept(requestId: string) {
     setConfirmCard("");
     setAcceptingId(requestId);
@@ -200,21 +333,61 @@ export default function DriverDashboardPage() {
       if (!driverId) {
         throw new Error("Unable to confirm driver. Please sign in again.");
       }
+      // Server marks the request as matched to the driver.
       const res = await fetch("/api/requests/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, driverId }),
+        body: JSON.stringify({ requestId }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(body?.error || "Failed to accept request.");
       }
+      // Remove accepted request from the open list and show confirmation.
       setOpenRequests((prev) => prev.filter((req) => req.id !== requestId));
       setConfirmCard("Request accepted and moved to Upcoming Rides.");
-    } catch (err: any) {
-      setConfirmCard(err?.message || "Failed to accept request.");
+    } catch (err: unknown) {
+      setConfirmCard(getErrorMessage(err, "Failed to accept request."));
     } finally {
       setAcceptingId(null);
+    }
+  }
+
+  /**
+   * Toggle driver availability in the backend and sync local UI state.
+   * Throws a readable error when the server rejects the update.
+   */
+  async function toggleAvailability(nextValue: boolean) {
+    setAvailabilityError("");
+    setIsAvailabilityUpdating(true);
+
+    try {
+      if (nextValue && licenseStatus === "expired") {
+        setShowExpiredModal(true); // Intercept ON toggle and prompt for update.
+        return;
+      }
+      const sessionToken = localStorage.getItem("sessionToken");
+      // Authorization header mirrors the session fetch to identify the driver.
+      const res = await fetch("/api/auth/driver/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+        },
+        body: JSON.stringify({ isAvailable: nextValue, verifyLicense: true }),
+      });
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to update availability.");
+      }
+
+      // Sync UI with persisted availability state.
+      setIsAvailable(Boolean(body?.user?.isDriverAvailable));
+    } catch (err: unknown) {
+      setAvailabilityError(getErrorMessage(err, "Failed to update availability."));
+    } finally {
+      setIsAvailabilityUpdating(false);
     }
   }
 
@@ -223,6 +396,7 @@ export default function DriverDashboardPage() {
       className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
     >
       <div className="mx-auto w-full max-w-6xl">
+        {/* Intro splash (brief confetti screen) before showing the dashboard. */}
         {showIntro ? (
           <div className="relative mx-auto mt-12 w-full max-w-xl overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] px-8 py-10 text-center shadow-[0_18px_40px_rgba(10,27,63,0.15)]">
             <div className="pointer-events-none absolute inset-0">
@@ -240,7 +414,7 @@ export default function DriverDashboardPage() {
               ))}
             </div>
             <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
-              Thank you, Olohi, for delivering safe rides to other students!
+              Thank you, {driverUserName || "Driver"}, for delivering safe rides to other students!
             </p>
             <p className="mt-3 text-sm text-[#6b5f52]">
               Loading your driver dashboard...
@@ -271,6 +445,7 @@ export default function DriverDashboardPage() {
           </div>
         ) : (
         <>
+        {/* Main dashboard layout once the intro has finished. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/dashboard"
@@ -282,6 +457,7 @@ export default function DriverDashboardPage() {
             </svg>
           </Link>
 
+          {/* Quick action icons (profile, settings, home, help). */}
           <div className="flex items-center gap-3 text-[#0a3570]">
             <Link
               href="/dashboard"
@@ -326,8 +502,10 @@ export default function DriverDashboardPage() {
           </div>
         </header>
 
+        {/* Two-column layout: left = driver profile/availability, right = requests and earnings. */}
         <section className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-6">
+            {/* Driver profile card with rating and review link. */}
             <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5 text-center">
               <div className="relative mx-auto h-32 w-32 overflow-hidden rounded-2xl border-2 border-[#0a3570] bg-[#f4ecdf]">
                 <img
@@ -340,29 +518,41 @@ export default function DriverDashboardPage() {
                 </span>
               </div>
               <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
-                Olohi John
+                {driverName || "Driver"}
               </h2>
-              <div className="mt-3 flex items-center justify-center gap-1 text-[#f0b429]">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <svg
-                    key={`star-${index}`}
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4"
-                    fill="currentColor"
-                  >
-                    <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="mt-2 text-sm text-[#6b5f52]">Ratings & reviews</p>
+              {driverReviewsCount === 0 ? (
+                <p className="mt-3 text-sm font-semibold text-[#0a3570]">
+                  (no rating yet)
+                </p>
+              ) : (
+                <div className="mt-3 flex items-center justify-center gap-2 text-[#f0b429]">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <svg
+                      key={`star-${index}`}
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="currentColor"
+                    >
+                      <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
+                    </svg>
+                  ))}
+                  <span className="text-sm font-semibold text-[#0a3570]">
+                    {driverRating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              <p className="mt-2 text-sm text-[#6b5f52]">
+                Ratings & reviews{driverReviewsCount > 0 ? ` (${driverReviewsCount})` : ""}
+              </p>
               <Link
-                href="/in-progress"
+                href={driverId ? `/drivers/${driverId}/reviews` : "/in-progress"}
                 className="mt-4 inline-flex rounded-full bg-[#9aa7b9] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
               >
                 View all reviews
               </Link>
             </div>
 
+            {/* Availability toggle card (client-side only for MVP). */}
             <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
               <div
                 className={`flex items-center justify-between gap-3 rounded-full border-2 border-[#0a3570] px-3 py-2 ${
@@ -373,25 +563,28 @@ export default function DriverDashboardPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsAvailable(false)}
-                    className={`rounded-full px-4 py-1 text-sm font-semibold transition ${
+                    onClick={() => toggleAvailability(false)}
+                    disabled={isAvailabilityUpdating || isAvailable === false}
+                    className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
                         ? "bg-transparent text-[#0a3570]"
                         : "bg-[#ff2d2d] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
                     }`}
                   >
-                    OFF
+                    {isAvailabilityUpdating && isAvailable === false ? "Updating..." : "OFF"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsAvailable(true)}
-                    className={`rounded-full px-4 py-1 text-sm font-semibold transition ${
+                    onClick={() => toggleAvailability(true)}
+                    disabled={isAvailabilityUpdating || isAvailable === true}
+                    aria-disabled={licenseStatus === "expired"}
+                    className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
                         ? "bg-[#12b861] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
                         : "bg-transparent text-[#0a3570]"
-                    }`}
+                    } ${licenseStatus === "expired" ? "cursor-not-allowed bg-[#d3d3d3] text-[#7a6f63] shadow-none" : ""}`}
                   >
-                    ON
+                    {isAvailabilityUpdating && isAvailable === true ? "Updating..." : "ON"}
                   </button>
                 </div>
               </div>
@@ -400,22 +593,60 @@ export default function DriverDashboardPage() {
                   ? "You are set to available. Expect pings for ride updates."
                   : "You are currently set to unavailable. Change status to receive request pings."}
               </p>
+              {/* Inline chip reminder sits under the availability toggle. */}
+              {(licenseStatus === "expiringSoon" || licenseStatus === "expired") ? (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#0a3570] bg-[#ffe9d1] px-3 py-1 text-xs text-[#0a3570]">
+                  {/* Badge icon draws attention to the reminder. */}
+                  <span
+                    className="grid h-4 w-4 place-items-center rounded-full bg-[#ff4b4b] text-[10px] font-semibold text-white badge-pulse"
+                    aria-hidden="true"
+                  >
+                    !
+                  </span>
+                  <span>
+                    {licenseStatus === "expired"
+                      ? "License expired"
+                      : `License expires in ${daysRemaining ?? "a few"} days`}
+                  </span>
+                  <Link href="/driver/enable?mode=update" className="font-semibold underline">
+                    Update
+                  </Link>
+                  {/* Soft pulse on the badge to keep the reminder visible without being noisy. */}
+                  <style jsx>{`
+                    .badge-pulse {
+                      animation: badgePulse 3.2s ease-in-out infinite;
+                    }
+                    @keyframes badgePulse {
+                      0%,
+                      100% {
+                        transform: scale(1);
+                        box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.35);
+                      }
+                      50% {
+                        transform: scale(1.06);
+                        box-shadow: 0 0 0 8px rgba(255, 75, 75, 0);
+                      }
+                    }
+                  `}</style>
+                </div>
+              ) : null}
+              {availabilityError ? (
+                <p className="mt-2 text-xs font-semibold text-[#b42318]">
+                  {availabilityError}
+                </p>
+              ) : null}
             </div>
           </aside>
 
           <div className="space-y-6">
+              {/* Earnings summary for the last week. */}
               <div className="flex flex-wrap items-center justify-between gap-4 px-1">
                 <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
                   You earned $320 in the past week
                 </p>
-                <Link
-                  href="/in-progress"
-                  className="rounded-full bg-[#9aa7b9] px-6 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
-                >
-                  View My Insights
-                </Link>
               </div>
 
+            {/* Collapsible list of new/open ride requests. */}
             <div className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <div className="flex items-center justify-between rounded-t-3xl bg-[#0a3570] px-5 py-3 text-sm font-semibold text-white">
                 <button
@@ -441,6 +672,7 @@ export default function DriverDashboardPage() {
               </div>
               {pingsOpen ? (
                 <div className="rounded-b-3xl bg-[#d9b58c] px-5 py-4">
+                  {/* Only show requests when the driver is available. */}
                   {isAvailable ? (
                     <div className="space-y-3">
                       {openRequests.map((ping) => (
@@ -459,6 +691,7 @@ export default function DriverDashboardPage() {
                             ${estimatePriceRange(ping.partySize).min}
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Accept triggers a POST to /api/requests/accept. */}
                             <button
                               type="button"
                               onClick={() => handleAccept(ping.id)}
@@ -491,6 +724,7 @@ export default function DriverDashboardPage() {
               ) : null}
             </div>
 
+            {/* Upcoming rides summary with shortcuts to history/upcoming pages. */}
             <section className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6">
               <h3 className={`${displayFont.className} text-xl text-[#0a3570]`}>
                 Your Rides
@@ -518,7 +752,11 @@ export default function DriverDashboardPage() {
                   upcomingRequests.slice(0, 2).map((request) => (
                     <div
                       key={request.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-3"
+                      className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
+                        request.status === "CANCELED"
+                          ? "driver-canceled-card border-[#b42318] bg-[#fde9e7]"
+                          : "border-[#0a3570] bg-[#f4ecdf]"
+                      }`}
                     >
                       <div className="text-sm text-[#0a1b3f]">
                         <span className="font-semibold">{request.dropoffLabel}</span>
@@ -527,12 +765,22 @@ export default function DriverDashboardPage() {
                         <span className="mx-2 text-[#0a3570]">•</span>
                         <span className="font-semibold">Pickup:</span> {request.pickupLabel}
                       </div>
-                      <span className="rounded-full bg-[#d9e8ff] px-3 py-1 text-xs font-semibold text-[#0a3570]">
-                        UPCOMING
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          request.status === "CANCELED"
+                            ? "bg-[#f7c7c3] text-[#8a1c17]"
+                            : "bg-[#d9e8ff] text-[#0a3570]"
+                        }`}
+                      >
+                        {request.status === "CANCELED" ? "CANCELED" : "UPCOMING"}
                       </span>
                       <Link
                         href="/driver/upcoming"
-                        className="rounded-full border border-[#0a3570] bg-white px-3 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                        className={`rounded-full border bg-white px-3 py-1 text-xs font-semibold hover:bg-[#efe3d2] ${
+                          request.status === "CANCELED"
+                            ? "border-[#b42318] text-[#8a1c17]"
+                            : "border-[#0a3570] text-[#0a3570]"
+                        }`}
                       >
                         View
                       </Link>
@@ -540,9 +788,31 @@ export default function DriverDashboardPage() {
                   ))
                 )}
               </div>
+              <style jsx>{`
+                .driver-canceled-card {
+                  animation: driver-cancel-vibrate 0.95s ease-in-out infinite;
+                }
+
+                @keyframes driver-cancel-vibrate {
+                  0%,
+                  100% {
+                    transform: scale(1);
+                  }
+                  50% {
+                    transform: scale(1.02);
+                  }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                  .driver-canceled-card {
+                    animation: none;
+                  }
+                }
+              `}</style>
             </section>
 
 
+            {/* Collapsible payment details section (mock data for MVP). */}
             <section className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <button
                 type="button"
@@ -563,7 +833,9 @@ export default function DriverDashboardPage() {
                   <div className="grid gap-3 text-sm text-[#0a1b3f]">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="w-24 font-semibold">Name</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">Olohi John</span>
+                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">
+                        {driverName || driverUserName || "Driver"}
+                      </span>
                       <button type="button" className="text-[#0a3570]" aria-label="Edit name">
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 20h9" />
@@ -600,6 +872,7 @@ export default function DriverDashboardPage() {
         </>
         )}
       </div>
+      {/* Toast-style confirmation after accepting a request. */}
       {confirmCard ? (
         <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
           <div className="flex items-start justify-between gap-3">
@@ -612,6 +885,33 @@ export default function DriverDashboardPage() {
             >
               ✕
             </button>
+          </div>
+        </div>
+      ) : null}
+      {showExpiredModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+          <div className="w-full max-w-md rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.25)]">
+            <h3 className={`${displayFont.className} text-xl text-[#0a3570]`}>
+              License expired
+            </h3>
+            <p className="mt-2 text-sm text-[#6b5f52]">
+              Update your license details to continue accepting rides.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/driver/enable?mode=update"
+                className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)]"
+              >
+                Update details
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowExpiredModal(false)}
+                className="rounded-full border-2 border-[#0a3570] px-5 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#e9dcc9]"
+              >
+                Not now
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

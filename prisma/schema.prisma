@@ -22,12 +22,21 @@ enum RequestStatus {
   EXPIRED
 }
 
+enum CarpoolStatus {
+  OPEN
+  PENDING_CONFIRMATIONS
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  EXPIRED
+}
+
 model User {
   id                     String     @id @default(uuid())
   email                  String     @unique
-  passwordHash           String
+  userName               String     @unique
+  passwordHash           String?
   campusId               String
-  pseudonym              String
   isDriverAvailable      Boolean    @default(false)
   emailVerified          Boolean    @default(false)
   emailVerifiedAt        DateTime?
@@ -38,15 +47,25 @@ model User {
   ridesCompleted         Int        @default(0)
   noShowCount            Int        @default(0)
 
-  campus     Campus      @relation(fields: [campusId], references: [id])
-  driverInfo DriverInfo?
-  sessions   Session[]
+  campus              Campus               @relation(fields: [campusId], references: [id])
+  driverInfo          DriverInfo?
+  sessions            Session[]
+  notifications       Notification[]
+  carpoolParticipants CarpoolParticipant[]
+  carpoolMessages     CarpoolMessage[]
+  reviewsWritten        DriverReview[]         @relation("ReviewsWritten")
+  reviewsReceived       DriverReview[]         @relation("ReviewsReceived")
 }
 
 model DriverInfo {
   id                     String   @id @default(uuid())
   userId                 String   @unique
   legalName              String
+  acceptedRidesCount     Int      @default(0)
+  canceledRidesCount     Int      @default(0)
+  ratingCount            Int      @default(0)
+  ratingSum              Int      @default(0)
+  averageRating          Float    @default(0)
   licenseNumber          String?
   issuingState           String?
   licenseExpirationDate  String?
@@ -70,6 +89,22 @@ model Session {
   user User @relation(fields: [userId], references: [id])
 }
 
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String
+  message       String
+  rideRequestId String?
+  createdAt     DateTime @default(now())
+  readAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
 model Campus {
   id          String   @id @default(uuid())
   name        String
@@ -84,6 +119,7 @@ model RideRequest {
   id            String        @id @default(uuid())
   riderId       String
   acceptedDriverId String?
+  bookedForSelf Boolean       @default(true)
   type          RequestType
   status        RequestStatus
   pickupLabel   String
@@ -95,9 +131,98 @@ model RideRequest {
   pickupAt      DateTime
   carsNeeded    Int
   matchedAt     DateTime?
+  driverLocationSharingStartedAt DateTime?
+  driverLocationLastLat Float?
+  driverLocationLastLng Float?
+  driverLocationAccuracyMeters Float?
+  driverLocationLastSharedAt DateTime?
+  completedAt   DateTime?
+  canceledAt    DateTime?
+  canceledBy    String?
+  driverCancelReason String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  driverReview  DriverReview?
 
   @@index([status])
   @@index([pickupAt])
+}
+
+
+model Carpool {
+  id              String        @id @default(uuid())
+  creatorId       String
+  destination     String
+  date            String
+  timeStart       String
+  timeEnd         String
+  pickupArea      String
+  seatsNeeded     Int
+  targetGroupSize Int
+  status          CarpoolStatus @default(OPEN)
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lockedAt        DateTime?
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  expiredAt       DateTime?
+
+  participants    CarpoolParticipant[]
+  messages        CarpoolMessage[]
+
+  @@index([status])
+  @@index([date])
+  @@index([destination])
+  @@index([creatorId])
+}
+
+model CarpoolParticipant {
+  id          String   @id @default(uuid())
+  carpoolId   String
+  userId      String
+  joinedAt    DateTime @default(now())
+  confirmedAt DateTime?
+  isCreator   Boolean  @default(false)
+
+  carpool     Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([carpoolId, userId])
+  @@index([userId])
+  @@index([carpoolId])
+}
+
+model CarpoolMessage {
+  id        String   @id @default(uuid())
+  carpoolId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  carpool   Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([carpoolId])
+  @@index([createdAt])
+}
+
+model DriverReview {
+  id            String   @id @default(uuid())
+  rideRequestId String   @unique
+  riderId       String
+  driverId      String
+  stars         Int
+  reviewText    String?
+  isVisible     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rideRequest RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  rider       User        @relation("ReviewsWritten", fields: [riderId], references: [id], onDelete: Cascade)
+  driver      User        @relation("ReviewsReceived", fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, createdAt])
+  @@index([riderId, createdAt])
 }

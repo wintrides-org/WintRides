@@ -27,9 +27,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 
 const displayFont = Playfair_Display({
@@ -44,8 +45,10 @@ const bodyFont = Work_Sans({
 
 export default function RegisterPage() {
   const router = useRouter();
+  const googleButtonRef = useRef<HTMLDivElement | null>(null); // Hold the GIS button mount node.
   
   const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [wantsToDrive, setWantsToDrive] = useState(false);
@@ -57,6 +60,124 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [userNameError, setUserNameError] = useState("");
+  const [userNameChecking, setUserNameChecking] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    // empty entries will be handled when the user tries to submit
+    // validateForm() will show the error. While typing, ignore it
+    if (!userName.trim()) {
+      setUserNameError("");
+      setUserNameChecking(false);
+      return;
+    }
+
+    setUserNameChecking(true);
+    timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/auth/username-available?userName=${encodeURIComponent(userName)}`
+        );
+        const data = await res.json().catch(() => null);
+        if (ignore) return;
+        if (data?.available) {
+          setUserNameError("");
+        } else {
+          setUserNameError(
+            data?.error ||
+              "This username has been taken. Choose a new username or sign in if you already created an account"
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setUserNameError("Unable to check username right now.");
+        }
+      } finally {
+        if (!ignore) {
+          setUserNameChecking(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      ignore = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [userName]);
+  const [googleReady, setGoogleReady] = useState(false); // Track GIS script readiness.
+  const [googleError, setGoogleError] = useState(""); // Track Google sign-in errors.
+
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // Read the Google client ID.
+
+  useEffect(() => { // Handle client-side navigation when GIS is already loaded.
+    if ((window as any)?.google?.accounts?.id) { // Detect the loaded GIS script.
+      setGoogleReady(true); // Mark Google as ready without waiting for onLoad.
+    }
+  }, []);
+
+  async function handleGoogleCredentialResponse(response: { credential?: string }) { // Handle GIS credential response.
+    setGoogleError(""); // Clear any previous Google error message.
+    const idToken = response?.credential; // Extract the ID token from the response.
+    if (!idToken) { // Guard against missing credentials.
+      setGoogleError("Google sign-in failed. Please try again."); // Show a user-friendly error.
+      return; // Stop processing without a token.
+    }
+
+    try { // Wrap the request in a try/catch for errors.
+      const res = await fetch("/api/auth/google", { // Exchange the ID token for a session.
+        method: "POST", // Use POST for token exchange.
+        headers: { "Content-Type": "application/json" }, // Send JSON payload.
+        body: JSON.stringify({ idToken }) // Include the ID token in the request body.
+      });
+
+      const data = await res.json(); // Parse the server response.
+      if (!res.ok) { // Handle non-200 responses.
+        const message = String(data?.error || "Google sign-in failed"); // Normalize the backend error message.
+        if (message.toLowerCase().includes("campus")) { // Translate domain errors into a friendlier message.
+          setGoogleError("This app currently supports Smith emails only. Please use your smith.edu account."); // Show a clearer domain error.
+          return; // Stop here after showing the message.
+        }
+        throw new Error(message); // Surface other errors.
+      }
+
+      router.push("/dashboard"); // Redirect to the dashboard on success.
+    } catch (e: any) { // Catch and display errors from the exchange.
+      setGoogleError(e?.message || "Google sign-in failed"); // Show a fallback error message.
+    }
+  }
+
+  useEffect(() => { // Initialize GIS once the script is loaded.
+    if (!googleReady) { // Exit early until the GIS script is ready.
+      return; // Prevent initializing before the script loads.
+    }
+    if (!googleClientId) { // Ensure the client ID is configured.
+      setGoogleError("Google sign-in is not configured."); // Show a configuration error.
+      return; // Stop initialization without a client ID.
+    }
+
+    const google = (window as any)?.google; // Access the global GIS object.
+    if (!google?.accounts?.id || !googleButtonRef.current) { // Verify GIS and the button ref.
+      return; // Exit if the GIS library or button ref is missing.
+    }
+
+    google.accounts.id.initialize({ // Initialize the GIS client.
+      client_id: googleClientId, // Provide the OAuth client ID.
+      callback: handleGoogleCredentialResponse // Handle credential responses.
+    });
+
+    googleButtonRef.current.innerHTML = ""; // Clear any previous button renders.
+    google.accounts.id.renderButton(googleButtonRef.current, { // Render the Google sign-in button.
+      theme: "outline", // Use the outline button style.
+      size: "large", // Render a large button.
+      text: "signin_with", // Use the "Sign in with Google" text.
+      shape: "pill" // Use a pill-shaped button.
+    });
+  }, [googleReady, googleClientId]); // Re-run when the script or config changes.
 
   /**
    * Client-side form validation
@@ -68,7 +189,7 @@ export default function RegisterPage() {
    * - Driver intent (if wantsToDrive is true)
    * 
    * MVP: Basic validation
-   * Production: Add more robust validation, password strength checking
+   * Production: Add more robust server-side validation, password strength checking
    */
   function validateForm(): boolean {
     const next: Record<string, string> = {};
@@ -90,6 +211,14 @@ export default function RegisterPage() {
       next.password = "Password is required";
     } else if (password.length < 8) {
       next.password = "Password must be at least 8 characters long";
+    }
+
+    // Username validation here only checks if user entered a value
+    // instead of re-checking the database for uniqueness (auth/username-available did that already)
+    if (!userName.trim()) {
+      next.userName = "Username is required";
+    } else if (userNameError) {
+      next.userName = userNameError;
     }
 
     // Confirm password
@@ -144,6 +273,11 @@ export default function RegisterPage() {
     setSubmitError("");
     setSubmitSuccess(false);
 
+    if (userNameChecking) {
+      setSubmitError("Please wait for username validation to finish.");
+      return;
+    }
+
     if (!validateForm()) return;
 
     setSubmitting(true);
@@ -163,6 +297,7 @@ export default function RegisterPage() {
       // Build payload with driver intent only (details collected later).
       const payload = {
         email: email.trim().toLowerCase(),
+        userName,
         password,
         wantsToDrive: wantsToDrive || undefined
       };
@@ -202,6 +337,12 @@ export default function RegisterPage() {
     <main
       className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className}`}
     >
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer
+        onLoad={() => setGoogleReady(true)}
+      />
       <div className="mx-auto max-w-xl">
       <Link
         href="/"
@@ -241,6 +382,34 @@ export default function RegisterPage() {
               Must be a .edu email address 
             </p>
           )}
+        </div>
+
+        {/* Username */}
+        <div className="grid gap-1">
+          <label htmlFor="userName" className="text-sm font-medium">
+            Username
+          </label>
+          <input
+            id="userName"
+            type="text"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder="Enter a username"
+            className="rounded-xl border p-3"
+            disabled={submitting}
+          />
+          {errors.userName || userNameError ? (
+            <p className="text-sm text-red-600">
+              {errors.userName || userNameError}
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              3-15 characters, starts with 3 letters, and can include _, @, -.
+            </p>
+          )}
+          {userNameChecking ? (
+            <p className="text-xs text-neutral-500">Checking availability...</p>
+          ) : null}
         </div>
 
         {/* Password */}
@@ -340,6 +509,20 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
+
+        <div className="mt-4 grid gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-neutral-300" />
+            <span className="text-xs text-neutral-500">or</span>
+            <span className="h-px flex-1 bg-neutral-300" />
+          </div>
+          <div ref={googleButtonRef} className="flex justify-center" />
+          {googleError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {googleError}
+            </div>
+          )}
+        </div>
       </form>
       </div>
     </main>
