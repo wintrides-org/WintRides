@@ -4,11 +4,11 @@ import { prisma } from "@/lib/prisma";
 // GET /api/drivers/:id/reviews - public review list + rating summary for a driver.
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: driverId } = await params;
     // Driver whose public review profile is being viewed.
-    const driverId = params.id;
 
     // Fetch summary + recent visible reviews in parallel for faster response.
     const [driverInfo, reviews] = await Promise.all([

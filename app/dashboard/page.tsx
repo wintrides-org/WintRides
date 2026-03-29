@@ -44,6 +44,9 @@ const bodyFont = Work_Sans({
   weight: ["400", "500", "600"],
 });
 
+const REVIEW_WINDOW_DAYS = 7;
+const REVIEW_PROMPT_DISMISSALS_KEY = "dismissedReviewPromptRideIds";
+
 type StoredReview = {
   id: string;
   driverId: string;
@@ -51,6 +54,14 @@ type StoredReview = {
   rating: number;
   text: string;
   createdAt: string;
+};
+
+type CompletedRideReviewCandidate = {
+  id: string;
+  status: "COMPLETED";
+  acceptedDriverId?: string | null;
+  dropoffLabel: string;
+  completedAt?: string | null;
 };
 
 // MVP review persistence helper (localStorage-backed).
@@ -74,6 +85,47 @@ function getDriverReviewStats(driverId: string) {
     average: total / reviews.length,
     count: reviews.length,
   };
+}
+
+function isReviewWindowOpen(completedAt?: string | null): boolean {
+  if (!completedAt) return false;
+  const completedAtMs = new Date(completedAt).getTime();
+  if (!Number.isFinite(completedAtMs)) return false;
+  const deadlineMs = completedAtMs + REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() <= deadlineMs;
+}
+
+function loadDismissedReviewPromptRideIds(): string[] {
+  try {
+    const stored = localStorage.getItem(REVIEW_PROMPT_DISMISSALS_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDismissedReviewPromptRideIds(rideIds: string[]) {
+  localStorage.setItem(REVIEW_PROMPT_DISMISSALS_KEY, JSON.stringify(rideIds));
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+// Build fetch-compatible auth headers only when a token exists.
+// Returning `undefined` instead of `{ Authorization: undefined }` avoids
+// the TypeScript error shown in the editor because `HeadersInit` requires
+// header values to always be strings.
+function buildAuthHeaders(sessionToken: string | null): HeadersInit | undefined {
+  return sessionToken
+    ? {
+        Authorization: `Bearer ${sessionToken}`,
+      }
+    : undefined;
 }
 
 export default function DashboardPage() {
@@ -117,6 +169,12 @@ export default function DashboardPage() {
     id: string;
     status: "OPEN" | "MATCHED";
   } | null>(null);
+  const [completedReviewCandidates, setCompletedReviewCandidates] = useState<
+    CompletedRideReviewCandidate[]
+  >([]);
+  const [reviewedRideIds, setReviewedRideIds] = useState<Set<string>>(new Set());
+  const [dismissedReviewPromptRideIds, setDismissedReviewPromptRideIds] =
+    useState<Set<string>>(new Set());
   const [driverProfiles, setDriverProfiles] = useState<
     Record<string, { id: string; name: string; rating: number; reviewsCount: number }>
   >({});
@@ -143,16 +201,13 @@ export default function DashboardPage() {
       try {
         // MVP: token in localStorage; production should use httpOnly cookies.
         const sessionToken = localStorage.getItem("sessionToken");
+        const authHeaders = buildAuthHeaders(sessionToken);
 
         // Session API validates either the Authorization header or cookies.
         const res = await fetch("/api/auth/session", {
           method: "GET",
-          headers: sessionToken
-            ? {
-                // MVP: send token in Authorization header.
-                Authorization: `Bearer ${sessionToken}`,
-              }
-            : {},
+          // If no token exists we omit the header entirely.
+          headers: authHeaders,
         });
 
         if (res.ok) {
@@ -197,14 +252,11 @@ export default function DashboardPage() {
     async function fetchAlerts() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
+        const authHeaders = buildAuthHeaders(sessionToken);
         // MVP: pass the session token via Authorization header.
         const res = await fetch("/api/notifications", {
           method: "GET",
-          headers: sessionToken
-            ? {
-                Authorization: `Bearer ${sessionToken}`,
-              }
-            : {},
+          headers: authHeaders,
         });
 
         // If the request fails, keep the last known alerts.
@@ -253,6 +305,13 @@ export default function DashboardPage() {
     };
   }, []);
 
+  // Track which prompt rides have already been dismissed on this device.
+  useEffect(() => {
+    setDismissedReviewPromptRideIds(
+      new Set(loadDismissedReviewPromptRideIds())
+    );
+  }, []);
+
   useEffect(() => {
     let ignore = false;
     // Fetches all OPEN & MATCHED rides for the rider
@@ -262,14 +321,11 @@ export default function DashboardPage() {
       try {
         if (!riderId) return;
         const sessionToken = localStorage.getItem("sessionToken");
+        const authHeaders = buildAuthHeaders(sessionToken);
         const res = await fetch(
           `/api/requests?status=OPEN,MATCHED&riderId=${riderId}`,
           {
-            headers: sessionToken
-              ? {
-                  Authorization: `Bearer ${sessionToken}`,
-                }
-              : {},
+            headers: authHeaders,
           }
         );
         if (!res.ok) {
@@ -279,9 +335,9 @@ export default function DashboardPage() {
         if (!ignore) {
           setUpcomingRides(data.requests || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!ignore) {
-          setRidesError(err?.message || "Failed to load ride status.");
+          setRidesError(getErrorMessage(err, "Failed to load ride status."));
         }
       } finally {
         if (!ignore) {
@@ -299,6 +355,81 @@ export default function DashboardPage() {
     };
   }, [riderId]);
 
+  useEffect(() => {
+    let ignore = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    // Poll for completed rides plus already-written reviews so the dashboard can
+    // prompt for the newest eligible ride without requiring a refresh.
+    async function fetchReviewPromptData() {
+      try {
+        // Until auth has resolved, there is no rider-scoped data to fetch.
+        if (!riderId) return;
+        const sessionToken = localStorage.getItem("sessionToken");
+        const authHeaders = buildAuthHeaders(sessionToken);
+
+        // We need both pieces of information:
+        // 1. completed rides the rider could potentially review
+        // 2. reviews already submitted, so we do not prompt again
+        const [completedRes, reviewsRes] = await Promise.all([
+          fetch(`/api/requests?status=COMPLETED&riderId=${riderId}`, {
+            headers: authHeaders,
+          }),
+          fetch(`/api/reviews?riderId=${riderId}`, {
+            headers: authHeaders,
+          }),
+        ]);
+
+        // If either request fails, keep the previous prompt state instead of
+        // clearing it and flashing the UI.
+        if (!completedRes.ok || !reviewsRes.ok) return;
+
+        const [completedData, reviewsData] = await Promise.all([
+          completedRes.json().catch(() => null),
+          reviewsRes.json().catch(() => null),
+        ]);
+
+        if (ignore) return;
+
+        // Keep the raw completed rides so we can choose the newest eligible one
+        // later during render.
+        setCompletedReviewCandidates(
+          Array.isArray(completedData?.requests)
+            ? completedData.requests
+            : []
+        );
+        // Convert the API response into a Set for O(1) "has this ride been reviewed?"
+        // lookups when deciding whether to show the prompt.
+        setReviewedRideIds(
+          new Set<string>(
+            Array.isArray(reviewsData?.reviews)
+              ? reviewsData.reviews.map(
+                  (review: { rideRequestId: string }) => review.rideRequestId
+                )
+              : []
+          )
+        );
+      } catch {
+        if (!ignore) {
+          setCompletedReviewCandidates([]);
+          setReviewedRideIds(new Set());
+        }
+      }
+    }
+
+    if (riderId) {
+      fetchReviewPromptData();
+      interval = setInterval(fetchReviewPromptData, 30000);
+    }
+
+    return () => {
+      ignore = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [riderId]);
+
   // Load driver details for matched rides (name + rating + reviews count).
   useEffect(() => {
     let ignore = false;
@@ -306,17 +437,14 @@ export default function DashboardPage() {
     async function fetchDriverProfiles(driverIds: string[]) {
       if (driverIds.length === 0) return;
       const sessionToken = localStorage.getItem("sessionToken");
+      const authHeaders = buildAuthHeaders(sessionToken);
 
       // Fetch minimal driver profiles for confirmation cards.
       const entries = await Promise.all(
         driverIds.map(async (id) => {
           try {
             const res = await fetch(`/api/users/${id}`, {
-              headers: sessionToken
-                ? {
-                    Authorization: `Bearer ${sessionToken}`,
-                  }
-                : {},
+              headers: authHeaders,
             });
             if (!res.ok) return null;
             const data = await res.json().catch(() => null);
@@ -381,18 +509,17 @@ export default function DashboardPage() {
   // Confirm cancellation from the inline modal and remove from Upcoming.
   async function handleCancelRideConfirm() {
     if (!cancelModalRide) return;
-``
+
     setCancelingRideId(cancelModalRide.id);
     try {
       // Call the API route that updates the ride status to CANCEL in the database.
       const sessionToken = localStorage.getItem("sessionToken");
+      const authHeaders = buildAuthHeaders(sessionToken);
       const res = await fetch("/api/requests/rider-cancel", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(sessionToken
-            ? { Authorization: `Bearer ${sessionToken}` }
-            : {}),
+          ...authHeaders,
         },
         body: JSON.stringify({ requestId: cancelModalRide.id }),
       });
@@ -458,10 +585,80 @@ export default function DashboardPage() {
     }, 3000);
   };
 
+  const reviewPromptRide =
+    completedReviewCandidates
+      .filter(
+        (ride) =>
+          // Only rides with a matched driver can be reviewed.
+          Boolean(ride.acceptedDriverId) &&
+          // Only rides still inside the 7-day review window should prompt.
+          isReviewWindowOpen(ride.completedAt) &&
+          // Skip rides already reviewed.
+          !reviewedRideIds.has(ride.id) &&
+          // Skip rides the rider already dismissed on this device.
+          !dismissedReviewPromptRideIds.has(ride.id)
+      )
+      // If multiple rides are eligible, prompt for the most recent one only.
+      .sort((left, right) => {
+        const leftCompletedAt = new Date(left.completedAt ?? 0).getTime();
+        const rightCompletedAt = new Date(right.completedAt ?? 0).getTime();
+        return rightCompletedAt - leftCompletedAt;
+      })[0] ?? null;
+
+  // "Maybe later" stores the ride ID in localStorage so this prompt does not
+  // keep reappearing for the same ride on this browser.
+  function dismissReviewPrompt(rideId: string) {
+    setDismissedReviewPromptRideIds((prev) => {
+      const next = new Set(prev);
+      next.add(rideId);
+      saveDismissedReviewPromptRideIds(Array.from(next));
+      return next;
+    });
+  }
+
+  // Deep-link into Ride History so the rider lands on the specific review form
+  // instead of having to manually find the completed ride.
+  function handleLeaveReviewClick(rideId: string) {
+    dismissReviewPrompt(rideId);
+    router.push(`/dashboard/ride-history?reviewRideId=${rideId}#review-${rideId}`);
+  }
+
   return (
     <main
       className={`min-h-screen bg-[#f4ecdf] bg-[radial-gradient(circle_at_top,_#f9f2e8,_#f4ecdf_60%)] ${bodyFont.className}`}
     >
+      {reviewPromptRide && !cancelModalRide && !showDriverModal ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-6">
+          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
+              Completed ride
+            </p>
+            <h2 className={`${displayFont.className} mt-2 text-2xl text-[#0a3570]`}>
+              Leave a review for your driver
+            </h2>
+            <p className="mt-3 text-sm text-[#6b5f52]">
+              Your ride to {reviewPromptRide.dropoffLabel} has been completed.
+              You can leave a review now, or return to Ride History within 7 days.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => dismissReviewPrompt(reviewPromptRide.id)}
+                className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+              >
+                Maybe later
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLeaveReviewClick(reviewPromptRide.id)}
+                className="rounded-full border border-[#0a3570] bg-[#0a3570] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#092a59]"
+              >
+                Leave a review
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {cancelModalRide ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
           <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
@@ -822,28 +1019,6 @@ export default function DashboardPage() {
         </h2>
 
         <div className="mt-10 grid gap-10">
-          {/* Demo Stripe Connect entry points for rider checkout + driver onboarding. */}
-          <section className="rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
-            <h3 className="text-lg font-semibold text-[#0a3570]">Payments demo</h3>
-            <p className="mt-2 text-sm text-[#6b5f52]">
-              Try the sample Connect storefront flow where riders pay and drivers receive transfers.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href="/storefront"
-                className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
-              >
-                Open rider storefront
-              </Link>
-              <Link
-                href="/driver/connect"
-                className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
-              >
-                Driver payout onboarding
-              </Link>
-            </div>
-          </section>
-
           {/* Request a ride row */}
           <div className="grid gap-6 md:grid-cols-[220px_auto] md:items-center">
             <RequestButton

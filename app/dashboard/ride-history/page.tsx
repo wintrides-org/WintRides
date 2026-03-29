@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 
 // Page fonts (kept consistent with the rest of the dashboard UI).
@@ -54,6 +54,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 export default function RiderRideHistoryPage() {
   const router = useRouter();
+  // If the rider came from the dashboard review prompt, this query param tells
+  // us which completed ride should be emphasized on the page.
+  const searchParams = useSearchParams();
+  const highlightedRideId = searchParams.get("reviewRideId");
 
   // Core page data.
   const [riderId, setRiderId] = useState<string>("");
@@ -210,6 +214,21 @@ export default function RiderRideHistoryPage() {
     [requests]
   );
 
+  // When Ride History is opened from the dashboard review prompt, scroll the
+  // targeted ride into view so the rider lands on the correct review form.
+  useEffect(() => {
+    if (!highlightedRideId || loading) return;
+
+    // The review form container gets an id like `review-<rideId>`.
+    const targetedElement = document.getElementById(`review-${highlightedRideId}`);
+    if (!targetedElement) return;
+
+    targetedElement.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [highlightedRideId, loading, requests]);
+
   // Update draft rating/text per ride.
   function updateDraft(requestId: string, next: { rating?: number; text?: string }) {
     setReviewDrafts((prev) => ({
@@ -340,11 +359,18 @@ export default function RiderRideHistoryPage() {
                   STATUS_STYLES[request.status as "COMPLETED" | "CANCELED"] ||
                   STATUS_STYLES.COMPLETED;
                 const reviewWindowOpen = isReviewWindowOpen(request.completedAt);
+                // Use the query param to visually distinguish the ride selected
+                // from the dashboard prompt from all the other history cards.
+                const isHighlightedRide = highlightedRideId === request.id;
 
                 return (
                   <div
                     key={request.id}
-                    className="rounded-2xl border border-[#0a3570] bg-white/90 p-5"
+                    className={`rounded-2xl border p-5 ${
+                      isHighlightedRide
+                        ? "border-2 border-[#d08a2d] bg-[#fff7e8] shadow-[0_12px_24px_rgba(208,138,45,0.18)]"
+                        : "border-[#0a3570] bg-white/90"
+                    }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -379,10 +405,22 @@ export default function RiderRideHistoryPage() {
                     </div>
 
                     {request.status === "COMPLETED" && request.acceptedDriverId ? (
-                      <div className="mt-5 rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4">
+                      <div
+                        id={`review-${request.id}`}
+                        className={`mt-5 rounded-2xl border p-4 ${
+                          isHighlightedRide
+                            ? "border-[#d08a2d] bg-[#fff1cf]"
+                            : "border-[#0a3570] bg-[#fdf7ef]"
+                        }`}
+                      >
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6b5f52]">
                           Rate your driver
                         </p>
+                        {isHighlightedRide ? (
+                          <p className="mt-2 text-sm font-medium text-[#8a5a12]">
+                            Review this completed ride here.
+                          </p>
+                        ) : null}
 
                         {reviewedRideIds.has(request.id) ? (
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-[#0a1b3f]">
