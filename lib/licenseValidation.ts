@@ -120,8 +120,8 @@ export const US_STATE_RULES = {
   },
   MA: {
     patterns: [
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
+      { regex: /^[A-Za-z]{2}\d{7}$/, description: "2 Alpha + 7 Numeric", minLength: 9, maxLength: 9 },
+      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 }
     ]
   },
   MI: {
