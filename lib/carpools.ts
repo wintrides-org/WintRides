@@ -1,9 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import type { CarpoolThread, CarpoolStatus, CarpoolMessage } from "@/types/carpool";
 import type { Prisma } from "@prisma/client";
+import { processDueRideAuthorizations, summarizeRidePayments } from "@/lib/payments";
 
 type CarpoolWithParticipants = Prisma.CarpoolGetPayload<{
-  include: { participants: { include: { user: { select: { userName: true } } } } };
+  include: {
+    participants: { include: { user: { select: { userName: true } } } };
+    rideRequest: {
+      include: {
+        payments: {
+          select: {
+            status: true;
+            authorizationScheduledFor: true;
+          };
+        };
+      };
+    };
+  };
 }>;
 
 type CarpoolMessageRecord = Prisma.CarpoolMessageGetPayload<{
@@ -59,7 +72,21 @@ function toCarpoolThread(carpool: CarpoolWithParticipants): CarpoolThread {
     lockedAt: toIso(carpool.lockedAt),
     completedAt: toIso(carpool.completedAt),
     canceledAt: toIso(carpool.canceledAt),
-    expiredAt: toIso(carpool.expiredAt)
+    expiredAt: toIso(carpool.expiredAt),
+    rideRequestId: carpool.rideRequest?.id,
+    authorizationScheduledFor:
+      carpool.rideRequest?.payments.reduce<Date | null>((latest, payment) => {
+        if (!payment.authorizationScheduledFor) {
+          return latest;
+        }
+        if (!latest || payment.authorizationScheduledFor > latest) {
+          return payment.authorizationScheduledFor;
+        }
+        return latest;
+      }, null)?.toISOString() ?? undefined,
+    paymentSummary: carpool.rideRequest
+      ? summarizeRidePayments(carpool.rideRequest.payments)
+      : undefined,
   };
 }
 
@@ -76,16 +103,49 @@ function toCarpoolMessage(message: CarpoolMessageRecord): CarpoolMessage {
 
 export async function getAllCarpools(): Promise<CarpoolThread[]> {
   const carpools = await prisma.carpool.findMany({
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return carpools.map(toCarpoolThread);
 }
 
 export async function getCarpoolById(id: string): Promise<CarpoolThread | undefined> {
+  const rideRequest = await prisma.rideRequest.findUnique({
+    where: { carpoolId: id },
+    select: { id: true },
+  });
+
+  if (rideRequest) {
+    await processDueRideAuthorizations(rideRequest.id);
+  }
+
   const carpool = await prisma.carpool.findUnique({
     where: { id },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return carpool ? toCarpoolThread(carpool) : undefined;
@@ -114,7 +174,19 @@ export async function createCarpool(input: CreateCarpoolInput): Promise<CarpoolT
         }
       }
     },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return toCarpoolThread(carpool);
@@ -141,7 +213,19 @@ export async function addParticipant(carpoolId: string, userId: string): Promise
 
   const carpool = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!carpool) return null;
@@ -155,7 +239,19 @@ export async function addParticipant(carpoolId: string, userId: string): Promise
 
   const refreshed = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return refreshed ? toCarpoolThread(refreshed) : null;
@@ -181,7 +277,19 @@ export async function confirmParticipant(carpoolId: string, userId: string): Pro
 
   const carpool = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!carpool) return null;
@@ -195,7 +303,19 @@ export async function confirmParticipant(carpoolId: string, userId: string): Pro
 
   const refreshed = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return refreshed ? toCarpoolThread(refreshed) : null;
@@ -221,7 +341,19 @@ export async function removeParticipant(
 
   const refreshed = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!refreshed) return null;
@@ -255,7 +387,19 @@ export async function removeParticipant(
 
   const final = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return final ? toCarpoolThread(final) : null;
@@ -264,7 +408,19 @@ export async function removeParticipant(
 export async function unconfirmParticipant(carpoolId: string, userId: string): Promise<CarpoolThread | null> {
   const carpool = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!carpool) return null;
@@ -296,7 +452,19 @@ export async function unconfirmParticipant(carpoolId: string, userId: string): P
 
   const refreshed = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return refreshed ? toCarpoolThread(refreshed) : null;
@@ -305,7 +473,19 @@ export async function unconfirmParticipant(carpoolId: string, userId: string): P
 export async function lockCarpool(carpoolId: string, creatorId: string): Promise<CarpoolThread | null> {
   const carpool = await prisma.carpool.findUnique({
     where: { id: carpoolId },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!carpool || carpool.creatorId !== creatorId) return null;
@@ -317,7 +497,19 @@ export async function lockCarpool(carpoolId: string, creatorId: string): Promise
   const updated = await prisma.carpool.update({
     where: { id: carpoolId },
     data: { status: "CONFIRMED", lockedAt: new Date() },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return toCarpoolThread(updated);
@@ -334,7 +526,19 @@ export async function cancelCarpool(carpoolId: string, creatorId: string): Promi
   const updated = await prisma.carpool.update({
     where: { id: carpoolId },
     data: { status: "CANCELED", canceledAt: new Date() },
-    include: { participants: { include: { user: { select: { userName: true } } } } }
+    include: {
+      participants: { include: { user: { select: { userName: true } } } },
+      rideRequest: {
+        include: {
+          payments: {
+            select: {
+              status: true,
+              authorizationScheduledFor: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return toCarpoolThread(updated);

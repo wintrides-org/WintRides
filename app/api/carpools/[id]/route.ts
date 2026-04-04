@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCarpoolById, cancelCarpool } from "@/lib/carpools";
 import { getSessionUser } from "@/lib/sessionAuth";
+import { prisma } from "@/lib/prisma";
+import { cancelRidePayments } from "@/lib/payments";
 
 // GET /api/carpools/[id] - Get a single carpool
 export async function GET(
@@ -73,6 +75,25 @@ export async function PATCH(
         { error: "Failed to cancel carpool" },
         { status: 500 }
       );
+    }
+
+    // If the locked carpool already created a shared ride request, cancel the
+    // downstream ride and release any uncaptured authorizations.
+    const rideRequest = await prisma.rideRequest.findUnique({
+      where: { carpoolId: id },
+      select: { id: true },
+    });
+
+    if (rideRequest) {
+      await prisma.rideRequest.update({
+        where: { id: rideRequest.id },
+        data: {
+          status: "CANCELED",
+          canceledAt: new Date(),
+          canceledBy: auth.user.id,
+        },
+      });
+      await cancelRidePayments(rideRequest.id);
     }
 
     return NextResponse.json({ carpool }, { status: 200 });

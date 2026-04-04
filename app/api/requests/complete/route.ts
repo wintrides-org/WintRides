@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  captureRidePaymentsForRequest,
+  transferRidePayoutForRequest,
+} from "@/lib/payments";
 
 // POST /api/requests/complete - mark a matched request as completed.
 export async function POST(request: NextRequest) {
@@ -36,6 +40,13 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
+
+    // The product flow ultimately wants capture at ride start and payout at
+    // ride completion. Until a dedicated ride-start transition exists in the
+    // current app, completion performs a final capture pass so the payout step
+    // can still run safely end to end.
+    await captureRidePaymentsForRequest(body.requestId);
+    await transferRidePayoutForRequest(body.requestId);
 
     return NextResponse.json(
       { ok: true, message: "Ride completed." },

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { RequestStatus } from "@prisma/client";
 import { getSession, getUserById } from "@/lib/mockUsers";
+import {
+  appendPaymentSummaryToRequests,
+  processDueRideAuthorizations,
+} from "@/lib/payments";
 
 // GET /api/requests - list ride requests (defaults to OPEN).
 export async function GET(request: NextRequest) {
@@ -103,7 +107,15 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ requests }, { status: 200 });
+    // Keep scheduled authorizations moving when a request enters its 48-hour
+    // window, even before a background scheduler is introduced.
+    for (const rideRequest of requests) {
+      await processDueRideAuthorizations(rideRequest.id);
+    }
+
+    const requestsWithPaymentState = await appendPaymentSummaryToRequests(requests);
+
+    return NextResponse.json({ requests: requestsWithPaymentState }, { status: 200 });
   } catch (error) {
     console.error("Error fetching requests:", error);
     return NextResponse.json(

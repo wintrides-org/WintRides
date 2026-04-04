@@ -145,8 +145,8 @@ export default function CreateCarpoolPage() {
       });
 
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || "Failed to create carpool");
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || "Failed to create carpool");
       }
 
       const data = await res.json();
@@ -156,8 +156,8 @@ export default function CreateCarpoolPage() {
       setTimeout(() => {
         router.push(`/carpool/${data.carpool.id}`);
       }, 1000);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
     }

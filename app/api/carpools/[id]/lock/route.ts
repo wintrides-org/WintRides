@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lockCarpool, getCarpoolById } from "@/lib/carpools";
 import { getSessionUser } from "@/lib/sessionAuth";
+import { prisma } from "@/lib/prisma";
+import {
+  calculateRideAmountCents,
+  ensureRidePaymentsForRequest,
+  getConfirmedParticipantIds,
+  processDueRideAuthorizations,
+  refreshRidePaymentSummary,
+} from "@/lib/payments";
+
+function buildPickupAt(date: string, timeStart: string) {
+  return new Date(`${date}T${timeStart}:00`);
+}
 
 // POST /api/carpools/[id]/lock - Lock a carpool (creator only)
 export async function POST(
@@ -49,7 +61,58 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ carpool }, { status: 200 });
+    // Locking a carpool freezes the participant list and creates the shared
+    // ride request that drivers can then discover and accept.
+    const confirmedRiderIds = getConfirmedParticipantIds(carpool.participants);
+    const pickupAt = buildPickupAt(carpool.date, carpool.timeWindow.start);
+    const quotedAmountPerRider = Math.ceil(
+      calculateRideAmountCents(Math.max(1, confirmedRiderIds.length)) /
+        Math.max(1, confirmedRiderIds.length)
+    );
+
+    const rideRequest = await prisma.rideRequest.upsert({
+      where: { carpoolId: carpool.id },
+      update: {
+        status: "OPEN",
+        pickupLabel: carpool.pickupArea,
+        pickupAddress: carpool.pickupArea,
+        dropoffLabel: carpool.destination,
+        dropoffAddress: carpool.destination,
+        partySize: confirmedRiderIds.length,
+        pickupAt,
+        quotedAmount: quotedAmountPerRider,
+      },
+      create: {
+        riderId: auth.user.id,
+        type: "GROUP",
+        status: "OPEN",
+        bookedForSelf: true,
+        carpoolId: carpool.id,
+        pickupLabel: carpool.pickupArea,
+        pickupAddress: carpool.pickupArea,
+        dropoffLabel: carpool.destination,
+        dropoffAddress: carpool.destination,
+        partySize: confirmedRiderIds.length,
+        pickupAt,
+        carsNeeded: 1,
+        quotedAmount: quotedAmountPerRider,
+        currency: "usd",
+      },
+    });
+
+    // A locked carpool creates one rider payment row per confirmed participant.
+    await ensureRidePaymentsForRequest({
+      rideRequestId: rideRequest.id,
+      riderIds: confirmedRiderIds,
+      carpoolId: carpool.id,
+    });
+    await processDueRideAuthorizations(rideRequest.id);
+    const paymentState = await refreshRidePaymentSummary(rideRequest.id);
+
+    return NextResponse.json(
+      { carpool, rideRequest, paymentSummary: paymentState.paymentSummary },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error locking carpool:", error);
     return NextResponse.json(

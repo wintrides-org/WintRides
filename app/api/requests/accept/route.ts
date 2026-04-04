@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserById } from "@/lib/mockUsers";
+import { processDueRideAuthorizations } from "@/lib/payments";
 
 // POST /api/requests/accept - accept a request if it's still OPEN.
 export async function POST(request: NextRequest) {
@@ -52,12 +53,28 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+    // Drivers must finish Stripe Connect onboarding before they can accept
+    // paid rides, otherwise the platform cannot safely send their payout later.
+    if (!user.stripeConnectedAccountId || !user.stripeConnectPayoutsEnabled) {
+      return NextResponse.json(
+        {
+          error:
+            "Complete driver payout onboarding in Account > Payments before accepting rides.",
+        },
+        { status: 409 }
+      );
+    }
     // creates a rideRequest record with only two fields, the request's id and the requester's id
     // where and select are prisma key words
     // As used here, they imply where the request id exists, select its id and requester's id and create a request record with those
     const existingRequest = await prisma.rideRequest.findUnique({
       where: { id: body.requestId },
-      select: { id: true, riderId: true }
+      select: {
+        id: true,
+        riderId: true,
+        type: true,
+        paymentReadyAt: true,
+      }
     });
     // if request has been accepted or doesn't exist, return an error
     if (!existingRequest) {
@@ -71,6 +88,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Drivers cannot accept their own requests." },
         { status: 403 }
+      );
+    }
+
+    // Immediate rides must already be financially ready before a driver can
+    // claim them. Scheduled/group rides can be matched before authorization.
+    await processDueRideAuthorizations(existingRequest.id);
+    const refreshedRequest = await prisma.rideRequest.findUnique({
+      where: { id: existingRequest.id },
+      select: {
+        id: true,
+        type: true,
+        paymentReadyAt: true,
+      },
+    });
+
+    if (
+      refreshedRequest?.type === "IMMEDIATE" &&
+      !refreshedRequest.paymentReadyAt
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This immediate ride is not ready yet because payment authorization has not completed.",
+        },
+        { status: 409 }
       );
     }
 

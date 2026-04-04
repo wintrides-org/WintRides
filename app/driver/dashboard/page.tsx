@@ -91,6 +91,11 @@ export default function DriverDashboardPage() {
       pickupAt: string;
       partySize: number;
       carsNeeded: number;
+      paymentSummary?: {
+        tone: "neutral" | "info" | "success" | "danger";
+        label: string;
+        detail: string;
+      };
     }[]
   >([]);
   // initializes accept status of a request, confirm status, and what upcoming requests should be shown as
@@ -105,6 +110,11 @@ export default function DriverDashboardPage() {
       pickupAt: string;
       partySize: number;
       canceledAt?: string | null;
+      paymentSummary?: {
+        tone: "neutral" | "info" | "success" | "danger";
+        label: string;
+        detail: string;
+      };
     }[]
   >([]);
 
@@ -689,6 +699,11 @@ export default function DriverDashboardPage() {
                             <span className="mx-2 text-[#0a3570]">•</span>
                             <span className="font-semibold">Pay:</span>{" "}
                             ${estimatePriceRange(ping.partySize).min}
+                            {ping.paymentSummary ? (
+                              <p className="mt-2 text-xs text-[#6b5f52]">
+                                Payment: {ping.paymentSummary.label}
+                              </p>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-2">
                             {/* Accept triggers a POST to /api/requests/accept. */}
@@ -764,6 +779,11 @@ export default function DriverDashboardPage() {
                         <span>{formatPickupTime(request.pickupAt)}</span>
                         <span className="mx-2 text-[#0a3570]">•</span>
                         <span className="font-semibold">Pickup:</span> {request.pickupLabel}
+                        {request.paymentSummary ? (
+                          <p className="mt-2 text-xs text-[#6b5f52]">
+                            Payment: {request.paymentSummary.label}
+                          </p>
+                        ) : null}
                       </div>
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -812,7 +832,7 @@ export default function DriverDashboardPage() {
             </section>
 
 
-            {/* Collapsible payment details section (mock data for MVP). */}
+            {/* Payout section routes drivers to the Stripe-backed onboarding hub. */}
             <section className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <button
                 type="button"
@@ -830,39 +850,19 @@ export default function DriverDashboardPage() {
               </button>
               {paymentOpen ? (
                 <div className="bg-[#d9b58c] px-5 py-4">
-                  <div className="grid gap-3 text-sm text-[#0a1b3f]">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 font-semibold">Name</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">
-                        {driverName || driverUserName || "Driver"}
-                      </span>
-                      <button type="button" className="text-[#0a3570]" aria-label="Edit name">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 font-semibold">Acct number</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">************8876</span>
-                      <button type="button" className="text-[#0a3570]" aria-label="Edit account number">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 font-semibold">Pin</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">***</span>
-                      <button type="button" className="text-[#0a3570]" aria-label="Edit pin">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                    </div>
+                  <div className="space-y-3 text-sm text-[#0a1b3f]">
+                    <p>
+                      Driver payouts now run through Stripe Connect instead of locally stored bank placeholders.
+                    </p>
+                    <p className="text-[#6b5f52]">
+                      Complete onboarding from Account &gt; Payments before accepting rides so WintRides can send payouts after completed trips.
+                    </p>
+                    <Link
+                      href="/account/payments"
+                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                    >
+                      Open payout onboarding
+                    </Link>
                   </div>
                 </div>
               ) : null}

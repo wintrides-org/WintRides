@@ -61,6 +61,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Creating or joining carpools requires a saved payment method, but this
+    // guard remains separate from the later ride-level authorization step.
+    if (
+      auth.user.paymentMethodStatus !== "READY" ||
+      !auth.user.defaultPaymentMethodId
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Add a payment method in Account > Payments before creating a carpool.",
+        },
+        { status: 409 }
+      );
+    }
+
     const body = await request.json();
     const {
       destination,
