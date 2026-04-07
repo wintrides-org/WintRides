@@ -31,6 +31,7 @@ enum CarpoolStatus {
   EXPIRED
 }
 
+
 enum PaymentMethodStatus {
   NONE
   READY
@@ -51,6 +52,7 @@ enum RidePaymentStatus {
   TRANSFERRED
   FAILED
 }
+
 
 enum CarpoolType {
   RIDER
@@ -92,9 +94,6 @@ model User {
   rideParticipations  RideRequestParticipant[]
   carpoolParticipants CarpoolParticipant[]
   carpoolMessages     CarpoolMessage[]
-  rideRequests        RideRequest[]          @relation("RideRequestRider")
-  acceptedRequests    RideRequest[]          @relation("RideRequestDriver")
-  ridePayments        RidePayment[]
   reviewsWritten      DriverReview[]         @relation("ReviewsWritten")
   reviewsReceived     DriverReview[]         @relation("ReviewsReceived")
 }
@@ -165,7 +164,6 @@ model RideRequest {
   bookedForSelf Boolean       @default(true)
   type          RequestType
   status        RequestStatus
-  carpoolId     String?       @unique
   pickupLabel   String
   pickupAddress String
   dropoffLabel  String
@@ -241,8 +239,6 @@ model Carpool {
   rideRequests    RideRequest[]
   participants    CarpoolParticipant[]
   messages        CarpoolMessage[]
-  rideRequest     RideRequest?
-  ridePayments    RidePayment[]
 
   @@index([status])
   @@index([date])
@@ -297,39 +293,4 @@ model DriverReview {
 
   @@index([driverId, createdAt])
   @@index([riderId, createdAt])
-}
-
-model RidePayment {
-  id                       String            @id @default(uuid())
-  rideRequestId            String
-  riderId                  String
-  carpoolId                String?
-  status                   RidePaymentStatus @default(PENDING_AUTHORIZATION)
-  amount                   Int
-  currency                 String            @default("usd")
-  paymentIntentId          String?           @unique
-  transferId               String?           @unique
-  authorizationScheduledFor DateTime?
-  authorizationExpiresAt   DateTime?
-  authorizedAt             DateTime?
-  capturedAt               DateTime?
-  canceledAt               DateTime?
-  refundedAt               DateTime?
-  transferredAt            DateTime?
-  lastPaymentError         String?
-  cancellationFeeAmount    Int?
-  capturedAmount           Int?
-  transferAmount           Int?
-  createdAt                DateTime          @default(now())
-  updatedAt                DateTime          @updatedAt
-
-  rideRequest              RideRequest       @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
-  rider                    User              @relation(fields: [riderId], references: [id], onDelete: Cascade)
-  carpool                  Carpool?          @relation(fields: [carpoolId], references: [id], onDelete: SetNull)
-
-  @@unique([rideRequestId, riderId])
-  @@index([status])
-  @@index([authorizationScheduledFor])
-  @@index([riderId])
-  @@index([carpoolId])
 }
