@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // As used here, they imply where the request id exists, select its id and requester's id and create a request record with those
     const existingRequest = await prisma.rideRequest.findUnique({
       where: { id: body.requestId },
-      select: { id: true, riderId: true }
+      select: { id: true, requesterId: true }
     });
     // if request has been accepted or doesn't exist, return an error
     if (!existingRequest) {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
     // if driver attempting to request the ride placed the ride request, don't allow it 
-    if (existingRequest.riderId === user.id) {
+    if (existingRequest.requesterId === user.id) {
       return NextResponse.json(
         { error: "Drivers cannot accept their own requests." },
         { status: 403 }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: existingRequest.id,
         status: "OPEN",
-        riderId: { not: user.id },
+        requesterId: { not: user.id },
       },
       data: {
         status: "MATCHED",
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     // creates a new row in the "Notification" table on the database
     await prisma.notification.create({
       data: {
-        userId: existingRequest.riderId,
+        userId: existingRequest.requesterId,
         type: "RIDE_ACCEPTED",
         message: "Your ride request was accepted by a driver.",
         rideRequestId: existingRequest.id,

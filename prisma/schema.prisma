@@ -31,6 +31,11 @@ enum CarpoolStatus {
   EXPIRED
 }
 
+enum CarpoolType {
+  RIDER
+  DRIVER
+}
+
 model User {
   id                     String     @id @default(uuid())
   email                  String     @unique
@@ -51,6 +56,8 @@ model User {
   driverInfo          DriverInfo?
   sessions            Session[]
   notifications       Notification[]
+  rideRequestsCreated RideRequest[]           @relation("RideRequestsCreated")
+  rideParticipations  RideRequestParticipant[]
   carpoolParticipants CarpoolParticipant[]
   carpoolMessages     CarpoolMessage[]
   reviewsWritten        DriverReview[]         @relation("ReviewsWritten")
@@ -117,7 +124,8 @@ model Campus {
 
 model RideRequest {
   id            String        @id @default(uuid())
-  riderId       String
+  requesterId   String
+  sourceCarpoolId String?
   acceptedDriverId String?
   bookedForSelf Boolean       @default(true)
   type          RequestType
@@ -143,15 +151,35 @@ model RideRequest {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   driverReview  DriverReview?
+  requester     User          @relation("RideRequestsCreated", fields: [requesterId], references: [id])
+  sourceCarpool Carpool?      @relation(fields: [sourceCarpoolId], references: [id])
+  participants  RideRequestParticipant[]
 
   @@index([status])
   @@index([pickupAt])
+  @@index([sourceCarpoolId])
+}
+
+model RideRequestParticipant {
+  id               String      @id @default(uuid())
+  rideRequestId    String
+  userId           String
+  isPrimaryContact Boolean     @default(false)
+  joinedAt         DateTime    @default(now())
+
+  rideRequest      RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([rideRequestId, userId])
+  @@index([rideRequestId])
+  @@index([userId])
 }
 
 
 model Carpool {
   id              String        @id @default(uuid())
   creatorId       String
+  carpoolType     CarpoolType   @default(RIDER)
   destination     String
   date            String
   timeStart       String
@@ -169,6 +197,7 @@ model Carpool {
   canceledAt      DateTime?
   expiredAt       DateTime?
 
+  rideRequests    RideRequest[]
   participants    CarpoolParticipant[]
   messages        CarpoolMessage[]
 

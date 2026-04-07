@@ -323,7 +323,7 @@ export default function DashboardPage() {
         const sessionToken = localStorage.getItem("sessionToken");
         const authHeaders = buildAuthHeaders(sessionToken);
         const res = await fetch(
-          `/api/requests?status=OPEN,MATCHED&riderId=${riderId}`,
+          `/api/requests?status=OPEN,MATCHED&participantId=${riderId}`,
           {
             headers: authHeaders,
           }
@@ -372,7 +372,7 @@ export default function DashboardPage() {
         // 1. completed rides the rider could potentially review
         // 2. reviews already submitted, so we do not prompt again
         const [completedRes, reviewsRes] = await Promise.all([
-          fetch(`/api/requests?status=COMPLETED&riderId=${riderId}`, {
+          fetch(`/api/requests?status=COMPLETED&participantId=${riderId}`, {
             headers: authHeaders,
           }),
           fetch(`/api/reviews?riderId=${riderId}`, {

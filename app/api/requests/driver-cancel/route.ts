@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       where: { id: body.requestId },
       select: {
         id: true,
-        riderId: true,
+        requesterId: true,
         status: true,
         acceptedDriverId: true,
       },
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     // Sends a message to the rider about the cancellation
     await prisma.notification.create({
       data: {
-        userId: existingRequest.riderId,
+        userId: existingRequest.requesterId,
         type: "DRIVER_CANCELED",
         message:
           "Your driver canceled, we’re sorry about this. We’re working hard to find you a new driver ASAP",

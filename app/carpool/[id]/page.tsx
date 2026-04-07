@@ -18,6 +18,8 @@ const bodyFont = Work_Sans({
   weight: ["400", "500", "600"],
 });
 
+const MIN_CONFIRMED_PARTICIPANTS_TO_LOCK = 2;
+
 function formatDateLong(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
@@ -169,15 +171,30 @@ export default function CarpoolThreadPage() {
     }
   }
 
+  // function to handle locking the carpool
   async function handleLock() {
     if (!userId) {
       setError("Sign in to lock this carpool.");
       return;
     }
 
+    if (!carpool) {
+      setError("Carpool details are still loading.");
+      return;
+    }
+
+    if (carpool.confirmedCount < MIN_CONFIRMED_PARTICIPANTS_TO_LOCK) {
+      setError(
+        "A minimum of two confirmed participants is required to lock a carpool request. If you are no longer interested in the carpool request, you can cancel it."
+      );
+      return;
+    }
+
     if (
       !confirm(
-        "Lock this carpool? Once locked, it will move to Confirmed status and no longer be discoverable in the feed."
+        carpool.carpoolType === "DRIVER"
+          ? "Lock this driver carpool and create the ride now"
+          : "Lock this carpool and continue to request the ride"
       )
     ) {
       return;
@@ -185,15 +202,41 @@ export default function CarpoolThreadPage() {
 
     setActionLoading("lock");
     try {
-      const res = await fetch(`/api/carpools/${carpoolId}/lock`, {
-        method: "POST",
+      if (carpool.carpoolType === "DRIVER") {
+        // calls backend flow to auto-create the ride and handles errors if they come up
+        const res = await fetch(`/api/carpools/${carpoolId}/driver-lock`, {
+          method: "POST",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(
+            typeof data.error === "string" ? data.error : "Failed to lock carpool"
+          );
+        }
+        setCarpool(data.carpool);
+        setError("");
+        return;
+      }
+      // if not driver, build query parameters from the carpool request so prepopulation of the request form
+      const params = new URLSearchParams({
+        sourceCarpoolId: carpool.id,
+        pickup: carpool.pickupArea,
+        dropoff: carpool.destination,
+        date: carpool.date,
+        timeStart: carpool.timeWindow.start,
+        partySize: String(carpool.confirmedCount),
+        carsNeeded: "1",
       });
-
-      if (!res.ok) throw new Error("Failed to lock carpool");
-      const data = await res.json();
-      setCarpool(data.carpool);
+      router.push(`/request/group?${params.toString()}`);
+      // catch any errors from either DRIVER or RIDER carpool
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to lock carpool");
+      setError(
+        e instanceof Error
+          ? e.message
+          : carpool.carpoolType === "DRIVER"
+            ? "Failed to lock carpool"
+            : "Failed to open request flow"
+      );
     } finally {
       setActionLoading("");
     }
@@ -289,8 +332,10 @@ export default function CarpoolThreadPage() {
   const seatsRemaining = Math.max(0, carpool.targetGroupSize - carpool.confirmedCount);
   const canLock =
     isCreator &&
-    carpool.confirmedCount >= carpool.targetGroupSize &&
-    carpool.status !== "CONFIRMED";
+    carpool.status !== "CONFIRMED" &&
+    carpool.status !== "COMPLETED" &&
+    carpool.status !== "CANCELED" &&
+    carpool.status !== "EXPIRED";
 
   const riderBadge = phaseBrowse
     ? { label: "Open", className: "bg-green-100 text-green-800" }

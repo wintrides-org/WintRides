@@ -4,6 +4,7 @@ export type QuoteInput = {
   type: RequestType;
   partySize: number;
   bookedForSelf?: boolean;
+  sourceCarpoolId?: string;
   pickup: Location | string;
   dropoff: Location | string;
   pickupNotes?: string;
@@ -15,6 +16,7 @@ export type NormalizedRequest = {
   type: RequestType;
   partySize: number;
   bookedForSelf: boolean;
+  sourceCarpoolId?: string;
   pickup: Location;
   dropoff: Location;
   pickupNotes?: string;
@@ -150,6 +152,7 @@ export function buildQuote(
       type: input.type,
       partySize: input.partySize,
       bookedForSelf: input.bookedForSelf !== false,
+      sourceCarpoolId: input.sourceCarpoolId?.trim() || undefined,
       pickup: pickupResult.location as Location,
       dropoff: dropoffResult.location as Location,
       pickupNotes: input.pickupNotes?.trim() || undefined,

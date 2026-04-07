@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       where: { id: rideRequestId },
       select: {
         id: true,
-        riderId: true,
+        requesterId: true,
         acceptedDriverId: true,
         status: true,
         completedAt: true,
@@ -112,8 +112,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Ride not found." }, { status: 404 });
     }
 
-    if (ride.riderId !== session.userId) {
-      return NextResponse.json({ error: "Only the rider can review this ride." }, { status: 403 });
+    if (ride.requesterId !== session.userId) {
+      return NextResponse.json({ error: "Only the ride requester can review this ride." }, { status: 403 });
     }
 
     if (ride.status !== "COMPLETED" || !ride.completedAt || !ride.acceptedDriverId) {
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
         const review = await tx.driverReview.create({
           data: {
             rideRequestId: ride.id,
-            riderId: ride.riderId,
+            riderId: ride.requesterId,
             driverId: ride.acceptedDriverId as string,
             stars,
             reviewText,

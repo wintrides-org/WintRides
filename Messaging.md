@@ -62,6 +62,8 @@ If the creator locks a `DRIVER` carpool:
 - `partySize` should equal confirmed riders only.
 - The normal accept flow is bypassed.
 - The driver who created the carpool is treated as the matched driver immediately.
+- The driver is stored as the ride requester and matched driver, not as a ride participant.
+- `RideRequestParticipant` rows for this flow should represent confirmed riders only.
 - The resulting ride should show up in the usual dashboard/status surfaces for the driver and all participating riders.
 
 ### High-Level Product Consequence
@@ -320,4 +322,3 @@ Drivers respond
 Rider selects driver
 Create DM with pinned request details
 Close/expire requests cleanly
-

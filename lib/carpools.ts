@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { CarpoolThread, CarpoolStatus, CarpoolMessage } from "@/types/carpool";
+import type { CarpoolThread, CarpoolStatus, CarpoolMessage, CarpoolType } from "@/types/carpool";
 import type { Prisma } from "@prisma/client";
 
 type CarpoolWithParticipants = Prisma.CarpoolGetPayload<{
@@ -12,6 +12,7 @@ type CarpoolMessageRecord = Prisma.CarpoolMessageGetPayload<{
 
 type CreateCarpoolInput = {
   creatorId: string;
+  carpoolType: CarpoolType;
   destination: string;
   date: string;
   timeWindow: { start: string; end: string };
@@ -40,6 +41,7 @@ function toCarpoolThread(carpool: CarpoolWithParticipants): CarpoolThread {
   return {
     id: carpool.id,
     creatorId: carpool.creatorId,
+    carpoolType: carpool.carpoolType as CarpoolType,
     destination: carpool.destination,
     date: carpool.date,
     timeWindow: {
@@ -96,6 +98,7 @@ export async function createCarpool(input: CreateCarpoolInput): Promise<CarpoolT
   const carpool = await prisma.carpool.create({
     data: {
       creatorId: input.creatorId,
+      carpoolType: input.carpoolType,
       destination: input.destination,
       date: input.date,
       timeStart: input.timeWindow.start,

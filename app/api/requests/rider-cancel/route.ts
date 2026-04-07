@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       where: { id: body.requestId },
       select: {
         id: true,
-        riderId: true,
+        requesterId: true,
         status: true,
         acceptedDriverId: true,
         dropoffLabel: true,
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
     }
 
     // check to ensure the cancel request was placed by a valid signed-in user
-    if (existingRequest.riderId !== user.id) {
+    if (existingRequest.requesterId !== user.id) {
       return NextResponse.json(
-        { error: "Only the rider can cancel this request." },
+        { error: "Only the ride requester can cancel this request." },
         { status: 403 }
       );
     }
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const updated = await prisma.rideRequest.updateMany({
       where: {
         id: existingRequest.id,
-        riderId: user.id,
+        requesterId: user.id,
         status: { in: [...RIDER_CANCELABLE_STATUSES] },
       },
       data: {

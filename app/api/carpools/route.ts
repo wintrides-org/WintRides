@@ -5,7 +5,7 @@ import {
   filterCarpools,
   sortCarpoolsBySoonest
 } from "@/lib/carpools";
-import type { CarpoolStatus } from "@/types/carpool";
+import type { CarpoolStatus, CarpoolType } from "@/types/carpool";
 import { getSessionUser } from "@/lib/sessionAuth";
 
 // GET /api/carpools - List carpools with optional filters
@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
       pickupArea,
       seatsNeeded,
       notes,
-      status
+      status,
+      carpoolType
     } = body;
 
     if (!destination || !date || !timeWindow || !pickupArea || seatsNeeded === undefined) {
@@ -93,10 +94,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // set carpool type to rider or driver (if driver-capable and driver requested in inline modal)
+    const resolvedCarpoolType: CarpoolType =
+      auth.user.driverInfo && carpoolType === "DRIVER" ? "DRIVER" : "RIDER";
+
     const targetGroupSize = seatsNeeded + 1;
 
     const carpool = await createCarpool({
       creatorId: auth.user.id,
+      carpoolType: resolvedCarpoolType,
       destination: destination.trim(),
       date,
       timeWindow,

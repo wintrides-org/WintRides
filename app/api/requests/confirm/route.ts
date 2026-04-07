@@ -9,6 +9,11 @@ import {
 // Defines how long after a ride request is confirmed before a rider can place another request
 const OVERLAP_WINDOW_MINUTES = 30;
 
+// Adds a carpool id if the ride request was sent by a carpool
+type ConfirmRideRequestInput = QuoteInput & {
+  sourceCarpoolId?: string;
+};
+
 // POST /api/requests/confirm - re-validate input and persist the request.
 export async function POST(request: NextRequest) {
   // looks for the session in the server to determine if it's valid
@@ -42,15 +47,59 @@ export async function POST(request: NextRequest) {
       );
     }
     // Reads the request as a quote input
-    const body = (await request.json()) as QuoteInput;
+    const body = (await request.json()) as ConfirmRideRequestInput;
     // Runs buildQuote(body) to validate it, returning data (cleaned input) and errors (validation issues)
     const { data, errors } = buildQuote(body);
+    const sourceCarpoolId = body?.sourceCarpoolId?.trim() || undefined; // stores the carpool id if present
 
     if (errors || !data) {
       return NextResponse.json(
         { error: "Invalid request", details: errors },
         { status: 400 }
       );
+    }
+
+    let participantIds = [user.id];
+
+    // if ride request was sent by a carpool, return all ride participants
+    if (sourceCarpoolId) {
+      const sourceCarpool = await prisma.carpool.findUnique({
+        where: { id: sourceCarpoolId },
+        select: {
+          id: true,
+          creatorId: true,
+          participants: {
+            where: { confirmedAt: { not: null } },
+            select: { userId: true },
+          },
+        },
+      });
+
+      // if no carpool with sourceCarpoolId, return error
+      if (!sourceCarpool) {
+        return NextResponse.json(
+          { error: "Source carpool not found." },
+          { status: 404 }
+        );
+      }
+
+      // allows POST request to go through only if initiated by carpool creator
+      if (sourceCarpool.creatorId !== user.id) {
+        return NextResponse.json(
+          { error: "Only the carpool creator can submit a carpool-backed ride request." },
+          { status: 403 }
+        );
+      }
+
+      // returns the participant ids for a given ride
+      participantIds = Array.from(
+        new Set(sourceCarpool.participants.map((participant) => participant.userId))
+      );
+
+      // includes the ride requester's id in the array of participantIds
+      if (!participantIds.includes(user.id)) {
+        participantIds.unshift(user.id);
+      }
     }
 
     // Defines the full day-time window, from when the day begins to when it ends
@@ -63,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Gets all upcoming rides placed by the rider
     const existing = await prisma.rideRequest.findMany({
       where: {
-        riderId: user.id,
+        requesterId: user.id,
         status: { in: ["OPEN", "MATCHED"] },
         pickupAt: {
           gte: dayStart,
@@ -93,7 +142,8 @@ export async function POST(request: NextRequest) {
     // inserts the request payload as a row in the table with the values defined as data.x
     const created = await prisma.rideRequest.create({
       data: {
-        riderId: user.id,
+        requesterId: user.id,
+        sourceCarpoolId,
         bookedForSelf: data.bookedForSelf,
         type: data.type,
         status: "OPEN",
@@ -105,6 +155,12 @@ export async function POST(request: NextRequest) {
         partySize: data.partySize,
         pickupAt: new Date(data.pickupAt),
         carsNeeded: data.carsNeeded,
+        participants: {
+          create: participantIds.map((participantId) => ({ 
+            userId: participantId,
+            isPrimaryContact: participantId === user.id,
+          })),
+        },
       },
     });
 

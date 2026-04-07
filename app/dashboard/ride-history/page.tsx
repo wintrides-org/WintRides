@@ -134,7 +134,7 @@ function RiderRideHistoryContent() {
         if (!riderId) return;
         const sessionToken = localStorage.getItem("sessionToken");
         const res = await fetch(
-          `/api/requests?status=COMPLETED,CANCELED&riderId=${riderId}`,
+          `/api/requests?status=COMPLETED,CANCELED&participantId=${riderId}`,
           {
             headers: sessionToken
               ? {

@@ -34,7 +34,7 @@ export type Location = {
 // defines the main RideRequest interface
 export interface RideRequest { 
     id: string;
-    riderId: string;
+    requesterId: string;
     acceptedDriverId?: string;
     bookedForSelf: boolean;
 

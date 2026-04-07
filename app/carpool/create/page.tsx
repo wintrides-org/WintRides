@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
-import type { TimeWindow } from "@/types/carpool";
+import type { CarpoolType, TimeWindow } from "@/types/carpool";
 
 const displayFont = Playfair_Display({
   subsets: ["latin"],
@@ -20,6 +20,9 @@ type FieldErrors = Partial<Record<"destination" | "date" | "timeStart" | "timeEn
 
 export default function CreateCarpoolPage() {
   const router = useRouter();
+  const [canChooseCarpoolType, setCanChooseCarpoolType] = useState(false);
+  const [carpoolType, setCarpoolType] = useState<CarpoolType | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
 
   // Suggested destinations (campus-defined places)
   const suggestedDestinations = useMemo(
@@ -60,6 +63,52 @@ export default function CreateCarpoolPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchSession() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken");
+        const res = await fetch("/api/auth/session", {
+          headers: sessionToken
+            ? {
+                Authorization: `Bearer ${sessionToken}`,
+              }
+            : {},
+        });
+        
+        // only signed in users should be able to create a carpool
+        if (!res.ok) {
+          throw new Error("Sign in to create a carpool.");
+        }
+        
+        const data = await res.json().catch(() => null);
+        if (ignore) return;
+        
+        // determines whether to give an option to choose requesting as a driver
+        const isDriver = Boolean(data?.user?.isDriver);
+        setCanChooseCarpoolType(isDriver);
+        setCarpoolType(isDriver ? null : "RIDER");
+      } catch (error: unknown) {
+        if (!ignore) {
+          setCanChooseCarpoolType(false);
+          setCarpoolType("RIDER");
+          setSubmitError(error instanceof Error ? error.message : "Unable to load account details.");
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingSession(false);
+        }
+      }
+    }
+
+    fetchSession();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // Validation helpers
   function validateTextLocation(label: string) {
@@ -118,6 +167,11 @@ export default function CreateCarpoolPage() {
     setSubmitError("");
     setSubmitSuccess(false);
 
+    if (!carpoolType) {
+      setSubmitError("Choose whether this carpool request is as a driver or rider.");
+      return;
+    }
+
     if (!validateForm()) return;
 
     setSubmitting(true);
@@ -135,7 +189,8 @@ export default function CreateCarpoolPage() {
         pickupArea: pickupArea.trim(),
         seatsNeeded,
         notes: notes.trim() || undefined,
-        status: "OPEN"
+        status: "OPEN",
+        carpoolType,
       };
 
       const res = await fetch("/api/carpools", {
@@ -156,8 +211,8 @@ export default function CreateCarpoolPage() {
       setTimeout(() => {
         router.push(`/carpool/${data.carpool.id}`);
       }, 1000);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
     }
@@ -188,6 +243,64 @@ export default function CreateCarpoolPage() {
         </p>
 
       <div className="mt-6 grid gap-4">
+        {loadingSession ? (
+          <div className="rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-4 text-sm text-[#6b5f52]">
+            Loading account details...
+          </div>
+        ) : null}
+
+        {canChooseCarpoolType && !carpoolType ? (
+          <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5 shadow-[0_12px_26px_rgba(10,27,63,0.12)]">
+            <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+              Who are you requesting this carpool AS?
+            </h2>
+            <div className="mt-4 grid gap-3">
+              <button
+                type="button"
+                onClick={() => setCarpoolType("DRIVER")}
+                className="rounded-2xl border border-[#0a3570] bg-white p-4 text-left hover:bg-[#efe3d2]"
+              >
+                <span className="block text-sm font-semibold text-[#0a3570]">
+                  Driver on the request
+                </span>
+                <span className="mt-1 block text-sm text-[#6b5f52]">
+                  I&apos;m a driver who wants to find riders to hop on my ride to XXX
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCarpoolType("RIDER")}
+                className="rounded-2xl border border-[#0a3570] bg-white p-4 text-left hover:bg-[#efe3d2]"
+              >
+                <span className="block text-sm font-semibold text-[#0a3570]">
+                  Rider on request
+                </span>
+                <span className="mt-1 block text-sm text-[#6b5f52]">
+                  I am a rider who wants to find other riders to carpool with
+                </span>
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {carpoolType ? (
+          <div className="rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-sm text-[#1e3a5f]">
+            <span className="font-semibold">Carpool type:</span>{" "}
+            {carpoolType === "DRIVER" ? "Driver on the request" : "Rider on request"}
+            {canChooseCarpoolType ? (
+              <button
+                type="button"
+                onClick={() => setCarpoolType(null)}
+                className="ml-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570]"
+              >
+                Change
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {carpoolType ? (
+          <>
         {/* Destination */}
         <div className="grid gap-1">
           <label className="text-sm font-medium">Destination</label>
@@ -346,6 +459,8 @@ export default function CreateCarpoolPage() {
 
         {submitError ? (
           <p className="text-sm text-red-600">{submitError}</p>
+        ) : null}
+          </>
         ) : null}
       </div>
       </div>

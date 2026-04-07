@@ -76,7 +76,7 @@ export default function RiderRideStatusPage() {
         // Pass the session token so the API can authorize rider-scoped access.
         const sessionToken = localStorage.getItem("sessionToken");
         const res = await fetch(
-          `/api/requests?status=OPEN,MATCHED&riderId=${riderId}`,
+          `/api/requests?status=OPEN,MATCHED&participantId=${riderId}`,
           {
             headers: sessionToken
               ? {
@@ -92,9 +92,9 @@ export default function RiderRideStatusPage() {
         if (!ignore) {
           setRequests(data.requests || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!ignore) {
-          setError(err?.message || "Failed to load ride status.");
+          setError(err instanceof Error ? err.message : "Failed to load ride status.");
         }
       } finally {
         if (!ignore) {
