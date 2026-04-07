@@ -88,11 +88,25 @@ export async function ensureStripeCustomerForUser(userId: string) {
     throw new Error("User not found.");
   }
 
+  const stripe = getStripe();
+
   if (user.stripeCustomerId) {
-    return user;
+    try {
+      const existingCustomer = await stripe.customers.retrieve(user.stripeCustomerId);
+      if (!existingCustomer.deleted) {
+        return user;
+      }
+    } catch (error) {
+      // If the stored customer belongs to a different Stripe account or no
+      // longer exists, recreate it under the current key instead of failing
+      // the entire payment-setup flow.
+      const message = error instanceof Error ? error.message : "";
+      if (!message.toLowerCase().includes("no such customer")) {
+        throw error;
+      }
+    }
   }
 
-  const stripe = getStripe();
   const customer = await stripe.customers.create({
     email: user.email,
     name: user.userName,
@@ -295,6 +309,39 @@ export async function createDriverAccountSession(userId: string) {
   });
 
   return session.client_secret;
+}
+
+export async function createDriverOnboardingLink(userId: string, requestOrigin: string) {
+  const user = await ensureDriverConnectedAccount(userId);
+  if (!user.stripeConnectedAccountId) {
+    throw new Error("Connected account is required before creating an onboarding link.");
+  }
+
+  const stripe = getStripe();
+  const origin = requestOrigin.replace(/\/$/, "");
+  const accountLink = await stripe.accountLinks.create({
+    account: user.stripeConnectedAccountId,
+    refresh_url: `${origin}/account/payments`,
+    return_url: `${origin}/account/payments`,
+    type: "account_onboarding",
+  });
+
+  return accountLink.url;
+}
+
+export async function createDriverDashboardLoginLink(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { driverInfo: true },
+  });
+
+  if (!user?.driverInfo || !user.stripeConnectedAccountId) {
+    throw new Error("Complete payout onboarding before opening the Stripe Express dashboard.");
+  }
+
+  const stripe = getStripe();
+  const loginLink = await stripe.accounts.createLoginLink(user.stripeConnectedAccountId);
+  return loginLink.url;
 }
 
 /**

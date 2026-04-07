@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/sessionAuth";
-import { createDriverAccountSession } from "@/lib/payments";
-import { getStripePublishableKey, isStripeConfigured } from "@/lib/stripe";
+import { createDriverOnboardingLink } from "@/lib/payments";
+import { isStripeConfigured } from "@/lib/stripe";
 
-// POST /api/stripe/connect/account-session - mint a Connect embedded onboarding session for the signed-in driver.
 export async function POST(request: NextRequest) {
   try {
     const auth = await getSessionUser(request);
@@ -25,22 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const clientSecret = await createDriverAccountSession(auth.user.id);
-    return NextResponse.json(
-      {
-        clientSecret,
-        publishableKey: getStripePublishableKey(),
-      },
-      { status: 200 }
-    );
+    const origin = request.nextUrl.origin;
+    const url = await createDriverOnboardingLink(auth.user.id, origin);
+    return NextResponse.json({ url }, { status: 200 });
   } catch (error) {
-    console.error("Error creating Stripe Connect account session:", error);
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to start driver onboarding.";
+    console.error("Error creating Stripe onboarding link:", error);
     return NextResponse.json(
-      { error: message },
+      { error: error instanceof Error ? error.message : "Failed to create onboarding link." },
       { status: 500 }
     );
   }

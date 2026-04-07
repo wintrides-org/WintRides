@@ -101,6 +101,8 @@ export default function DriverDashboardPage() {
   // initializes accept status of a request, confirm status, and what upcoming requests should be shown as
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [confirmCard, setConfirmCard] = useState<string>("");
+  const [stripePayoutReady, setStripePayoutReady] = useState(false);
+  const [stripeOnboardingComplete, setStripeOnboardingComplete] = useState(false);
   const [upcomingRequests, setUpcomingRequests] = useState<
     {
       id: string;
@@ -149,6 +151,8 @@ export default function DriverDashboardPage() {
           setDriverName(data?.user?.driverLegalName || "");
           // Seed availability from the server so UI matches persisted state.
           setIsAvailable(Boolean(data?.user?.isDriverAvailable));
+          setStripePayoutReady(Boolean(data?.user?.stripeConnectPayoutsEnabled));
+          setStripeOnboardingComplete(Boolean(data?.user?.stripeConnectOnboardingComplete));
 
           // Load the driver's own public rating summary for the profile card.
           if (nextDriverId) {
@@ -178,6 +182,8 @@ export default function DriverDashboardPage() {
           setDriverRating(0);
           setDriverReviewsCount(0);
           setIsAvailable(false);
+          setStripePayoutReady(false);
+          setStripeOnboardingComplete(false);
         }
       }
     }
@@ -398,6 +404,38 @@ export default function DriverDashboardPage() {
       setAvailabilityError(getErrorMessage(err, "Failed to update availability."));
     } finally {
       setIsAvailabilityUpdating(false);
+    }
+  }
+
+  async function openStripePayoutOnboarding() {
+    setConfirmCard("");
+    try {
+      const res = await fetch("/api/stripe/connect/onboarding-link", {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.url) {
+        throw new Error(body?.error || "Unable to start Stripe onboarding.");
+      }
+      window.location.assign(body.url);
+    } catch (error) {
+      setConfirmCard(getErrorMessage(error, "Unable to start Stripe onboarding."));
+    }
+  }
+
+  async function openStripeExpressDashboard() {
+    setConfirmCard("");
+    try {
+      const res = await fetch("/api/stripe/connect/login-link", {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.url) {
+        throw new Error(body?.error || "Unable to open Stripe Express dashboard.");
+      }
+      window.open(body.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setConfirmCard(getErrorMessage(error, "Unable to open Stripe Express dashboard."));
     }
   }
 
@@ -855,13 +893,31 @@ export default function DriverDashboardPage() {
                       Driver payouts now run through Stripe Connect instead of locally stored bank placeholders.
                     </p>
                     <p className="text-[#6b5f52]">
-                      Complete onboarding from Account &gt; Payments before accepting rides so WintRides can send payouts after completed trips.
+                      {stripePayoutReady
+                        ? "Your Stripe payout setup is active. You can manage your Express account here or from Account > Payments."
+                        : stripeOnboardingComplete
+                          ? "Stripe onboarding is submitted, but payouts are not active yet. Review your Express account or finish any requested steps."
+                          : "Complete Stripe onboarding before accepting rides so WintRides can send payouts after completed trips."}
                     </p>
+                    <button
+                      type="button"
+                      onClick={openStripePayoutOnboarding}
+                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                    >
+                      {stripeOnboardingComplete ? "Review payout setup" : "Start payout setup"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openStripeExpressDashboard}
+                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                    >
+                      Open Stripe Express dashboard
+                    </button>
                     <Link
                       href="/account/payments"
                       className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
                     >
-                      Open payout onboarding
+                      Open Account payments
                     </Link>
                   </div>
                 </div>

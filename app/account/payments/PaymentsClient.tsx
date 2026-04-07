@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { loadConnectAndInitialize } from "@stripe/connect-js";
 
 type PaymentSummaryResponse = {
   summary: {
@@ -103,6 +102,9 @@ function RiderSetupForm({
         throw new Error(syncBody?.error || "Unable to sync payment method.");
       }
 
+      // The current SetupIntent is single-use. After a successful save, the
+      // parent resets the setup session so any later "replace card" action
+      // starts from a fresh client secret and a freshly mounted PaymentElement.
       await onSuccess();
     } catch (submissionError) {
       setError(
@@ -148,13 +150,15 @@ export default function PaymentsClient() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState("");
-  const [connectClientSecret, setConnectClientSecret] = useState<string | null>(null);
-  const [connectPublishableKey, setConnectPublishableKey] = useState("");
-  const connectContainerRef = useRef<HTMLDivElement | null>(null);
 
   const stripePromise = useMemo(() => {
     return publishableKey ? loadStripe(publishableKey) : null;
   }, [publishableKey]);
+
+  function resetSetupFlow() {
+    setSetupClientSecret(null);
+    setPublishableKey("");
+  }
 
   async function fetchSummary() {
     setLoading(true);
@@ -178,54 +182,6 @@ export default function PaymentsClient() {
   useEffect(() => {
     fetchSummary();
   }, []);
-
-  useEffect(() => {
-    if (!connectClientSecret || !connectPublishableKey || !connectContainerRef.current) {
-      return;
-    }
-
-    let isMounted = true;
-    let embeddedComponent: (Node & { destroy?: () => void }) | null = null;
-
-    async function mountEmbeddedOnboarding() {
-      try {
-        const connect = await loadConnectAndInitialize({
-          publishableKey: connectPublishableKey,
-          fetchClientSecret: async () => {
-            if (!connectClientSecret) {
-              throw new Error("Stripe Connect client secret is missing.");
-            }
-            return connectClientSecret;
-          },
-        });
-
-        if (!isMounted || !connectContainerRef.current) {
-          return;
-        }
-
-        // Stripe renders the onboarding UI inside this container so drivers can
-        // finish payout setup without leaving the WintRides account page.
-        embeddedComponent = connect.create("account-onboarding");
-        connectContainerRef.current.innerHTML = "";
-        connectContainerRef.current.appendChild(embeddedComponent);
-      } catch (mountError) {
-        if (isMounted) {
-          setConnectError(
-            mountError instanceof Error
-              ? mountError.message
-              : "Unable to mount Stripe Connect onboarding."
-          );
-        }
-      }
-    }
-
-    mountEmbeddedOnboarding();
-
-    return () => {
-      isMounted = false;
-      embeddedComponent?.destroy?.();
-    };
-  }, [connectClientSecret, connectPublishableKey]);
 
   async function handleStartSetup() {
     setSetupLoading(true);
@@ -257,22 +213,45 @@ export default function PaymentsClient() {
     setConnectError("");
 
     try {
-      const response = await fetch("/api/stripe/connect/account-session", {
+      const response = await fetch("/api/stripe/connect/onboarding-link", {
         method: "POST",
       });
       const body = await response.json().catch(() => null);
-      if (!response.ok || !body?.clientSecret || !body?.publishableKey) {
+      if (!response.ok || !body?.url) {
         throw new Error(body?.error || "Unable to start driver onboarding.");
       }
 
-      setConnectClientSecret(body.clientSecret);
-      setConnectPublishableKey(body.publishableKey);
-      await fetchSummary();
+      window.location.assign(body.url);
     } catch (onboardingError) {
       setConnectError(
         onboardingError instanceof Error
           ? onboardingError.message
           : "Unable to start driver onboarding."
+      );
+    } finally {
+      setConnectLoading(false);
+    }
+  }
+
+  async function handleOpenStripeDashboard() {
+    setConnectLoading(true);
+    setConnectError("");
+
+    try {
+      const response = await fetch("/api/stripe/connect/login-link", {
+        method: "POST",
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.url) {
+        throw new Error(body?.error || "Unable to open Stripe Express dashboard.");
+      }
+
+      window.open(body.url, "_blank", "noopener,noreferrer");
+    } catch (dashboardError) {
+      setConnectError(
+        dashboardError instanceof Error
+          ? dashboardError.message
+          : "Unable to open Stripe Express dashboard."
       );
     } finally {
       setConnectLoading(false);
@@ -346,32 +325,54 @@ export default function PaymentsClient() {
                 </button>
               ) : stripePromise ? (
                 <div className="mt-4">
-                  <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
-                    <RiderSetupForm onSuccess={fetchSummary} />
+                  <Elements
+                    key={setupClientSecret}
+                    stripe={stripePromise}
+                    options={{ clientSecret: setupClientSecret }}
+                  >
+                    <RiderSetupForm
+                      onSuccess={async () => {
+                        await fetchSummary();
+                        resetSetupFlow();
+                      }}
+                    />
                   </Elements>
+                  <button
+                    type="button"
+                    onClick={resetSetupFlow}
+                    className="mt-3 rounded-full border border-[#0a3570] px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                  >
+                    Cancel update
+                  </button>
                 </div>
               ) : null}
             </div>
 
             <div className="rounded-2xl border border-[#0a3570]/20 bg-white/80 p-5">
-              <h2 className="text-base font-semibold text-[#0a3570]">Driver payout onboarding</h2>
+              <h2 className="text-base font-semibold text-[#0a3570]">Driver payouts</h2>
               <p className="mt-2 text-sm text-[#6b5f52]">
-                Drivers complete Stripe Connect onboarding here so WintRides can pay them out after completed rides.
+                Set up your payout account so WintRides can send your earnings after completed rides.
               </p>
 
               {summary.driver.hasDriverCapability ? (
                 <>
                   <div className="mt-4 rounded-2xl border border-[#0a3570]/10 bg-[#f8efe3] p-4">
                     <p className="text-sm font-semibold text-[#0a3570]">
-                      {summary.driver.onboardingComplete
-                        ? "Onboarding submitted"
-                        : "Onboarding still required"}
+                      {summary.driver.payoutsEnabled
+                        ? "Payout setup complete"
+                        : summary.driver.onboardingComplete
+                          ? "Payout setup still in progress"
+                          : "Payout setup not started"}
                     </p>
                     <div className="mt-3 grid gap-2 text-sm text-[#6b5f52]">
                       <p>Account linked: {summary.driver.stripeConnectedAccountId || "Not created yet"}</p>
-                      <p>Charges enabled: {summary.driver.chargesEnabled ? "Yes" : "No"}</p>
-                      <p>Payouts enabled: {summary.driver.payoutsEnabled ? "Yes" : "No"}</p>
+                      <p>Ready to receive payouts: {summary.driver.payoutsEnabled ? "Yes" : "No"}</p>
                     </div>
+                    {!summary.driver.payoutsEnabled ? (
+                      <p className="mt-3 text-sm text-[#6b5f52]">
+                        Stripe may still need additional information or review before payouts can be enabled.
+                      </p>
+                    ) : null}
                   </div>
 
                   <button
@@ -383,26 +384,21 @@ export default function PaymentsClient() {
                     {connectLoading
                       ? "Launching..."
                       : summary.driver.onboardingComplete
-                        ? "Review payout onboarding"
-                        : "Start payout onboarding"}
+                        ? "Review payout setup"
+                        : "Start payout setup"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenStripeDashboard}
+                    disabled={connectLoading || !summary.driver.stripeConnectedAccountId}
+                    className="mt-3 rounded-full border border-[#0a3570] px-5 py-3 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2] disabled:opacity-50"
+                  >
+                    Open Stripe Express dashboard
                   </button>
 
                   {connectError ? (
                     <p className="mt-3 text-sm text-red-600">{connectError}</p>
                   ) : null}
-
-                  <div
-                    ref={connectContainerRef}
-                    className={`mt-4 rounded-2xl border border-dashed border-[#0a3570]/30 bg-[#f8efe3] p-4 ${
-                      connectClientSecret ? "min-h-[420px]" : ""
-                    }`}
-                  >
-                    {!connectClientSecret ? (
-                      <p className="text-sm text-[#6b5f52]">
-                        Launch onboarding to collect payout details and required Stripe verification information here.
-                      </p>
-                    ) : null}
-                  </div>
                 </>
               ) : (
                 <div className="mt-4 rounded-2xl border border-dashed border-[#0a3570]/30 bg-[#f8efe3] p-4 text-sm text-[#6b5f52]">
