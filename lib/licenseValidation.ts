@@ -22,29 +22,24 @@ export type LicenseFormatRule = {
 // State-by-state license number rules (multiple patterns per state).
 export const US_STATE_RULES = {
   AL: {
-    patterns: [{ regex: /^\d{1,8}$/, description: "1-8 Numeric", minLength: 1, maxLength: 8 }]
+    patterns: [{ regex: /^\d{7,8}$/, description: "7 or 8 Numeric", minLength: 7, maxLength: 8 }]
   },
   AK: {
-    patterns: [{ regex: /^\d{1,7}$/, description: "1-7 Numeric", minLength: 1, maxLength: 7 }]
+    patterns: [{ regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 }]
   },
   AZ: {
     patterns: [
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
+      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 }
     ]
   },
   AR: {
-    patterns: [{ regex: /^\d{4,9}$/, description: "4-9 Numeric", minLength: 4, maxLength: 9 }]
+    patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   },
   CA: {
     patterns: [{ regex: /^[A-Za-z]\d{7}$/, description: "1 Alpha + 7 Numeric", minLength: 8, maxLength: 8 }]
   },
   CO: {
-    patterns: [
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^[A-Za-z]\d{3,6}$/, description: "1 Alpha + 3-6 Numeric", minLength: 4, maxLength: 7 },
-      { regex: /^[A-Za-z]{2}\d{2,5}$/, description: "2 Alpha + 2-5 Numeric", minLength: 4, maxLength: 7 }
-    ]
+    patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   },
   CT: {
     patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
@@ -53,82 +48,52 @@ export const US_STATE_RULES = {
     patterns: [{ regex: /^\d{1,7}$/, description: "1-7 Numeric", minLength: 1, maxLength: 7 }]
   },
   DC: {
-    patterns: [
-      { regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 }]
   },
   FL: {
     patterns: [{ regex: /^[A-Za-z]\d{12}$/, description: "1 Alpha + 12 Numeric", minLength: 13, maxLength: 13 }]
   },
   GA: {
-    patterns: [{ regex: /^\d{7,9}$/, description: "7-9 Numeric", minLength: 7, maxLength: 9 }]
+    patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   },
   HI: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[Hh]\d{8}$/, description: "H + 8 Numeric", minLength: 9, maxLength: 9 }]
   },
   ID: {
-    patterns: [
-      { regex: /^[A-Za-z]{2}\d{6}[A-Za-z]$/, description: "2 Alpha + 6 Numeric + 1 Alpha", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]{2}\d{6}[A-Za-z]$/, description: "2 Alpha + 6 Numeric + 1 Alpha", minLength: 9, maxLength: 9 }]
   },
   IL: {
-    patterns: [{ regex: /^[A-Za-z]\d{11,12}$/, description: "1 Alpha + 11-12 Numeric", minLength: 12, maxLength: 13 }]
+    patterns: [{ regex: /^[A-Za-z]\d{11}$/, description: "1 Alpha + 11 Numeric", minLength: 12, maxLength: 12 }]
   },
   IN: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{9}$/, description: "1 Alpha + 9 Numeric", minLength: 10, maxLength: 10 },
-      { regex: /^\d{9,10}$/, description: "9-10 Numeric", minLength: 9, maxLength: 10 }
-    ]
+    patterns: [{ regex: /^\d{10}$/, description: "10 Numeric", minLength: 10, maxLength: 10 }]
   },
   IA: {
-    patterns: [
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{3}[A-Za-z]{2}\d{4}$/, description: "3 Numeric + 2 Alpha + 4 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^\d{3}[A-Za-z]{2}\d{4}$/, description: "3 Numeric + 2 Alpha + 4 Numeric", minLength: 9, maxLength: 9 }]
   },
   KS: {
-    patterns: [
-      { regex: /^[A-Za-z]\d[A-Za-z]\d[A-Za-z]$/, description: "1 Alpha + 1 Numeric + 1 Alpha + 1 Numeric + 1 Alpha", minLength: 5, maxLength: 5 },
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[Kk]\d{8}$/, description: "K + 8 Numeric", minLength: 9, maxLength: 9 }]
   },
   KY: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^[A-Za-z]\d{9}$/, description: "1 Alpha + 9 Numeric", minLength: 10, maxLength: 10 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 }]
   },
   LA: {
-    patterns: [{ regex: /^\d{1,9}$/, description: "1-9 Numeric", minLength: 1, maxLength: 9 }]
+    patterns: [{ regex: /^0\d{8}$/, description: "0 + 8 Numeric", minLength: 9, maxLength: 9 }]
   },
   ME: {
-    patterns: [
-      { regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 },
-      { regex: /^\d{7}[A-Za-z]$/, description: "7 Numeric + 1 Alpha", minLength: 8, maxLength: 8 },
-      { regex: /^\d{8}$/, description: "8 Numeric", minLength: 8, maxLength: 8 }
-    ]
+    patterns: [{ regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 }]
   },
   MD: {
     patterns: [{ regex: /^[A-Za-z]\d{12}$/, description: "1 Alpha + 12 Numeric", minLength: 13, maxLength: 13 }]
   },
   MA: {
     patterns: [
-      { regex: /^[A-Za-z]{2}\d{7}$/, description: "2 Alpha + 7 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 }
+      { regex: /^[Ss][Aa]\d{7}$/, description: "SA + 7 Numeric", minLength: 9, maxLength: 9 },
+      { regex: /^[Ss]\d{8}$/, description: "S + 8 Numeric", minLength: 9, maxLength: 9 }
     ]
   },
   MI: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{10}$/, description: "1 Alpha + 10 Numeric", minLength: 11, maxLength: 11 },
-      { regex: /^[A-Za-z]\d{12}$/, description: "1 Alpha + 12 Numeric", minLength: 13, maxLength: 13 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]\d{12}$/, description: "1 Alpha + 12 Numeric", minLength: 13, maxLength: 13 }]
   },
   MN: {
     patterns: [{ regex: /^[A-Za-z]\d{12}$/, description: "1 Alpha + 12 Numeric", minLength: 13, maxLength: 13 }]
@@ -137,99 +102,83 @@ export const US_STATE_RULES = {
     patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   },
   MO: {
-    patterns: [
-      { regex: /^\d{3}[A-Za-z]\d{6}$/, description: "3 Numeric + 1 Alpha + 6 Numeric", minLength: 10, maxLength: 10 },
-      { regex: /^[A-Za-z]\d{5,9}$/, description: "1 Alpha + 5-9 Numeric", minLength: 6, maxLength: 10 },
-      { regex: /^[A-Za-z]\d{6}R$/, description: "1 Alpha + 6 Numeric + R", minLength: 8, maxLength: 8 },
-      { regex: /^\d{8}[A-Za-z]{2}$/, description: "8 Numeric + 2 Alpha", minLength: 10, maxLength: 10 },
-      { regex: /^\d{9}[A-Za-z]$/, description: "9 Numeric + 1 Alpha", minLength: 10, maxLength: 10 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]\d{9}$/, description: "1 Alpha + 9 Numeric", minLength: 10, maxLength: 10 }]
   },
   MT: {
     patterns: [
       { regex: /^[A-Za-z]{3}\d{10}$/, description: "3 Alpha + 10 Numeric", minLength: 13, maxLength: 13 },
-      { regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{13,14}$/, description: "13-14 Numeric", minLength: 13, maxLength: 14 }
+      { regex: /^\d{13}$/, description: "13 Numeric", minLength: 13, maxLength: 13 }
     ]
   },
   NE: {
-    patterns: [{ regex: /^[A-Za-z]\d{6,8}$/, description: "1 Alpha + 6-8 Numeric", minLength: 7, maxLength: 9 }]
+    patterns: [{ regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 }]
   },
   NV: {
-    patterns: [
-      { regex: /^\d{9,10}$/, description: "9-10 Numeric", minLength: 9, maxLength: 10 },
-      { regex: /^\d{12}$/, description: "12 Numeric", minLength: 12, maxLength: 12 },
-      { regex: /^[Xx]\d{8}$/, description: "X + 8 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^\d{12}$/, description: "12 Numeric", minLength: 12, maxLength: 12 }]
   },
   NH: {
-    patterns: [{ regex: /^\d{2}[A-Za-z]{3}\d{5}$/, description: "2 Numeric + 3 Alpha + 5 Numeric", minLength: 10, maxLength: 10 }]
+    patterns: [
+      { regex: /^[A-Za-z]{3}\d{8}$/, description: "3 Alpha + 8 Numeric", minLength: 11, maxLength: 11 },
+      { regex: /^\d{2}[A-Za-z]{3}\d{5}$/, description: "2 Numeric + 3 Alpha + 5 Numeric", minLength: 10, maxLength: 10 }
+    ]
   },
   NJ: {
     patterns: [{ regex: /^[A-Za-z]\d{14}$/, description: "1 Alpha + 14 Numeric", minLength: 15, maxLength: 15 }]
   },
   NM: {
-    patterns: [{ regex: /^\d{8,9}$/, description: "8-9 Numeric", minLength: 8, maxLength: 9 }]
+    patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   },
   NY: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{7}$/, description: "1 Alpha + 7 Numeric", minLength: 8, maxLength: 8 },
-      { regex: /^[A-Za-z]\d{18}$/, description: "1 Alpha + 18 Numeric", minLength: 19, maxLength: 19 },
-      { regex: /^\d{8,9}$/, description: "8-9 Numeric", minLength: 8, maxLength: 9 },
-      { regex: /^\d{16}$/, description: "16 Numeric", minLength: 16, maxLength: 16 },
-      { regex: /^[A-Za-z]{8}$/, description: "8 Alpha", minLength: 8, maxLength: 8 }
-    ]
+    patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   },
   NC: {
-    patterns: [{ regex: /^\d{1,12}$/, description: "1-12 Numeric", minLength: 1, maxLength: 12 }]
+    patterns: [{ regex: /^\d{12}$/, description: "12 Numeric", minLength: 12, maxLength: 12 }]
   },
   ND: {
-    patterns: [
-      { regex: /^[A-Za-z]{3}\d{6}$/, description: "3 Alpha + 6 Numeric", minLength: 9, maxLength: 9 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]{3}\d{6}$/, description: "3 Alpha + 6 Numeric", minLength: 9, maxLength: 9 }]
   },
   OH: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{4,8}$/, description: "1 Alpha + 4-8 Numeric", minLength: 5, maxLength: 9 },
-      { regex: /^[A-Za-z]{2}\d{3,7}$/, description: "2 Alpha + 3-7 Numeric", minLength: 5, maxLength: 9 },
-      { regex: /^\d{8}$/, description: "8 Numeric", minLength: 8, maxLength: 8 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]{2}\d{6}$/, description: "2 Alpha + 6 Numeric", minLength: 8, maxLength: 8 }]
   },
   OK: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{9}$/, description: "1 Alpha + 9 Numeric", minLength: 10, maxLength: 10 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]\d{9}$/, description: "1 Alpha + 9 Numeric", minLength: 10, maxLength: 10 }]
   },
   OR: {
-    patterns: [{ regex: /^\d{1,9}$/, description: "1-9 Numeric", minLength: 1, maxLength: 9 }]
+    patterns: [
+      { regex: /^[A-Za-z]\d{6}$/, description: "1 Alpha + 6 Numeric", minLength: 7, maxLength: 7 },
+      { regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 }
+    ]
   },
   PA: {
     patterns: [{ regex: /^\d{8}$/, description: "8 Numeric", minLength: 8, maxLength: 8 }]
   },
   RI: {
     patterns: [
+      { regex: /^\d{8}$/, description: "8 Numeric", minLength: 8, maxLength: 8 },
       { regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 },
-      { regex: /^[A-Za-z]\d{6}$/, description: "1 Alpha + 6 Numeric", minLength: 7, maxLength: 7 }
+      { regex: /^[Vv]\d{6}$/, description: "V + 6 Numeric", minLength: 7, maxLength: 7 }
     ]
   },
   SC: {
-    patterns: [{ regex: /^\d{5,11}$/, description: "5-11 Numeric", minLength: 5, maxLength: 11 }]
+    patterns: [
+      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 },
+      { regex: /^\d{6,11}$/, description: "6-11 Numeric", minLength: 6, maxLength: 11 }
+    ]
   },
   SD: {
     patterns: [
-      { regex: /^\d{6,10}$/, description: "6-10 Numeric", minLength: 6, maxLength: 10 },
-      { regex: /^\d{12}$/, description: "12 Numeric", minLength: 12, maxLength: 12 }
+      { regex: /^\d{8}$/, description: "8 Numeric", minLength: 8, maxLength: 8 },
+      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
     ]
   },
   TN: {
-    patterns: [{ regex: /^\d{7,9}$/, description: "7-9 Numeric", minLength: 7, maxLength: 9 }]
+    patterns: [
+      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 },
+      { regex: /^\d{7,8}$/, description: "7-8 Numeric", minLength: 7, maxLength: 8 }
+    ]
   },
   TX: {
-    patterns: [{ regex: /^\d{7,8}$/, description: "7-8 Numeric", minLength: 7, maxLength: 8 }]
+    patterns: [{ regex: /^\d{8}$/, description: "8 Numeric", minLength: 8, maxLength: 8 }]
   },
   UT: {
     patterns: [{ regex: /^\d{4,10}$/, description: "4-10 Numeric", minLength: 4, maxLength: 10 }]
@@ -241,32 +190,32 @@ export const US_STATE_RULES = {
     ]
   },
   VA: {
-    patterns: [
-      { regex: /^[A-Za-z]\d{8,11}$/, description: "1 Alpha + 8-11 Numeric", minLength: 9, maxLength: 12 },
-      { regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }
-    ]
+    patterns: [{ regex: /^[A-Za-z]\d{8}$/, description: "1 Alpha + 8 Numeric", minLength: 9, maxLength: 9 }]
   },
   WA: {
     patterns: [
       {
-        regex: /^(?=.{12}$)[A-Za-z]{1,7}[A-Za-z0-9]+$/,
-        description: "1-7 Alpha + any combination of Alpha/Numeric (total 12)",
+        regex: /^[Ww][Dd][Ll][A-Za-z0-9]{9}$/,
+        description: "WDL + 9 Alpha/Numeric",
         minLength: 12,
         maxLength: 12
-      }
+      },
+      { regex: /^[A-Za-z]{5}\d{3}[A-Za-z]{2}$/, description: "5 Alpha + 3 Numeric + 2 Alpha", minLength: 10, maxLength: 10 },
+      { regex: /^[A-Za-z]{5}\d{5}$/, description: "5 Alpha + 5 Numeric", minLength: 10, maxLength: 10 }
     ]
   },
   WV: {
     patterns: [
       { regex: /^\d{7}$/, description: "7 Numeric", minLength: 7, maxLength: 7 },
-      { regex: /^[A-Za-z]{1,2}\d{5,6}$/, description: "1-2 Alpha + 5-6 Numeric", minLength: 6, maxLength: 8 }
+      { regex: /^[A-Za-z]\d{6}$/, description: "1 Alpha + 6 Numeric", minLength: 7, maxLength: 7 },
+      { regex: /^[A-Za-z]{2}\d{5}$/, description: "2 Alpha + 5 Numeric", minLength: 7, maxLength: 7 }
     ]
   },
   WI: {
     patterns: [{ regex: /^[A-Za-z]\d{13}$/, description: "1 Alpha + 13 Numeric", minLength: 14, maxLength: 14 }]
   },
   WY: {
-    patterns: [{ regex: /^\d{9,10}$/, description: "9-10 Numeric", minLength: 9, maxLength: 10 }]
+    patterns: [{ regex: /^\d{9}$/, description: "9 Numeric", minLength: 9, maxLength: 9 }]
   }
 } as const satisfies Record<string, LicenseFormatRule>;
 

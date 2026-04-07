@@ -5,6 +5,12 @@ import {
   buildQuote,
   type QuoteInput,
 } from "@/lib/requestValidation";
+import {
+  calculateRideAmountCents,
+  ensureRidePaymentsForRequest,
+  processDueRideAuthorizations,
+  refreshRidePaymentSummary,
+} from "@/lib/payments";
 
 // Defines how long after a ride request is confirmed before a rider can place another request
 const OVERLAP_WINDOW_MINUTES = 30;
@@ -44,6 +50,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "User not found." },
         { status: 404 }
+      );
+    }
+
+    // Riders must have a reusable payment method on file before they can place
+    // any request. This enforces the product-level safeguard separately from
+    // ride-level authorization.
+    if (user.paymentMethodStatus !== "READY" || !user.defaultPaymentMethodId) {
+      return NextResponse.json(
+        {
+          error:
+            "Add a payment method in Account > Payments before requesting a ride.",
+        },
+        { status: 409 }
       );
     }
     // Reads the request as a quote input
@@ -155,6 +174,8 @@ export async function POST(request: NextRequest) {
         partySize: data.partySize,
         pickupAt: new Date(data.pickupAt),
         carsNeeded: data.carsNeeded,
+        quotedAmount: calculateRideAmountCents(data.partySize),
+        currency: "usd",
         participants: {
           create: participantIds.map((participantId) => ({ 
             userId: participantId,
@@ -164,7 +185,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ request: created }, { status: 201 });
+    // Every ride request gets its own RidePayment row so the payment lifecycle
+    // stays separate from the rider's saved card state.
+    await ensureRidePaymentsForRequest({
+      rideRequestId: created.id,
+      riderIds: [user.id],
+    });
+
+    // Immediate rides authorize now. Scheduled/group rides only authorize when
+    // their time window opens, so this helper will no-op for future rides.
+    await processDueRideAuthorizations(created.id);
+    const paymentState = await refreshRidePaymentSummary(created.id);
+
+    return NextResponse.json(
+      { request: created, paymentSummary: paymentState.paymentSummary },
+      { status: 201 }
+    );
 
   } catch (error) {
     console.error("Error confirming request:", error);

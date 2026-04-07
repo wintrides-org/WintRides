@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserById } from "@/lib/mockUsers";
+import { cancelRidePayments } from "@/lib/payments";
 
 const MIN_REASON_LENGTH = 15;
 
@@ -135,6 +136,10 @@ export async function POST(request: NextRequest) {
         rideRequestId: existingRequest.id,
       },
     });
+
+    // Driver cancellations never charge riders, so any uncaptured ride
+    // authorizations are released immediately.
+    await cancelRidePayments(existingRequest.id);
 
     return NextResponse.json(
       { ok: true, message: "Ride canceled and reopened to drivers." },

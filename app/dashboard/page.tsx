@@ -159,6 +159,12 @@ export default function DashboardPage() {
       pickupAt: string;
       partySize: number;
       carsNeeded: number;
+      authorizationScheduledFor?: string | null;
+      paymentSummary?: {
+        tone: "neutral" | "info" | "success" | "danger";
+        label: string;
+        detail: string;
+      };
     }[]
   >([]);
   const [ridesLoading, setRidesLoading] = useState(false);
@@ -921,6 +927,25 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-[#6b5f52]">
                     Party size: {ride.partySize} • Cars needed: {ride.carsNeeded}
                   </p>
+                  {ride.paymentSummary ? (
+                    <div
+                      className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
+                        ride.paymentSummary.tone === "danger"
+                          ? "border-red-200 bg-red-50 text-red-700"
+                          : ride.paymentSummary.tone === "success"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : "border-blue-200 bg-blue-50 text-blue-700"
+                      }`}
+                    >
+                      <p className="font-semibold">{ride.paymentSummary.label}</p>
+                      <p className="mt-1">{ride.paymentSummary.detail}</p>
+                      {ride.authorizationScheduledFor ? (
+                        <p className="mt-1 text-xs">
+                          Authorization window opens {new Date(ride.authorizationScheduledFor).toLocaleString()}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {/* Driver confirmation card only appears once a driver is matched. */}
                   {ride.status === "MATCHED" && ride.acceptedDriverId ? (
                     <div className="mt-4 rounded-2xl border border-[#0a3570] bg-white/80 p-4">

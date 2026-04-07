@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserById } from "@/lib/mockUsers";
 import { RequestStatus } from "@prisma/client";
+import { applyRiderCancellationPolicy } from "@/lib/payments";
 
 // Defines the statuses for which a rider can cancel
 const RIDER_CANCELABLE_STATUSES: RequestStatus[] = ["OPEN", "MATCHED", "EXPIRED"] as const;
@@ -115,6 +116,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Apply the rider cancellation fee policy after the request itself is
+    // marked canceled so Stripe logic stays downstream of the business action.
+    await applyRiderCancellationPolicy(existingRequest.id);
 
     return NextResponse.json(
       {

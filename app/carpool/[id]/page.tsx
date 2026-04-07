@@ -110,7 +110,12 @@ export default function CarpoolThreadPage() {
         method: "POST",
       });
 
-      if (!res.ok) throw new Error("Failed to join carpool");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          typeof data.error === "string" ? data.error : "Failed to join carpool"
+        );
+      }
       const data = await res.json();
       setCarpool(data.carpool);
     } catch (e: unknown) {
@@ -134,7 +139,12 @@ export default function CarpoolThreadPage() {
         body: JSON.stringify({ action: "confirm" }),
       });
 
-      if (!res.ok) throw new Error("Failed to confirm participation");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          typeof data.error === "string" ? data.error : "Failed to confirm participation"
+        );
+      }
       const data = await res.json();
       setCarpool(data.carpool);
     } catch (e: unknown) {
@@ -437,6 +447,26 @@ export default function CarpoolThreadPage() {
           {sessionError}
         </div>
       )}
+
+      {carpool.paymentSummary ? (
+        <div
+          className={`mt-4 rounded-xl border p-4 text-sm ${
+            carpool.paymentSummary.tone === "danger"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : carpool.paymentSummary.tone === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-blue-200 bg-blue-50 text-blue-700"
+          }`}
+        >
+          <p className="font-semibold">{carpool.paymentSummary.label}</p>
+          <p className="mt-1">{carpool.paymentSummary.detail}</p>
+          {carpool.authorizationScheduledFor ? (
+            <p className="mt-1 text-xs">
+              Authorization window opens {new Date(carpool.authorizationScheduledFor).toLocaleString()}.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Phase 1 (browse on detail): interest only, no chat */}
       {phaseBrowse && carpool.status !== "CANCELED" && carpool.status !== "EXPIRED" && (

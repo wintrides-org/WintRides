@@ -91,11 +91,18 @@ export default function DriverDashboardPage() {
       pickupAt: string;
       partySize: number;
       carsNeeded: number;
+      paymentSummary?: {
+        tone: "neutral" | "info" | "success" | "danger";
+        label: string;
+        detail: string;
+      };
     }[]
   >([]);
   // initializes accept status of a request, confirm status, and what upcoming requests should be shown as
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [confirmCard, setConfirmCard] = useState<string>("");
+  const [stripePayoutReady, setStripePayoutReady] = useState(false);
+  const [stripeOnboardingComplete, setStripeOnboardingComplete] = useState(false);
   const [upcomingRequests, setUpcomingRequests] = useState<
     {
       id: string;
@@ -105,6 +112,11 @@ export default function DriverDashboardPage() {
       pickupAt: string;
       partySize: number;
       canceledAt?: string | null;
+      paymentSummary?: {
+        tone: "neutral" | "info" | "success" | "danger";
+        label: string;
+        detail: string;
+      };
     }[]
   >([]);
 
@@ -139,6 +151,8 @@ export default function DriverDashboardPage() {
           setDriverName(data?.user?.driverLegalName || "");
           // Seed availability from the server so UI matches persisted state.
           setIsAvailable(Boolean(data?.user?.isDriverAvailable));
+          setStripePayoutReady(Boolean(data?.user?.stripeConnectPayoutsEnabled));
+          setStripeOnboardingComplete(Boolean(data?.user?.stripeConnectOnboardingComplete));
 
           // Load the driver's own public rating summary for the profile card.
           if (nextDriverId) {
@@ -168,6 +182,8 @@ export default function DriverDashboardPage() {
           setDriverRating(0);
           setDriverReviewsCount(0);
           setIsAvailable(false);
+          setStripePayoutReady(false);
+          setStripeOnboardingComplete(false);
         }
       }
     }
@@ -388,6 +404,38 @@ export default function DriverDashboardPage() {
       setAvailabilityError(getErrorMessage(err, "Failed to update availability."));
     } finally {
       setIsAvailabilityUpdating(false);
+    }
+  }
+
+  async function openStripePayoutOnboarding() {
+    setConfirmCard("");
+    try {
+      const res = await fetch("/api/stripe/connect/onboarding-link", {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.url) {
+        throw new Error(body?.error || "Unable to start Stripe onboarding.");
+      }
+      window.location.assign(body.url);
+    } catch (error) {
+      setConfirmCard(getErrorMessage(error, "Unable to start Stripe onboarding."));
+    }
+  }
+
+  async function openStripeExpressDashboard() {
+    setConfirmCard("");
+    try {
+      const res = await fetch("/api/stripe/connect/login-link", {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.url) {
+        throw new Error(body?.error || "Unable to open Stripe Express dashboard.");
+      }
+      window.open(body.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setConfirmCard(getErrorMessage(error, "Unable to open Stripe Express dashboard."));
     }
   }
 
@@ -689,6 +737,11 @@ export default function DriverDashboardPage() {
                             <span className="mx-2 text-[#0a3570]">•</span>
                             <span className="font-semibold">Pay:</span>{" "}
                             ${estimatePriceRange(ping.partySize).min}
+                            {ping.paymentSummary ? (
+                              <p className="mt-2 text-xs text-[#6b5f52]">
+                                Payment: {ping.paymentSummary.label}
+                              </p>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-2">
                             {/* Accept triggers a POST to /api/requests/accept. */}
@@ -764,6 +817,11 @@ export default function DriverDashboardPage() {
                         <span>{formatPickupTime(request.pickupAt)}</span>
                         <span className="mx-2 text-[#0a3570]">•</span>
                         <span className="font-semibold">Pickup:</span> {request.pickupLabel}
+                        {request.paymentSummary ? (
+                          <p className="mt-2 text-xs text-[#6b5f52]">
+                            Payment: {request.paymentSummary.label}
+                          </p>
+                        ) : null}
                       </div>
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -812,7 +870,7 @@ export default function DriverDashboardPage() {
             </section>
 
 
-            {/* Collapsible payment details section (mock data for MVP). */}
+            {/* Payout section routes drivers to the Stripe-backed onboarding hub. */}
             <section className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
               <button
                 type="button"
@@ -830,39 +888,37 @@ export default function DriverDashboardPage() {
               </button>
               {paymentOpen ? (
                 <div className="bg-[#d9b58c] px-5 py-4">
-                  <div className="grid gap-3 text-sm text-[#0a1b3f]">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 font-semibold">Name</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">
-                        {driverName || driverUserName || "Driver"}
-                      </span>
-                      <button type="button" className="text-[#0a3570]" aria-label="Edit name">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 font-semibold">Acct number</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">************8876</span>
-                      <button type="button" className="text-[#0a3570]" aria-label="Edit account number">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-24 font-semibold">Pin</span>
-                      <span className="flex-1 tracking-[0.3em] text-[#6b5f52]">***</span>
-                      <button type="button" className="text-[#0a3570]" aria-label="Edit pin">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                        </svg>
-                      </button>
-                    </div>
+                  <div className="space-y-3 text-sm text-[#0a1b3f]">
+                    <p>
+                      Driver payouts now run through Stripe Connect instead of locally stored bank placeholders.
+                    </p>
+                    <p className="text-[#6b5f52]">
+                      {stripePayoutReady
+                        ? "Your Stripe payout setup is active. You can manage your Express account here or from Account > Payments."
+                        : stripeOnboardingComplete
+                          ? "Stripe onboarding is submitted, but payouts are not active yet. Review your Express account or finish any requested steps."
+                          : "Complete Stripe onboarding before accepting rides so WintRides can send payouts after completed trips."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={openStripePayoutOnboarding}
+                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                    >
+                      {stripeOnboardingComplete ? "Review payout setup" : "Start payout setup"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openStripeExpressDashboard}
+                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                    >
+                      Open Stripe Express dashboard
+                    </button>
+                    <Link
+                      href="/account/payments"
+                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                    >
+                      Open Account payments
+                    </Link>
                   </div>
                 </div>
               ) : null}

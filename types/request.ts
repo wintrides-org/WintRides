@@ -52,6 +52,12 @@ export interface RideRequest {
     pickupAt: string; // ISO timestamp
     // Defaults to 1 for immediate/scheduled requests.
     carsNeeded: number;
+    paymentSummary?: {
+      tone: "neutral" | "info" | "success" | "danger";
+      label: string;
+      detail: string;
+    };
+    authorizationScheduledFor?: string | null;
 
     matchedAt?: string;
     createdAt: string;

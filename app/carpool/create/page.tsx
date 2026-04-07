@@ -200,8 +200,8 @@ export default function CreateCarpoolPage() {
       });
 
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || "Failed to create carpool");
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || "Failed to create carpool");
       }
 
       const data = await res.json();

@@ -78,4 +78,11 @@ export interface CarpoolThread {
   completedAt?: string;          // ISO timestamp (when status became COMPLETED)
   canceledAt?: string;           // ISO timestamp (when status became CANCELED)
   expiredAt?: string;            // ISO timestamp (when status became EXPIRED)
+  rideRequestId?: string;        // Shared ride request generated after lock
+  authorizationScheduledFor?: string; // When payment authorization is expected to begin
+  paymentSummary?: {
+    tone: "neutral" | "info" | "success" | "danger";
+    label: string;
+    detail: string;
+  };
 }
