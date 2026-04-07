@@ -194,9 +194,6 @@ model RideRequest {
   requester     User          @relation("RideRequestsCreated", fields: [requesterId], references: [id])
   sourceCarpool Carpool?      @relation(fields: [sourceCarpoolId], references: [id])
   participants  RideRequestParticipant[]
-  rider         User          @relation("RideRequestRider", fields: [riderId], references: [id], onDelete: Cascade)
-  acceptedDriver User?        @relation("RideRequestDriver", fields: [acceptedDriverId], references: [id], onDelete: SetNull)
-  carpool       Carpool?      @relation(fields: [carpoolId], references: [id], onDelete: SetNull)
   payments      RidePayment[]
 
   @@index([status])
