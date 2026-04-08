@@ -66,7 +66,7 @@ export async function getRideRequestWithPayments(rideRequestId: string) {
   return prisma.rideRequest.findUnique({
     where: { id: rideRequestId },
     include: {
-      rider: true,
+      requester: true,
       acceptedDriver: true,
       payments: {
         orderBy: { createdAt: "asc" },
