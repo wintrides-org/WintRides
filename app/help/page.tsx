@@ -386,7 +386,7 @@ export default function HelpPage() {
                         type="button"
                         onClick={() => toggleItem(itemKey)}
                         aria-expanded={isOpen}
-                        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-xl font-semibold text-[#1d2330] sm:px-8 sm:text-[2rem]"
+                        className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-lg font-semibold text-[#1d2330] sm:px-8 sm:text-xl"
                       >
                         <span>{item.question}</span>
                         <svg
