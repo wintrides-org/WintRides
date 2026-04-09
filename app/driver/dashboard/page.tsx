@@ -889,9 +889,6 @@ export default function DriverDashboardPage() {
               {paymentOpen ? (
                 <div className="bg-[#d9b58c] px-5 py-4">
                   <div className="space-y-3 text-sm text-[#0a1b3f]">
-                    <p>
-                      Driver payouts now run through Stripe Connect instead of locally stored bank placeholders.
-                    </p>
                     <p className="text-[#6b5f52]">
                       {stripePayoutReady
                         ? "Your Stripe payout setup is active. You can manage your Express account here or from Account > Payments."
