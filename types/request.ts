@@ -34,7 +34,7 @@ export type Location = {
 // defines the main RideRequest interface
 export interface RideRequest { 
     id: string;
-    riderId: string;
+    requesterId: string;
     acceptedDriverId?: string;
     bookedForSelf: boolean;
 
@@ -52,6 +52,12 @@ export interface RideRequest {
     pickupAt: string; // ISO timestamp
     // Defaults to 1 for immediate/scheduled requests.
     carsNeeded: number;
+    paymentSummary?: {
+      tone: "neutral" | "info" | "success" | "danger";
+      label: string;
+      detail: string;
+    };
+    authorizationScheduledFor?: string | null;
 
     matchedAt?: string;
     createdAt: string;

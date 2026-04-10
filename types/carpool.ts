@@ -3,6 +3,10 @@ This file defines the types and interfaces for carpool coordination in the WintR
 These types are used for the group carpool coordination feature.
 */
 
+export type CarpoolType =
+  | "RIDER"
+  | "DRIVER";
+
 // Carpool thread status lifecycle
 export type CarpoolStatus =
   // | "DRAFT"                  // only creator sees
@@ -42,6 +46,7 @@ export interface CarpoolMessage {
 export interface CarpoolThread {
   id: string;
   creatorId: string;
+  carpoolType: CarpoolType;
   
   // Basic trip info
   destination: string;           // campus-defined place or custom
@@ -73,5 +78,11 @@ export interface CarpoolThread {
   completedAt?: string;          // ISO timestamp (when status became COMPLETED)
   canceledAt?: string;           // ISO timestamp (when status became CANCELED)
   expiredAt?: string;            // ISO timestamp (when status became EXPIRED)
+  rideRequestId?: string;        // Shared ride request generated after lock
+  authorizationScheduledFor?: string; // When payment authorization is expected to begin
+  paymentSummary?: {
+    tone: "neutral" | "info" | "success" | "danger";
+    label: string;
+    detail: string;
+  };
 }
-

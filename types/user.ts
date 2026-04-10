@@ -15,10 +15,10 @@ import type { USStateCode } from "@/lib/licenseValidation";
 export type VerificationStatus = "pending" | "verified" | "rejected";
 
 /**
- * Campus assignment (derived from email domain)
- * 
- * MVP: Campuses are auto-created based on email domain
- * Production: Campuses should be pre-configured in database with proper names,
+ * Campus assignment (derived from the user's .edu email domain)
+ *
+ * MVP: Campuses are auto-created from any valid .edu domain
+ * Production: Campuses may later be enriched with proper names,
  *             settings, and admin assignments
  */
 export interface Campus {
@@ -69,9 +69,9 @@ export interface DriverInfo {
  */
 export interface User {
   id: string; // Unique user identifier
-  email: string; // Campus email (must be .edu)
+  email: string; // User email (must be .edu)
   passwordHash?: string; // MVP: SHA-256 hash. Production: bcrypt hash (never store plain text)
-  campusId: string; // Assigned campus based on email domain (permanent assignment)
+  campusId: string; // Assigned campus based on the email domain
   
   // Identity
   userName: string; // Public username 

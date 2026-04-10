@@ -17,11 +17,9 @@ import type { Prisma } from "@prisma/client"; // Prisma type helpers for payload
 import { normalizeUserName } from "@/lib/usernameValidation";
 
 const SALT_ROUNDS = 10; // Number of bcrypt salt rounds for password hashing.
-// Read allowed domains from env (or default), normalize, and keep an allowlist array.
-const allowedCampusDomains = (process.env.ALLOWED_CAMPUS_DOMAINS ?? "smith.edu") // Read allowed domains or default to Smith.
-  .split(",") // Split comma-separated domains into an array.
-  .map(domain => domain.trim().toLowerCase()) // Normalize whitespace and casing.
-  .filter(Boolean); // Remove any empty entries.
+
+// WintRides accepts any university email whose domain ends with ".edu".
+const EDU_DOMAIN_SUFFIX = ".edu";
 
 type UserWithDriverInfo = Prisma.UserGetPayload<{ include: { driverInfo: true } }>;
 
@@ -75,48 +73,48 @@ function getEmailDomain(email: string): string { // Extract the email domain.
 }
 
 /**
- * Pure allowlist check for a domain string
- * Checks if an email domain is in the allowed campus list.
+ * Checks whether an email domain belongs to an educational institution.
  */
-function isAllowedCampusDomain(domain: string): boolean { // Check if domain is in allowlist.
-  return allowedCampusDomains.includes(domain); // Return true only for configured domains.
+function isEduDomain(domain: string): boolean {
+  return domain.endsWith(EDU_DOMAIN_SUFFIX);
+}
+
+
+/**
+ * Validate that an email belongs to an .edu domain.
+ * Extracts the domain from the email and checks for the ".edu" suffix.
+ */
+function isValidCampusEmail(email: string): boolean {
+  const domain = getEmailDomain(email);
+  return isEduDomain(domain);
 }
 
 /**
- * Validate that an email belongs to an allowed campus domain.
- * Extracts the domain from an email and then calls the allowlist check.
+ * Validates that the email domain ends with ".edu",
+ * then fetches or creates a campus record for that domain.
  */
-function isValidCampusEmail(email: string): boolean { // Validate email against campus allowlist.
-  const domain = getEmailDomain(email); // Derive the domain from the email.
-  return isAllowedCampusDomain(domain); // Allow only configured campus domains.
-}
+async function getCampusFromEmail(email: string) {
+  const domain = getEmailDomain(email);
 
-/**
- * Validates the email’s domain (using the same allowlist logic)
- * Then fetches or creates a campus record in the database.
- * Adds persistence and database lookups on top of validation.
- */
-async function getCampusFromEmail(email: string) { // Resolve a campus record for the email domain.
-  const domain = getEmailDomain(email); // Extract the email domain.
-  if (!isAllowedCampusDomain(domain)) { // Block domains outside the allowlist.
-    throw new Error("Invalid email domain. WintRides is yet to arrive at your campus!"); // Explain why registration fails.
+  if (!isEduDomain(domain)) {
+    throw new Error("Email must be from a .edu domain");
   }
 
-  const existing = await prisma.campus.findUnique({ where: { emailDomain: domain } }); // Look up campus by domain.
-  if (existing) { // If already configured, reuse it.
-    return existing; // Return the existing campus record.
+  const existing = await prisma.campus.findUnique({ where: { emailDomain: domain } });
+  if (existing) {
+    return existing;
   }
 
-  const campusName = domain // Derive a friendly campus name from the domain.
-    .split(".")[0] // Take the first label (e.g., "smith").
-    .split("-") // Split on hyphens for multi-word names.
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word.
-    .join(" "); // Join words with spaces.
+  const campusName = domain
+    .split(".")[0]
+    .split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
-  return prisma.campus.create({ // Create a campus entry for this allowed domain.
+  return prisma.campus.create({
     data: {
-      name: `${campusName} Campus`, // Use derived name for display.
-      emailDomain: domain // Store the domain for future lookups.
+      name: `${campusName} Campus`,
+      emailDomain: domain
     }
   });
 }
@@ -166,7 +164,7 @@ export async function createUser(data: {
   issuingState?: string;
 }): Promise<{ user: any; verificationToken: string }> {
   if (!isValidCampusEmail(data.email)) {
-    throw new Error("Email must be from an allowed campus domain");
+    throw new Error("Email must be from a .edu domain");
   }
 
   const email = data.email.toLowerCase();
@@ -314,8 +312,8 @@ export async function authenticateUser(email: string, password: string) {
  */
 export async function findOrCreateGoogleUser(email: string): Promise<UserWithDriverInfo> { // Find or create a user from Google sign-in.
   const normalizedEmail = email.trim().toLowerCase(); // Normalize the email for lookup and storage.
-  if (!isValidCampusEmail(normalizedEmail)) { // Enforce the campus allowlist.
-    throw new Error("Oops! Wintirdes is not yet on your campus."); // Explain why sign-in fails.
+  if (!isValidCampusEmail(normalizedEmail)) {
+  throw new Error("Google account email must be from a .edu domain");
   }
 
   const existing = await getUserByEmail(normalizedEmail); // Look up an existing account by email.

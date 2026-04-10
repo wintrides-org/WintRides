@@ -26,13 +26,22 @@ type FieldErrors = Partial<
   Record<"partySize" | "pickup" | "dropoff" | "pickupAt" | "carsNeeded", string>
 >;
 
-// Defines what any form that uses the shared type "RequestForm.tsx" should provide and the types of each
+// Defines the base  structure for a request: group, immediate, and scheduled requests (including carpool initiated) build on top of this
 type RequestFormProps = {
   requestType: RequestType;
   title: string;
   description: string;
   showPickupAt?: boolean;
   showCarsNeeded?: boolean;
+  initialValues?: {
+    partySize?: number;
+    pickup?: string;
+    pickupNotes?: string;
+    dropoff?: string;
+    pickupAtInput?: string;
+    carsNeeded?: number;
+    sourceCarpoolId?: string;
+  };
 };
 
 // makes quote draft align with the types in "NormalizedRequest" under lib/requestValidation
@@ -61,6 +70,7 @@ export default function RequestForm({
   description,
   showPickupAt = false,
   showCarsNeeded = false,
+  initialValues,
 }: RequestFormProps) {
   const router = useRouter();
   // Suggested pickup chips for fast entry.
@@ -77,13 +87,13 @@ export default function RequestForm({
   );
 
   // Defines form inputs.
-  const [partySize, setPartySize] = useState<number>(1);
+  const [partySize, setPartySize] = useState<number>(initialValues?.partySize ?? 1);
   const [bookedForSelf, setBookedForSelf] = useState(true);
-  const [pickup, setPickup] = useState<string>("");
-  const [pickupNotes, setPickupNotes] = useState<string>("");
-  const [dropoff, setDropoff] = useState<string>("");
-  const [pickupAtInput, setPickupAtInput] = useState<string>("");
-  const [carsNeeded, setCarsNeeded] = useState<number>(1);
+  const [pickup, setPickup] = useState<string>(initialValues?.pickup ?? "");
+  const [pickupNotes, setPickupNotes] = useState<string>(initialValues?.pickupNotes ?? "");
+  const [dropoff, setDropoff] = useState<string>(initialValues?.dropoff ?? "");
+  const [pickupAtInput, setPickupAtInput] = useState<string>(initialValues?.pickupAtInput ?? "");
+  const [carsNeeded, setCarsNeeded] = useState<number>(initialValues?.carsNeeded ?? 1);
   // UX state (errors and submission feedback).
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -141,6 +151,7 @@ export default function RequestForm({
       pickup: pickup.trim(),
       dropoff: dropoff.trim(),
       bookedForSelf,
+      sourceCarpoolId: initialValues?.sourceCarpoolId,
       pickupNotes: pickupNotes.trim() || undefined,
       partySize,
       pickupAt: showPickupAt ? new Date(pickupAtInput).toISOString() : undefined,

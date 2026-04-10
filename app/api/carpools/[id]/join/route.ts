@@ -16,6 +16,19 @@ export async function POST(
       );
     }
 
+    if (
+      auth.user.paymentMethodStatus !== "READY" ||
+      !auth.user.defaultPaymentMethodId
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Add a payment method in Account > Payments before joining a carpool.",
+        },
+        { status: 409 }
+      );
+    }
+
     const { id } = await params;
     const existing = await getCarpoolById(id);
 

@@ -167,9 +167,9 @@ Use the app flows to create data. Instructions to navigate through the app can b
 
 - Email verification is currently **simulated** for development and testing.
 - Upon registration (sign-up), a verification link is logged in the dev server console, and a verification token is returned in the API response.
-- A user is considered “verified” if their email ends with **`.edu`**. The system does **not** yet verify that the email address actually exists.
-- Future versions of this app will implement real email delivery and stronger verification by sending a verification link to the user’s email and validating it upon click.
-- Note that the current implementation of sign-in is restricted to users with a **verified `.edu` email address**.
+- Registration currently accepts email addresses whose domains end with **`.edu`**.
+- The app creates or reuses a campus record based on the email domain.
+- Email verification is still simulated in development; future versions should send a real verification link and validate it on click.
 
 **Common issues**
 

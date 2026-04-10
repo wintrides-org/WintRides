@@ -102,7 +102,11 @@ export async function GET(request: NextRequest) {
           campusId: user.campusId,
           driverLegalName: user.driverInfo?.legalName || null,
           isDriver: !!user.driverInfo, // Whether user has driver capability
-          isDriverAvailable: user.isDriverAvailable // Current driver availability
+          isDriverAvailable: user.isDriverAvailable, // Current driver availability
+          hasSavedPaymentMethod:
+            user.paymentMethodStatus === "READY" && Boolean(user.defaultPaymentMethodId),
+          stripeConnectOnboardingComplete: user.stripeConnectOnboardingComplete,
+          stripeConnectPayoutsEnabled: user.stripeConnectPayoutsEnabled,
         },
         expiresAt: session.expiresAt // When session expires
       },

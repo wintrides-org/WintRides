@@ -1,9 +1,9 @@
 ### Big picture
-App is a closed ecosystem by campus
-Registration Flow: They sign up with a campus email, verify it, and choose if they want to also be a driver.
+App groups users by campus domain
+Registration Flow: They sign up with a .edu email, verify it, and choose if they want to also be a driver.
 
 ### Registration Platform & Campus Authentication
-**Goal:** Only verified students (or staff) from a single campus can register. Everyone can be a rider, but they can also opt in as a driver if they choose.
+**Goal:** Only users with valid .edu email domains can register. Everyone can be a rider, but they can also opt in as a driver if they choose.
 **How to do this:**
 - Email Domain Verification: 
 Require users to sign up with their university email (like @myuniversity.edu). That ensures only people from that institution can register.

@@ -1,0 +1,334 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RequestType {
+  IMMEDIATE
+  SCHEDULED
+  GROUP
+}
+
+enum RequestStatus {
+  DRAFT
+  OPEN
+  MATCHED
+  COMPLETED
+  CANCELED
+  EXPIRED
+}
+
+enum CarpoolStatus {
+  OPEN
+  PENDING_CONFIRMATIONS
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentMethodStatus {
+  NONE
+  READY
+  REQUIRES_ACTION
+  ERRORED
+}
+
+enum RidePaymentStatus {
+  PAYMENT_METHOD_MISSING
+  PENDING_AUTHORIZATION
+  AUTHORIZATION_SCHEDULED
+  AUTHORIZED
+  CAPTURE_PENDING
+  CAPTURED
+  CANCELED
+  REFUNDED
+  TRANSFER_PENDING
+  TRANSFERRED
+  FAILED
+}
+
+enum CarpoolType {
+  RIDER
+  DRIVER
+}
+
+model User {
+  id                     String     @id @default(uuid())
+  email                  String     @unique
+  userName               String     @unique
+  passwordHash           String?
+  campusId               String
+  isDriverAvailable      Boolean    @default(false)
+  emailVerified          Boolean    @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationToken String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  lastLoginAt            DateTime?
+  ridesCompleted         Int        @default(0)
+  noShowCount            Int        @default(0)
+  stripeCustomerId       String?    @unique
+  defaultPaymentMethodId String?
+  paymentMethodStatus    PaymentMethodStatus @default(NONE)
+  paymentMethodBrand     String?
+  paymentMethodLast4     String?
+  paymentMethodExpMonth  Int?
+  paymentMethodExpYear   Int?
+  stripeConnectedAccountId String?  @unique
+  stripeConnectOnboardingComplete Boolean @default(false)
+  stripeConnectChargesEnabled Boolean @default(false)
+  stripeConnectPayoutsEnabled Boolean @default(false)
+
+  campus              Campus               @relation(fields: [campusId], references: [id])
+  driverInfo          DriverInfo?
+  sessions            Session[]
+  notifications       Notification[]
+  rideRequestsCreated RideRequest[]           @relation("RideRequestsCreated")
+  rideParticipations  RideRequestParticipant[]
+  carpoolParticipants CarpoolParticipant[]
+  carpoolMessages     CarpoolMessage[]
+  rideRequests        RideRequest[]          @relation("RideRequestRider")
+  acceptedRequests    RideRequest[]          @relation("RideRequestDriver")
+  ridePayments        RidePayment[]
+  reviewsWritten      DriverReview[]         @relation("ReviewsWritten")
+  reviewsReceived     DriverReview[]         @relation("ReviewsReceived")
+}
+
+model DriverInfo {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  legalName              String
+  acceptedRidesCount     Int      @default(0)
+  canceledRidesCount     Int      @default(0)
+  ratingCount            Int      @default(0)
+  ratingSum              Int      @default(0)
+  averageRating          Float    @default(0)
+  licenseNumber          String?
+  issuingState           String?
+  licenseExpirationDate  String?
+  verified               Boolean  @default(false)
+  verifiedAt             DateTime?
+  lastVerifiedAt         DateTime?
+  expirationAlertsSent   Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String
+  message       String
+  rideRequestId String?
+  createdAt     DateTime @default(now())
+  readAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Campus {
+  id          String   @id @default(uuid())
+  name        String
+  emailDomain String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
+model RideRequest {
+  id            String        @id @default(uuid())
+  requesterId   String
+  sourceCarpoolId String?
+  acceptedDriverId String?
+  bookedForSelf Boolean       @default(true)
+  type          RequestType
+  status        RequestStatus
+  carpoolId     String?       @unique
+  pickupLabel   String
+  pickupAddress String
+  dropoffLabel  String
+  dropoffAddress String
+  pickupNotes   String?
+  partySize     Int
+  pickupAt      DateTime
+  carsNeeded    Int
+  quotedAmount  Int           @default(0)
+  currency      String        @default("usd")
+  paymentAuthorizationDueAt DateTime?
+  paymentReadyAt DateTime?
+  matchedAt     DateTime?
+  driverLocationSharingStartedAt DateTime?
+  driverLocationLastLat Float?
+  driverLocationLastLng Float?
+  driverLocationAccuracyMeters Float?
+  driverLocationLastSharedAt DateTime?
+  completedAt   DateTime?
+  canceledAt    DateTime?
+  canceledBy    String?
+  driverCancelReason String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  driverReview  DriverReview?
+  requester     User          @relation("RideRequestsCreated", fields: [requesterId], references: [id])
+  sourceCarpool Carpool?      @relation(fields: [sourceCarpoolId], references: [id])
+  participants  RideRequestParticipant[]
+  payments      RidePayment[]
+
+  @@index([status])
+  @@index([pickupAt])
+  @@index([sourceCarpoolId])
+}
+
+model RideRequestParticipant {
+  id               String      @id @default(uuid())
+  rideRequestId    String
+  userId           String
+  isPrimaryContact Boolean     @default(false)
+  joinedAt         DateTime    @default(now())
+
+  rideRequest      RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([rideRequestId, userId])
+  @@index([rideRequestId])
+  @@index([userId])
+}
+
+
+model Carpool {
+  id              String        @id @default(uuid())
+  creatorId       String
+  carpoolType     CarpoolType   @default(RIDER)
+  destination     String
+  date            String
+  timeStart       String
+  timeEnd         String
+  pickupArea      String
+  seatsNeeded     Int
+  targetGroupSize Int
+  status          CarpoolStatus @default(OPEN)
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lockedAt        DateTime?
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  expiredAt       DateTime?
+
+  rideRequests    RideRequest[]
+  participants    CarpoolParticipant[]
+  messages        CarpoolMessage[]
+  ridePayments    RidePayment[]
+
+  @@index([status])
+  @@index([date])
+  @@index([destination])
+  @@index([creatorId])
+}
+
+model CarpoolParticipant {
+  id          String   @id @default(uuid())
+  carpoolId   String
+  userId      String
+  joinedAt    DateTime @default(now())
+  confirmedAt DateTime?
+  isCreator   Boolean  @default(false)
+
+  carpool     Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([carpoolId, userId])
+  @@index([userId])
+  @@index([carpoolId])
+}
+
+model CarpoolMessage {
+  id        String   @id @default(uuid())
+  carpoolId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  carpool   Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([carpoolId])
+  @@index([createdAt])
+}
+
+model DriverReview {
+  id            String   @id @default(uuid())
+  rideRequestId String   @unique
+  riderId       String
+  driverId      String
+  stars         Int
+  reviewText    String?
+  isVisible     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rideRequest RideRequest @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  rider       User        @relation("ReviewsWritten", fields: [riderId], references: [id], onDelete: Cascade)
+  driver      User        @relation("ReviewsReceived", fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, createdAt])
+  @@index([riderId, createdAt])
+}
+
+model RidePayment {
+  id                       String            @id @default(uuid())
+  rideRequestId            String
+  riderId                  String
+  carpoolId                String?
+  status                   RidePaymentStatus @default(PENDING_AUTHORIZATION)
+  amount                   Int
+  currency                 String            @default("usd")
+  paymentIntentId          String?           @unique
+  transferId               String?           @unique
+  authorizationScheduledFor DateTime?
+  authorizationExpiresAt   DateTime?
+  authorizedAt             DateTime?
+  capturedAt               DateTime?
+  canceledAt               DateTime?
+  refundedAt               DateTime?
+  transferredAt            DateTime?
+  lastPaymentError         String?
+  cancellationFeeAmount    Int?
+  capturedAmount           Int?
+  transferAmount           Int?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  rideRequest              RideRequest       @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  rider                    User              @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  carpool                  Carpool?          @relation(fields: [carpoolId], references: [id], onDelete: SetNull)
+
+  @@unique([rideRequestId, riderId])
+  @@index([status])
+  @@index([authorizationScheduledFor])
+  @@index([riderId])
+  @@index([carpoolId])
+}

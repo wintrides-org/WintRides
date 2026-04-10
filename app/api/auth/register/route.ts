@@ -41,7 +41,7 @@ function getRegistrationErrorStatus(message: string): number {
     return 400;
   }
   if (
-    message.includes("Email must be from a valid campus domain") ||
+    message.includes("Must be a .edu email address") ||
     message.includes("Invalid email format") ||
     message.includes("Legal name") ||
     // message.includes("License upload is required") ||
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     // This will:
     // - Validate email domain
     // - Hash password
-    // - Create campus assignment
+    // - Create or reuse a campus assignment based on the email domain
     // - If wantsToDrive: validate license details and create driverInfo
     // - Generate email verification token
     const { user, verificationToken } = await createUser({

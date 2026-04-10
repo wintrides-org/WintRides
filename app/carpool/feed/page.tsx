@@ -23,6 +23,7 @@ export default function CarpoolFeedPage() {
   const [carpools, setCarpools] = useState<CarpoolThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
 
   // Filters
   const [destinationFilter, setDestinationFilter] = useState<string>("");
@@ -31,6 +32,19 @@ export default function CarpoolFeedPage() {
   useEffect(() => {
     fetchCarpools();
   }, [destinationFilter, dateFilter]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUserId(data?.user?.id || "");
+      } catch {
+        /* guest feed */
+      }
+    })();
+  }, []);
 
   async function fetchCarpools() {
     setLoading(true);
@@ -178,7 +192,7 @@ export default function CarpoolFeedPage() {
       {!loading && !error && carpools.length > 0 && (
         <div className="grid gap-4">
           {carpools.map((carpool) => (
-            <CarpoolCard key={carpool.id} carpool={carpool} />
+            <CarpoolCard key={carpool.id} carpool={carpool} userId={userId} />
           ))}
         </div>
       )}

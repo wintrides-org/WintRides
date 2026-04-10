@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserById } from "@/lib/mockUsers";
+import { cancelRidePayments } from "@/lib/payments";
 
 const MIN_REASON_LENGTH = 15;
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       where: { id: body.requestId },
       select: {
         id: true,
-        riderId: true,
+        requesterId: true,
         status: true,
         acceptedDriverId: true,
       },
@@ -128,13 +129,17 @@ export async function POST(request: NextRequest) {
     // Sends a message to the rider about the cancellation
     await prisma.notification.create({
       data: {
-        userId: existingRequest.riderId,
+        userId: existingRequest.requesterId,
         type: "DRIVER_CANCELED",
         message:
           "Your driver canceled, we’re sorry about this. We’re working hard to find you a new driver ASAP",
         rideRequestId: existingRequest.id,
       },
     });
+
+    // Driver cancellations never charge riders, so any uncaptured ride
+    // authorizations are released immediately.
+    await cancelRidePayments(existingRequest.id);
 
     return NextResponse.json(
       { ok: true, message: "Ride canceled and reopened to drivers." },

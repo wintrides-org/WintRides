@@ -159,6 +159,12 @@ export default function DashboardPage() {
       pickupAt: string;
       partySize: number;
       carsNeeded: number;
+      authorizationScheduledFor?: string | null;
+      paymentSummary?: {
+        tone: "neutral" | "info" | "success" | "danger";
+        label: string;
+        detail: string;
+      };
     }[]
   >([]);
   const [ridesLoading, setRidesLoading] = useState(false);
@@ -323,7 +329,7 @@ export default function DashboardPage() {
         const sessionToken = localStorage.getItem("sessionToken");
         const authHeaders = buildAuthHeaders(sessionToken);
         const res = await fetch(
-          `/api/requests?status=OPEN,MATCHED&riderId=${riderId}`,
+          `/api/requests?status=OPEN,MATCHED&participantId=${riderId}`,
           {
             headers: authHeaders,
           }
@@ -372,7 +378,7 @@ export default function DashboardPage() {
         // 1. completed rides the rider could potentially review
         // 2. reviews already submitted, so we do not prompt again
         const [completedRes, reviewsRes] = await Promise.all([
-          fetch(`/api/requests?status=COMPLETED&riderId=${riderId}`, {
+          fetch(`/api/requests?status=COMPLETED&participantId=${riderId}`, {
             headers: authHeaders,
           }),
           fetch(`/api/reviews?riderId=${riderId}`, {
@@ -667,7 +673,7 @@ export default function DashboardPage() {
             </h2>
             {cancelModalRide.status === "MATCHED" ? (
               <p className="mt-3 text-sm text-[#6b5f52]">
-                You&apos;ll be charged 50% of the transaction.
+                You&apos;ll be charged 10% of the transaction.
               </p>
             ) : null}
             <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -749,7 +755,7 @@ export default function DashboardPage() {
               </svg>
             </Link>
             <Link
-              href="/in-progress"
+              href="/help"
               aria-label="Help"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
             >
@@ -921,6 +927,25 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-[#6b5f52]">
                     Party size: {ride.partySize} • Cars needed: {ride.carsNeeded}
                   </p>
+                  {ride.paymentSummary ? (
+                    <div
+                      className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
+                        ride.paymentSummary.tone === "danger"
+                          ? "border-red-200 bg-red-50 text-red-700"
+                          : ride.paymentSummary.tone === "success"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : "border-blue-200 bg-blue-50 text-blue-700"
+                      }`}
+                    >
+                      <p className="font-semibold">{ride.paymentSummary.label}</p>
+                      <p className="mt-1">{ride.paymentSummary.detail}</p>
+                      {ride.authorizationScheduledFor ? (
+                        <p className="mt-1 text-xs">
+                          Authorization window opens {new Date(ride.authorizationScheduledFor).toLocaleString()}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {/* Driver confirmation card only appears once a driver is matched. */}
                   {ride.status === "MATCHED" && ride.acceptedDriverId ? (
                     <div className="mt-4 rounded-2xl border border-[#0a3570] bg-white/80 p-4">
