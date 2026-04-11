@@ -673,7 +673,7 @@ export default function DashboardPage() {
             </h2>
             {cancelModalRide.status === "MATCHED" ? (
               <p className="mt-3 text-sm text-[#6b5f52]">
-                You&apos;ll be charged 50% of the transaction.
+                You&apos;ll be charged 10% of the transaction.
               </p>
             ) : null}
             <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -755,7 +755,7 @@ export default function DashboardPage() {
               </svg>
             </Link>
             <Link
-              href="/in-progress"
+              href="/help"
               aria-label="Help"
               className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
             >
