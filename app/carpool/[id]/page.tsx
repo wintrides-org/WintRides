@@ -18,7 +18,11 @@ const bodyFont = Work_Sans({
   weight: ["400", "500", "600"],
 });
 
+// Lock logic and associatederror warning parameters
 const MIN_CONFIRMED_PARTICIPANTS_TO_LOCK = 2;
+const LOCK_ELIGIBILITY_ERROR =
+  "A minimum of two confirmed participants is required to lock a carpool request. If you are no longer interested in the carpool request, you can cancel it.";
+const LOCK_ELIGIBILITY_ERROR_TIMEOUT_MS = 10000;
 
 function formatDateLong(dateString: string) {
   const date = new Date(dateString);
@@ -59,6 +63,7 @@ export default function CarpoolThreadPage() {
   const [actionLoading, setActionLoading] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const [sessionError, setSessionError] = useState<string>("");
+  const [lockModalOpen, setLockModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCarpool();
@@ -69,6 +74,20 @@ export default function CarpoolThreadPage() {
   useEffect(() => {
     fetchSession();
   }, []);
+
+  useEffect(() => {
+    if (error !== LOCK_ELIGIBILITY_ERROR) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setError((currentError) =>
+        currentError === LOCK_ELIGIBILITY_ERROR ? "" : currentError
+      );
+    }, LOCK_ELIGIBILITY_ERROR_TIMEOUT_MS);
+
+    return () => clearTimeout(timeout);
+  }, [error]);
 
   async function fetchSession() {
     try {
@@ -90,7 +109,12 @@ export default function CarpoolThreadPage() {
       if (!res.ok) throw new Error("Failed to fetch carpool");
       const data = await res.json();
       setCarpool(data.carpool);
-      setError("");
+      setError((currentError) =>
+        currentError === LOCK_ELIGIBILITY_ERROR &&
+        data.carpool.confirmedCount < MIN_CONFIRMED_PARTICIPANTS_TO_LOCK
+          ? currentError
+          : ""
+      );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load carpool");
     } finally {
@@ -181,8 +205,7 @@ export default function CarpoolThreadPage() {
     }
   }
 
-  // function to handle locking the carpool
-  async function handleLock() {
+  async function startLockFlow() {
     if (!userId) {
       setError("Sign in to lock this carpool.");
       return;
@@ -194,19 +217,18 @@ export default function CarpoolThreadPage() {
     }
 
     if (carpool.confirmedCount < MIN_CONFIRMED_PARTICIPANTS_TO_LOCK) {
-      setError(
-        "A minimum of two confirmed participants is required to lock a carpool request. If you are no longer interested in the carpool request, you can cancel it."
-      );
+      setError(LOCK_ELIGIBILITY_ERROR);
       return;
     }
 
-    if (
-      !confirm(
-        carpool.carpoolType === "DRIVER"
-          ? "Lock this driver carpool and create the ride now"
-          : "Lock this carpool and continue to request the ride"
-      )
-    ) {
+    setLockModalOpen(true); // opens a traditional confirm modal
+    setError("");
+  }
+
+  // function to handle locking the carpool
+  async function handleLock() {
+    if (!carpool) {
+      setError("Carpool details are still loading.");
       return;
     }
 
@@ -224,7 +246,13 @@ export default function CarpoolThreadPage() {
           );
         }
         setCarpool(data.carpool);
+        setLockModalOpen(false);
         setError("");
+        // if lock is completed for driver, success page is shown
+        if (typeof data?.ride?.id === "string") {
+          router.push(`/driver/upcoming?lockSuccess=1&rideId=${encodeURIComponent(data.ride.id)}`);
+          return;
+        }
         return;
       }
       // if not driver, build query parameters from the carpool request so prepopulation of the request form
@@ -237,6 +265,7 @@ export default function CarpoolThreadPage() {
         partySize: String(carpool.confirmedCount),
         carsNeeded: "1",
       });
+      setLockModalOpen(false);
       router.push(`/request/group?${params.toString()}`);
       // catch any errors from either DRIVER or RIDER carpool
     } catch (e: unknown) {
@@ -495,7 +524,7 @@ export default function CarpoolThreadPage() {
           {canLock && (
             <button
               type="button"
-              onClick={handleLock}
+              onClick={startLockFlow}
               disabled={actionLoading !== ""}
               className="rounded-xl bg-[#0a3570] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0a2d5c] disabled:opacity-50"
             >
@@ -629,6 +658,48 @@ export default function CarpoolThreadPage() {
             <li>Contact preferences</li>
             <li>Any last-minute changes</li>
           </ul>
+        </div>
+      )}
+      
+      {/* confirmation modal for LOCK */}
+      {lockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2430]/50 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lock-carpool-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.28)]"
+          >
+            <h2
+              id="lock-carpool-title"
+              className={`${displayFont.className} text-2xl font-semibold text-[#0a3570]`}
+            >
+              {carpool.carpoolType === "DRIVER" ? "Lock Driver Carpool?" : "Lock Carpool?"}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-neutral-600">
+              {carpool.carpoolType === "DRIVER"
+                ? "This will lock the carpool and create the ride immediately."
+                : "This will lock the carpool and take you to the request flow with your trip details prefilled."}
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setLockModalOpen(false)}
+                disabled={actionLoading !== ""}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLock}
+                disabled={actionLoading !== ""}
+                className="rounded-xl bg-[#0a3570] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0a2d5c] disabled:opacity-50"
+              >
+                {actionLoading === "lock" ? "Locking…" : "Continue"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>

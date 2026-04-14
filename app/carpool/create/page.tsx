@@ -258,24 +258,30 @@ export default function CreateCarpoolPage() {
               <button
                 type="button"
                 onClick={() => setCarpoolType("DRIVER")}
-                className="rounded-2xl border border-[#0a3570] bg-white p-4 text-left hover:bg-[#efe3d2]"
+                className="group rounded-2xl border-2 border-[#0a3570] bg-white p-4 text-left shadow-[0_10px_24px_rgba(10,27,63,0.1)] transition hover:-translate-y-0.5 hover:bg-[#efe3d2] hover:shadow-[0_16px_32px_rgba(10,27,63,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
               >
-                <span className="block text-sm font-semibold text-[#0a3570]">
-                  Driver on the request
+                <span className="flex items-center justify-between text-sm font-semibold text-[#0a3570]">
+                  <span>Driver on the request</span>
+                  <span className="rounded-full border border-[#0a3570] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[#0a3570] group-hover:text-white">
+                    Select
+                  </span>
                 </span>
-                <span className="mt-1 block text-sm text-[#6b5f52]">
+                <span className="mt-2 block text-sm text-[#6b5f52]">
                   I&apos;m a driver who wants to find riders to hop on my ride to XXX
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setCarpoolType("RIDER")}
-                className="rounded-2xl border border-[#0a3570] bg-white p-4 text-left hover:bg-[#efe3d2]"
+                className="group rounded-2xl border-2 border-[#0a3570] bg-white p-4 text-left shadow-[0_10px_24px_rgba(10,27,63,0.1)] transition hover:-translate-y-0.5 hover:bg-[#efe3d2] hover:shadow-[0_16px_32px_rgba(10,27,63,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
               >
-                <span className="block text-sm font-semibold text-[#0a3570]">
-                  Rider on request
+                <span className="flex items-center justify-between text-sm font-semibold text-[#0a3570]">
+                  <span>Rider on request</span>
+                  <span className="rounded-full border border-[#0a3570] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[#0a3570] group-hover:text-white">
+                    Select
+                  </span>
                 </span>
-                <span className="mt-1 block text-sm text-[#6b5f52]">
+                <span className="mt-2 block text-sm text-[#6b5f52]">
                   I am a rider who wants to find other riders to carpool with
                 </span>
               </button>
@@ -291,7 +297,7 @@ export default function CreateCarpoolPage() {
               <button
                 type="button"
                 onClick={() => setCarpoolType(null)}
-                className="ml-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570]"
+                className="ml-3 rounded-full border border-[#0a3570] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] transition hover:bg-[#0a3570] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
               >
                 Change
               </button>

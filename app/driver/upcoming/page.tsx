@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
 
@@ -36,6 +37,8 @@ const bodyFont = Work_Sans({
 });
 
 export default function DriverUpcomingPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const MIN_CANCEL_REASON_LENGTH = 15;
   const LOCATION_SEND_INTERVAL_MS = 10_000;
   // Driver/session info and upcoming rides state.
@@ -54,9 +57,11 @@ export default function DriverUpcomingPage() {
   const [activeLocationRideId, setActiveLocationRideId] = useState<string | null>(null);
   const [locationNotice, setLocationNotice] = useState("");
   const [locationError, setLocationError] = useState("");
+  const [showLockSuccessModal, setShowLockSuccessModal] = useState(false);
   const locationWatchIdRef = useRef<number | null>(null);
   const lastLocationPostAtRef = useRef<number>(0);
   const lastLocationRequestIdRef = useRef<string | null>(null);
+  const successRideId = searchParams.get("rideId");
 
   function clearDriverLocationWatch() {
     if (locationWatchIdRef.current !== null && typeof window !== "undefined") {
@@ -65,6 +70,7 @@ export default function DriverUpcomingPage() {
     }
     setSharingLocationId(null);
     setActiveLocationRideId(null);
+    lastLocationRequestIdRef.current = null;
   }
 
   useEffect(() => {
@@ -101,6 +107,29 @@ export default function DriverUpcomingPage() {
   }, []);
 
   useEffect(() => clearDriverLocationWatch, []);
+
+  useEffect(() => {
+    if (searchParams.get("lockSuccess") === "1") {
+      setShowLockSuccessModal(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!activeLocationRideId) {
+      return;
+    }
+
+    const activeRideStillVisible = requests.some(
+      (request) => request.id === activeLocationRideId
+    );
+
+    // clears GPS notifications for a ride if the ride is no longer active
+    if (!activeRideStillVisible) {
+      clearDriverLocationWatch();
+      setLocationNotice("");
+      setLocationError("");
+    }
+  }, [activeLocationRideId, requests]);
 
   useEffect(() => {
     let ignore = false;
@@ -156,6 +185,19 @@ export default function DriverUpcomingPage() {
       })),
     [requests]
   );
+
+  /* function to clear out LOCK success modal  */
+  function dismissLockSuccessModal() {
+    setShowLockSuccessModal(false);
+    if (searchParams.get("lockSuccess") !== "1") {
+      return;
+    }
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("lockSuccess");
+    nextParams.delete("rideId");
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `/driver/upcoming?${nextQuery}` : "/driver/upcoming");
+  }
 
   // Mark a ride as completed and show a confirmation.
   async function handleComplete(requestId: string, pay: number) {
@@ -433,6 +475,33 @@ export default function DriverUpcomingPage() {
               </div>
             </div>
           ) : null}
+
+          {/* Success Modal after LOCK (and associated after effects) completed for driver */}
+          {showLockSuccessModal ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+              <div className="w-full max-w-2xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+                <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+                  Ride created successfully
+                </h2>
+                <p className="mt-3 text-sm text-[#6b5f52]">
+                  The ride has been created and entered into the flow. Monitor the status on your driver dashboard.
+                </p>
+                <p className="mt-2 text-sm text-[#6b5f52]">
+                  Riders on the carpool can also monitor the status of the ride from their dashboard.
+                </p>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    /* clicking clears out the modal */
+                    onClick={dismissLockSuccessModal}
+                    className="rounded-full border border-[#0a3570] bg-[#0a3570] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#092a59]"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {cancelNotice ? (
             <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4 text-center">
               <p className="text-sm text-[#0a3570]">{cancelNotice}</p>
@@ -525,7 +594,11 @@ export default function DriverUpcomingPage() {
               {formatted.map((request) => (
                 <div
                   key={request.id}
-                  className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5"
+                  className={`rounded-2xl border-2 bg-[#fdf7ef] p-5 ${
+                    successRideId === request.id
+                      ? "border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
+                      : "border-[#0a3570]"
+                  }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
