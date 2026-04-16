@@ -237,6 +237,18 @@ export async function ensureDriverConnectedAccount(userId: string) {
         card_payments: { requested: true },
         transfers: { requested: true },
       },
+      // Bypasses "Business Details"
+      business_profile: {
+      mcc: '4121', 
+      url: "wint-rides-blond.vercel.app",
+      // Bypasses "Public Details"
+      name: "WintRides", 
+      },
+      settings: {
+      payments: {
+      statement_descriptor: "WINTRIDES",
+      },
+      },
       metadata: {
         userId: user.id,
       },
