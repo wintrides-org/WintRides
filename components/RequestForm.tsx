@@ -3,14 +3,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import { Work_Sans } from "next/font/google";
 
 // Defines the fonts used on the page for consistency
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
 const bodyFont = Work_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -270,7 +265,7 @@ export default function RequestForm({
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <h1 className={`${displayFont.className} mt-6 text-3xl font-semibold text-[#0a3570]`}>
+        <h1 className="font-nunito mt-6 text-3xl font-semibold text-[#0a3570]">
           {title}
         </h1>
         <p className="mt-1 text-sm text-[#6b5f52]">{description}</p>

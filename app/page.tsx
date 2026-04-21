@@ -43,7 +43,7 @@ export default function HomePage() {
       if (!res.ok) {
         const message = String(data?.error || "Google sign-in failed");
         if (message.toLowerCase().includes("campus")) {
-          setGoogleError("This app currently supports Smith emails only. Please use your smith.edu account.");
+          setGoogleError("This app currently institution emails. Please use your .edu account.");
           return;
         }
         throw new Error(message);

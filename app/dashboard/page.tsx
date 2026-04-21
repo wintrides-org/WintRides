@@ -927,7 +927,8 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-[#6b5f52]">
                     Party size: {ride.partySize} • Cars needed: {ride.carsNeeded}
                   </p>
-                  {ride.paymentSummary ? (
+                  {/* Commented out this code to prevent ride and carpoool UIs from being cluttered by payment message info */}
+                  {/* {ride.paymentSummary ? (
                     <div
                       className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
                         ride.paymentSummary.tone === "danger"
@@ -945,7 +946,7 @@ export default function DashboardPage() {
                         </p>
                       ) : null}
                     </div>
-                  ) : null}
+                  ) : null} */}
                   {/* Driver confirmation card only appears once a driver is matched. */}
                   {ride.status === "MATCHED" && ride.acceptedDriverId ? (
                     <div className="mt-4 rounded-2xl border border-[#0a3570] bg-white/80 p-4">
