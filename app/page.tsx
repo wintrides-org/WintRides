@@ -108,15 +108,13 @@ export default function HomePage() {
           </p>
 
           {/* Main headline */}
-          <h1 className="font-nunito mt-0 text-[2.75rem] font-semibold leading-tight text-[#1E3A5F]">
-            Drive when you can.
-            <br />
-            Ride when you want.
+          <h1 className="font-body mt-0 text-[2.75rem] font-semibold leading-tight text-[#1E3A5F]">
+            Your Campus, your ride
           </h1>
 
           {/* Supporting message */}
-          <p className="font-nunito mt-6 text-[1.25rem] text-[#b28762]">
-            Your campus, your community
+          <p className="font-body mt-6 text-[1.25rem] text-[#b28762]">
+            Got a car? Make it count. Need a ride, tap and go
           </p>
 
           {/* Primary call-to-action */}
