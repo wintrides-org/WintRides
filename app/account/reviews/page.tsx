@@ -6,7 +6,7 @@ export default function ReviewsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
           Account
         </p>
-        <h1 className="mt-2 text-3xl font-semibold">Reviews</h1>
+        <h1 className="font-heading mt-2 text-3xl font-semibold">Reviews</h1>
         <p className="mt-2 text-sm text-[#6b5f52]">
           Ratings summary and review history live here.
         </p>

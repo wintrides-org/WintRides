@@ -210,7 +210,7 @@ export default function AccountShell({
                 </svg>
               </Link>
             </div>
-            <div className={displayFont.className}>{children}</div>
+            <div>{children}</div>
           </div>
         </main>
       </div>

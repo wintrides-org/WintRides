@@ -128,11 +128,11 @@ export default function HomePage() {
           </div>
 
           {/* Secondary link for existing users */}
-          <p className="font-nunito mt-8 text-sm text-[#6a7680]">
+          <p className="font-body mt-8 text-sm text-[#6a7680]">
             Already signed up?{" "}
             <Link
               href="/signin"
-              className="font-nunito font-medium text-[#2f6db3] underline"
+              className="font-body font-medium text-[#2f6db3] underline"
             >
               Sign in
             </Link>
