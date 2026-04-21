@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 
 type RideRequestRow = {
   id: string;
@@ -97,9 +98,9 @@ export default function DriverRequestsPage() {
         if (!ignore) {
           setRequests(data.requests || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!ignore) {
-          setError(err?.message || "Failed to load requests.");
+          setError(err instanceof Error ? err.message : "Failed to load requests.");
         }
       } finally {
         if (!ignore) {
@@ -141,8 +142,8 @@ export default function DriverRequestsPage() {
       }
       setRequests((prev) => prev.filter((req) => req.id !== requestId));
       setAcceptNotice("Request accepted. It is now in your Upcoming Rides.");
-    } catch (err: any) {
-      setAcceptNotice(err?.message || "Failed to accept request.");
+    } catch (err: unknown) {
+      setAcceptNotice(err instanceof Error ? err.message : "Failed to accept request.");
     } finally {
       setAcceptingId(null);
     }
@@ -319,7 +320,7 @@ export default function DriverRequestsPage() {
           {acceptNotice ? (
             <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 text-sm text-[#0a1b3f] shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
               <div className="flex items-start justify-between gap-3">
-                <p>{acceptNotice}</p>
+                <PaymentsSupportMessage message={acceptNotice} />
                 <button
                   type="button"
                   onClick={() => setAcceptNotice("")}

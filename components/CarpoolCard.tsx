@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CarpoolThread } from "@/types/carpool";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 
 interface CarpoolCardProps {
   carpool: CarpoolThread;
@@ -162,7 +163,10 @@ export default function CarpoolCard({ carpool, userId = "" }: CarpoolCardProps) 
           </p>
         )}
         {localError && (
-          <p className="mt-2 text-center text-xs text-red-600">{localError}</p>
+          <PaymentsSupportMessage
+            message={localError}
+            className="mt-2 text-center text-xs text-red-600"
+          />
         )}
       </div>
     </article>

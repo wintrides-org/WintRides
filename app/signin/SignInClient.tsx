@@ -221,7 +221,7 @@ export default function SignInClient() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-4 rounded-xl bg-black px-4 py-3 font-medium text-white hover:bg-neutral-800 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+          className="mt-4 rounded-xl bg-[#0437F2] px-4 py-3 font-medium text-white hover:bg-[#032cc2] disabled:cursor-not-allowed disabled:bg-neutral-400"
         >
           {submitting ? "Signing In..." : "Sign In"}
         </button>

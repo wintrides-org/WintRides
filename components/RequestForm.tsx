@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 
 // Defines the fonts used on the page for consistency
 const displayFont = Playfair_Display({
@@ -262,9 +263,9 @@ export default function RequestForm({
     >
       <div className="mx-auto w-full max-w-xl">
         <Link
-          href="/dashboard"
+          href="/dashboard?requestOptions=1"
           className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-          aria-label="Back to dashboard"
+          aria-label="Back to request options"
         >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 18l-6-6 6-6" />
@@ -433,7 +434,7 @@ export default function RequestForm({
           You’ll review a quote before confirming.
         </p>
         {submitError ? (
-          <p className="text-sm text-red-600">{submitError}</p>
+          <PaymentsSupportMessage message={submitError} className="text-sm text-red-600" />
         ) : null}
       </div>
 

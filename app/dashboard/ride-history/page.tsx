@@ -321,9 +321,18 @@ function RiderRideHistoryContent() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="rounded-full border border-[#0a3570] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#e9dcc9]"
+              className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+              aria-label="Back"
             >
-              Back
+              <svg
+                viewBox="0 0 24 24"
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
             </button>
           </div>
           <p className="mt-2 text-sm text-[#6b5f52]">
