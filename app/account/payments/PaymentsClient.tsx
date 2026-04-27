@@ -410,9 +410,6 @@ export default function PaymentsClient() {
 
           <section className="rounded-2xl border border-[#0a3570]/20 bg-white/80 p-5">
             <h2 className="text-base font-semibold text-[#0a3570]">Recent payment activity</h2>
-            <p className="mt-2 text-sm text-[#6b5f52]">
-              This log is sourced from `RidePayment` records so riders and drivers can see the current payment stage for each trip.
-            </p>
 
             <div className="mt-4 space-y-3">
               {summary.latestPayments.length === 0 ? (
