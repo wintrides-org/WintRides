@@ -439,7 +439,7 @@ export default function DriverDashboardPage() {
       <div className="mx-auto w-full max-w-6xl">
         {/* Intro splash (brief confetti screen) before showing the dashboard. */}
         {showIntro ? (
-          <div className="relative mx-auto mt-12 w-full max-w-xl overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] px-8 py-10 text-center shadow-[0_18px_40px_rgba(10,27,63,0.15)]">
+          <div className="surface-card relative mx-auto mt-12 w-full max-w-xl overflow-hidden rounded-3xl px-8 py-10 text-center">
             <div className="pointer-events-none absolute inset-0">
               {confettiPieces.map((piece, index) => (
                 <span
@@ -454,7 +454,7 @@ export default function DriverDashboardPage() {
                 />
               ))}
             </div>
-            <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+            <p className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
               Thank you, {driverUserName || "Driver"}, for delivering safe rides to other students!
             </p>
             <p className="text-muted mt-3 text-sm">
@@ -491,7 +491,7 @@ export default function DriverDashboardPage() {
           <BrandMark />
           <Link
             href="/dashboard"
-            className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+            className="icon-button h-12 w-12"
             aria-label="Back to dashboard"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -500,10 +500,10 @@ export default function DriverDashboardPage() {
           </Link>
 
           {/* Quick action icons (profile, settings, home, help). */}
-          <div className="flex items-center gap-3 text-[#0a3570]">
+          <div className="flex items-center gap-3 text-[var(--primary)]">
             <Link
               href="/dashboard"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
+              className="icon-button h-10 w-10"
               aria-label="Profile"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -513,7 +513,7 @@ export default function DriverDashboardPage() {
             </Link>
             <Link
               href="/in-progress"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
+              className="icon-button h-10 w-10"
               aria-label="Settings"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -523,7 +523,7 @@ export default function DriverDashboardPage() {
             </Link>
             <Link
               href="/dashboard"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
+              className="icon-button h-10 w-10"
               aria-label="Home"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -532,7 +532,7 @@ export default function DriverDashboardPage() {
             </Link>
             <Link
               href="/in-progress"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] hover:bg-[#e9dcc9]"
+              className="icon-button h-10 w-10"
               aria-label="Help"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -548,8 +548,8 @@ export default function DriverDashboardPage() {
         <section className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-6">
             {/* Driver profile card with rating and review link. */}
-            <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5 text-center">
-              <div className="relative mx-auto h-32 w-32 overflow-hidden rounded-2xl border-2 border-[#0a3570] bg-[#f4ecdf]">
+            <div className="surface-card rounded-3xl p-5 text-center">
+              <div className="surface-panel relative mx-auto h-32 w-32 overflow-hidden rounded-2xl border-2 border-[var(--primary)]">
                 <img
                   src="/driver_profile.png"
                   alt="Driver profile"
@@ -559,11 +559,11 @@ export default function DriverDashboardPage() {
                   TOP RATED
                 </span>
               </div>
-              <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
+              <h2 className={`${displayFont.className} mt-4 text-2xl text-[var(--primary)]`}>
                 {driverName || "Driver"}
               </h2>
               {driverReviewsCount === 0 ? (
-                <p className="mt-3 text-sm font-semibold text-[#0a3570]">
+                <p className="mt-3 text-sm font-semibold text-[var(--primary)]">
                   (no rating yet)
                 </p>
               ) : (
@@ -578,12 +578,12 @@ export default function DriverDashboardPage() {
                       <path d="M12 17.3l-6.2 3.7 1.7-7-5.5-4.8 7.2-.6L12 2l2.8 6.6 7.2.6-5.5 4.8 1.7 7z" />
                     </svg>
                   ))}
-                  <span className="text-sm font-semibold text-[#0a3570]">
+                  <span className="text-sm font-semibold text-[var(--primary)]">
                     {driverRating.toFixed(1)}
                   </span>
                 </div>
               )}
-              <p className="mt-2 text-sm text-[#6b5f52]">
+              <p className="text-muted mt-2 text-sm">
                 Ratings & reviews{driverReviewsCount > 0 ? ` (${driverReviewsCount})` : ""}
               </p>
               <Link
@@ -595,13 +595,13 @@ export default function DriverDashboardPage() {
             </div>
 
             {/* Availability toggle card (client-side only for MVP). */}
-            <div className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
+            <div className="surface-card rounded-3xl p-5">
               <div
-                className={`flex items-center justify-between gap-3 rounded-full border-2 border-[#0a3570] px-3 py-2 ${
+                className={`flex items-center justify-between gap-3 rounded-full border-2 border-[var(--primary)] px-3 py-2 ${
                   isAvailable ? "bg-[#1dbf73]" : "bg-[#ff4b4b]"
                 }`}
               >
-                <span className="text-sm font-semibold text-[#0a3570]">Availability</span>
+                <span className="text-sm font-semibold text-[var(--primary)]">Availability</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -609,7 +609,7 @@ export default function DriverDashboardPage() {
                     disabled={isAvailabilityUpdating || isAvailable === false}
                     className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
-                        ? "bg-transparent text-[#0a3570]"
+                        ? "bg-transparent text-[var(--primary)]"
                         : "bg-[#ff2d2d] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
                     }`}
                   >
@@ -623,21 +623,21 @@ export default function DriverDashboardPage() {
                     className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
                         ? "bg-[#12b861] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
-                        : "bg-transparent text-[#0a3570]"
+                        : "bg-transparent text-[var(--primary)]"
                     } ${licenseStatus === "expired" ? "cursor-not-allowed bg-[#d3d3d3] text-[#7a6f63] shadow-none" : ""}`}
                   >
                     {isAvailabilityUpdating && isAvailable === true ? "Updating..." : "ON"}
                   </button>
                 </div>
               </div>
-              <p className="mt-3 text-sm text-[#6b5f52]">
+              <p className="text-muted mt-3 text-sm">
                 {isAvailable
                   ? "You are set to available. Expect pings for ride updates."
                   : "You are currently set to unavailable. Change status to receive request pings."}
               </p>
               {/* Inline chip reminder sits under the availability toggle. */}
               {(licenseStatus === "expiringSoon" || licenseStatus === "expired") ? (
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#0a3570] bg-[#ffe9d1] px-3 py-1 text-xs text-[#0a3570]">
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_10%,var(--background))] px-3 py-1 text-xs text-[var(--primary)]">
                   {/* Badge icon draws attention to the reminder. */}
                   <span
                     className="grid h-4 w-4 place-items-center rounded-full bg-[#ff4b4b] text-[10px] font-semibold text-white badge-pulse"
@@ -683,14 +683,14 @@ export default function DriverDashboardPage() {
           <div className="space-y-6">
               {/* Earnings summary for the last week. */}
               <div className="flex flex-wrap items-center justify-between gap-4 px-1">
-                <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+                <p className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
                   You earned $320 in the past week
                 </p>
               </div>
 
             {/* Collapsible list of new/open ride requests. */}
-            <div className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
-              <div className="flex items-center justify-between rounded-t-3xl bg-[#0a3570] px-5 py-3 text-sm font-semibold text-white">
+            <div className="surface-card overflow-hidden rounded-3xl">
+              <div className="flex items-center justify-between rounded-t-3xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white">
                 <button
                   type="button"
                   onClick={() => setPingsOpen((prev) => !prev)}
@@ -720,19 +720,19 @@ export default function DriverDashboardPage() {
                       {openRequests.map((ping) => (
                         <div
                           key={ping.id}
-                          className="flex items-center justify-between gap-3 rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-3"
+                          className="surface-panel flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
                         >
-                          <div className="text-sm text-[#0a1b3f]">
+                          <div className="text-sm">
                             <span className="font-semibold">Destination:</span> {ping.dropoffLabel}
-                            <span className="mx-2 text-[#0a3570]">•</span>
+                            <span className="mx-2 text-[var(--primary)]">•</span>
                             <span className="font-semibold">Pickup:</span> {ping.pickupLabel}
-                            <span className="mx-2 text-[#0a3570]">•</span>
+                            <span className="mx-2 text-[var(--primary)]">•</span>
                             <span className="font-semibold">Pick-up time:</span> {formatPickupTime(ping.pickupAt)}
-                            <span className="mx-2 text-[#0a3570]">•</span>
+                            <span className="mx-2 text-[var(--primary)]">•</span>
                             <span className="font-semibold">Pay:</span>{" "}
                             ${estimatePriceRange(ping.partySize).min}
                             {ping.paymentSummary ? (
-                              <p className="mt-2 text-xs text-[#6b5f52]">
+                              <p className="text-muted mt-2 text-xs">
                                 Payment: {ping.paymentSummary.label}
                               </p>
                             ) : null}
@@ -743,13 +743,13 @@ export default function DriverDashboardPage() {
                               type="button"
                               onClick={() => handleAccept(ping.id)}
                               disabled={acceptingId === ping.id}
-                              className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2] disabled:opacity-60"
+                              className="btn-secondary px-4 py-1 text-xs font-semibold disabled:opacity-60"
                             >
                               {acceptingId === ping.id ? "Accepting..." : "Accept"}
                             </button>
                             <Link
                               href={`/driver/requests#request-${ping.id}`}
-                              className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                              className="btn-secondary px-4 py-1 text-xs font-semibold"
                             >
                               View
                             </Link>
@@ -757,13 +757,13 @@ export default function DriverDashboardPage() {
                         </div>
                       ))}
                       {openRequests.length === 0 ? (
-                        <p className="rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-4 text-center text-sm text-[#0a1b3f]">
+                        <p className="surface-panel rounded-2xl px-4 py-4 text-center text-sm">
                           No open ride requests yet.
                         </p>
                       ) : null}
                     </div>
                   ) : (
-                    <p className="rounded-2xl border border-[#0a3570] bg-[#f4ecdf] px-4 py-4 text-center text-sm text-[#0a1b3f]">
+                    <p className="surface-panel rounded-2xl px-4 py-4 text-center text-sm">
                       Turn ON availability to see ride requests.
                     </p>
                   )}
@@ -772,27 +772,27 @@ export default function DriverDashboardPage() {
             </div>
 
             {/* Upcoming rides summary with shortcuts to history/upcoming pages. */}
-            <section className="rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6">
-              <h3 className={`${displayFont.className} text-xl text-[#0a3570]`}>
+            <section className="surface-card rounded-3xl p-6">
+              <h3 className={`${displayFont.className} text-xl text-[var(--primary)]`}>
                 Your Rides
               </h3>
               <div className="mt-4 flex flex-wrap gap-4">
                 <Link
                   href="/driver/ride-history"
-                  className="rounded-full bg-[#0a3570] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
+                  className="btn-primary px-6 py-2 text-sm font-semibold"
                 >
                   View Ride History
                 </Link>
                 <Link
                   href="/driver/upcoming"
-                  className="rounded-full bg-[#0a3570] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
+                  className="btn-primary px-6 py-2 text-sm font-semibold"
                 >
                   View Upcoming Rides
                 </Link>
               </div>
               <div className="mt-5 space-y-3">
                 {upcomingRequests.length === 0 ? (
-                  <p className="text-sm text-[#6b5f52]">
+                  <p className="text-muted text-sm">
                     No upcoming rides yet.
                   </p>
                 ) : (
@@ -802,17 +802,17 @@ export default function DriverDashboardPage() {
                       className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
                         request.status === "CANCELED"
                           ? "driver-canceled-card border-[#b42318] bg-[#fde9e7]"
-                          : "border-[#0a3570] bg-[#f4ecdf]"
+                          : "border-[var(--primary)] bg-[var(--surface)]"
                       }`}
                     >
-                      <div className="text-sm text-[#0a1b3f]">
+                      <div className="text-sm">
                         <span className="font-semibold">{request.dropoffLabel}</span>
-                        <span className="mx-2 text-[#0a3570]">•</span>
+                        <span className="mx-2 text-[var(--primary)]">•</span>
                         <span>{formatPickupTime(request.pickupAt)}</span>
-                        <span className="mx-2 text-[#0a3570]">•</span>
+                        <span className="mx-2 text-[var(--primary)]">•</span>
                         <span className="font-semibold">Pickup:</span> {request.pickupLabel}
                         {request.paymentSummary ? (
-                          <p className="mt-2 text-xs text-[#6b5f52]">
+                          <p className="text-muted mt-2 text-xs">
                             Payment: {request.paymentSummary.label}
                           </p>
                         ) : null}
@@ -821,7 +821,7 @@ export default function DriverDashboardPage() {
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           request.status === "CANCELED"
                             ? "bg-[#f7c7c3] text-[#8a1c17]"
-                            : "bg-[#d9e8ff] text-[#0a3570]"
+                            : "bg-[color-mix(in_srgb,var(--primary)_12%,var(--background))] text-[var(--primary)]"
                         }`}
                       >
                         {request.status === "CANCELED" ? "CANCELED" : "UPCOMING"}
@@ -831,7 +831,7 @@ export default function DriverDashboardPage() {
                         className={`rounded-full border bg-white px-3 py-1 text-xs font-semibold hover:bg-[#efe3d2] ${
                           request.status === "CANCELED"
                             ? "border-[#b42318] text-[#8a1c17]"
-                            : "border-[#0a3570] text-[#0a3570]"
+                            : "border-[var(--primary)] text-[var(--primary)]"
                         }`}
                       >
                         View
@@ -865,11 +865,11 @@ export default function DriverDashboardPage() {
 
 
             {/* Payout section routes drivers to the Stripe-backed onboarding hub. */}
-            <section className="overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef]">
+            <section className="surface-card overflow-hidden rounded-3xl">
               <button
                 type="button"
                 onClick={() => setPaymentOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between rounded-t-3xl bg-[#0a3570] px-5 py-3 text-left text-sm font-semibold text-white"
+                className="flex w-full items-center justify-between rounded-t-3xl bg-[var(--primary)] px-5 py-3 text-left text-sm font-semibold text-white"
                 aria-expanded={paymentOpen}
               >
                 Payment Information
@@ -882,8 +882,8 @@ export default function DriverDashboardPage() {
               </button>
               {paymentOpen ? (
                 <div className="bg-[#d9b58c] px-5 py-4">
-                  <div className="space-y-3 text-sm text-[#0a1b3f]">
-                    <p className="text-[#6b5f52]">
+                  <div className="space-y-3 text-sm">
+                    <p className="text-muted">
                       {stripePayoutReady
                         ? "Your Stripe payout setup is active. You can manage your Express account here or from Account > Payments."
                         : stripeOnboardingComplete
@@ -893,20 +893,20 @@ export default function DriverDashboardPage() {
                     <button
                       type="button"
                       onClick={openStripePayoutOnboarding}
-                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                      className="btn-secondary px-4 py-2 text-sm font-semibold"
                     >
                       {stripeOnboardingComplete ? "Review payout setup" : "Start payout setup"}
                     </button>
                     <button
                       type="button"
                       onClick={openStripeExpressDashboard}
-                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                      className="btn-secondary px-4 py-2 text-sm font-semibold"
                     >
                       Open Stripe Express dashboard
                     </button>
                     <Link
                       href="/account/payments"
-                      className="inline-flex rounded-full border border-[#0a3570] bg-white px-4 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                      className="btn-secondary px-4 py-2 text-sm font-semibold"
                     >
                       Open Account payments
                     </Link>
@@ -921,13 +921,13 @@ export default function DriverDashboardPage() {
       </div>
       {/* Toast-style confirmation after accepting a request. */}
       {confirmCard ? (
-        <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
+        <div className="surface-card fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl p-4">
           <div className="flex items-start justify-between gap-3">
-            <PaymentsSupportMessage message={confirmCard} className="text-sm text-[#0a1b3f]" />
+            <PaymentsSupportMessage message={confirmCard} className="text-sm" />
             <button
               type="button"
               onClick={() => setConfirmCard("")}
-              className="rounded-full border border-[#0a3570] px-2 py-0.5 text-xs font-semibold text-[#0a3570]"
+              className="btn-secondary px-2 py-0.5 text-xs font-semibold"
               aria-label="Dismiss confirmation"
             >
               ✕
@@ -937,24 +937,24 @@ export default function DriverDashboardPage() {
       ) : null}
       {showExpiredModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
-          <div className="w-full max-w-md rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.25)]">
-            <h3 className={`${displayFont.className} text-xl text-[#0a3570]`}>
+          <div className="surface-card w-full max-w-md rounded-3xl p-6">
+            <h3 className={`${displayFont.className} text-xl text-[var(--primary)]`}>
               License expired
             </h3>
-            <p className="mt-2 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-2 text-sm">
               Update your license details to continue accepting rides.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/driver/enable?mode=update"
-                className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)]"
+                className="btn-primary px-5 py-2 text-sm font-semibold"
               >
                 Update details
               </Link>
               <button
                 type="button"
                 onClick={() => setShowExpiredModal(false)}
-                className="rounded-full border-2 border-[#0a3570] px-5 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#e9dcc9]"
+                className="btn-secondary px-5 py-2 text-sm font-semibold"
               >
                 Not now
               </button>

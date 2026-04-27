@@ -418,7 +418,7 @@ export default function RequestForm({
                   <button
                     type="button"
                     onClick={onEditQuote}
-                    className="rounded-lg px-2 py-1 text-sm text-[var(--muted-foreground)] hover:bg-[var(--surface)]"
+                    className="btn-ghost rounded-lg px-2 py-1 text-sm text-muted"
                     aria-label="Close modal"
                   >
                     x

@@ -41,8 +41,8 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
       if (!res.ok) throw new Error("Failed to fetch messages");
       const data = await res.json();
       setMessages(data.messages || []);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load messages");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load messages");
     } finally {
       setLoading(false);
     }
@@ -128,8 +128,8 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
       
       // Refresh messages to get latest
       await fetchMessages();
-    } catch (e: any) {
-      setError(e?.message || "Failed to send message");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -152,22 +152,22 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
   };
 
   return (
-    <div className="flex flex-col h-full border rounded-xl bg-white">
+    <div className="surface-card flex h-full flex-col rounded-xl">
       {/* Messages area */}
       <div 
         ref={messagesContainerRef} // scrollable chat area that holds all messages. The ref lets us check the scroll position to decide when to auto-scroll.
-        className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]"
+        className="flex-1 min-h-[300px] max-h-[500px] space-y-3 overflow-y-auto p-4"
       >
         {!isAuthenticated ? (
-          <div className="text-center text-neutral-600 py-8">
+          <div className="text-muted py-8 text-center">
             Sign in to view and send messages.
           </div>
         ) : loading && messages.length === 0 ? (
-          <div className="text-center text-neutral-600 py-8">
+          <div className="text-muted py-8 text-center">
             Loading messages...
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-neutral-600 py-8">
+          <div className="text-muted py-8 text-center">
             No messages yet. Start the conversation!
           </div>
         ) : (
@@ -181,11 +181,11 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
                 <div
                   className={`max-w-[70%] rounded-lg px-3 py-2 ${
                     isOwn
-                      ? "bg-[#0a3570] text-white"
-                      : "border border-[#e5d9c8] bg-[#efe3d2] text-neutral-900"
+                      ? "bg-[var(--primary)] text-white"
+                      : "surface-panel text-[var(--foreground)]"
                   }`}
                 >
-                  <p className={`text-xs font-semibold ${isOwn ? "text-blue-100" : "text-[#6b5f52]"}`}>
+                  <p className={`text-xs font-semibold ${isOwn ? "text-blue-100" : "text-muted"}`}>
                     {message.userName}
                   </p>
                   <p className="text-sm whitespace-pre-wrap break-words">
@@ -193,7 +193,7 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
                   </p>
                   <p
                     className={`text-xs mt-1 ${
-                      isOwn ? "text-blue-100" : "text-[#8a7a6a]"
+                      isOwn ? "text-blue-100" : "text-muted"
                     }`}
                   >
                     {formatTime(message.createdAt)}
@@ -208,7 +208,7 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
 
       {/* Error message */}
       {error && (
-        <div className="px-4 py-2 bg-red-50 text-red-600 text-sm">
+        <div className="bg-red-50 px-4 py-2 text-sm text-red-600">
           {error}
         </div>
       )}
@@ -227,14 +227,14 @@ export default function CarpoolChat({ carpoolId, userId }: CarpoolChatProps) {
               }
             }}
             placeholder="Type a message..."
-            className="flex-1 rounded-xl border p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="app-input flex-1 rounded-xl p-2"
             disabled={sending || !isAuthenticated}
           />
           <button
             type="button"
             onClick={handleSend}
             disabled={!newMessage.trim() || sending || !isAuthenticated}
-            className="rounded-xl px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary rounded-xl px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {sending ? "Sending..." : "Send"}
           </button>

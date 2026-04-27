@@ -550,7 +550,7 @@ export default function DashboardPage() {
         className="app-shell min-h-screen"
       >
         <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-[#6b5f52]">Loading...</p>
+          <p className="text-muted">Loading...</p>
         </div>
       </main>
     );
@@ -651,14 +651,14 @@ export default function DashboardPage() {
     >
       {reviewPromptRide && !cancelModalRide && !showDriverModal ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-6">
-          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
+          <div className="surface-card w-full max-w-xl rounded-3xl p-6">
+            <p className="text-muted text-xs font-semibold uppercase tracking-[0.22em]">
               Completed ride
             </p>
-            <h2 className={`${displayFont.className} mt-2 text-2xl text-[#0a3570]`}>
+            <h2 className={`${displayFont.className} mt-2 text-2xl text-[var(--primary)]`}>
               Leave a review for your driver
             </h2>
-            <p className="mt-3 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-3 text-sm">
               Your ride to {reviewPromptRide.dropoffLabel} has been completed.
               You can leave a review now, or return to Ride History within 7 days.
             </p>
@@ -666,14 +666,14 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => dismissReviewPrompt(reviewPromptRide.id)}
-                className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+                className="btn-secondary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
               >
                 Maybe later
               </button>
               <button
                 type="button"
                 onClick={() => handleLeaveReviewClick(reviewPromptRide.id)}
-                className="rounded-full border border-[#0a3570] bg-[#0a3570] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#092a59]"
+                className="btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
               >
                 Leave a review
               </button>
@@ -683,12 +683,12 @@ export default function DashboardPage() {
       ) : null}
       {cancelModalRide ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
-          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
-            <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+          <div className="surface-card w-full max-w-xl rounded-3xl p-6">
+            <h2 className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
               Are you sure you want to cancel?
             </h2>
             {cancelModalRide.status === "MATCHED" ? (
-              <p className="mt-3 text-sm text-[#6b5f52]">
+              <p className="text-muted mt-3 text-sm">
                 You&apos;ll be charged 10% of the transaction.
               </p>
             ) : null}
@@ -696,7 +696,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setCancelModalRide(null)}
-                className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+                className="btn-secondary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
               >
                 Go Back
               </button>
@@ -704,7 +704,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={handleCancelRideConfirm}
                 disabled={cancelingRideId === cancelModalRide.id}
-                className="rounded-full border border-[#b35656] bg-[#b35656] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#a54c4c] disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {cancelingRideId === cancelModalRide.id
                   ? "Canceling..."
@@ -716,8 +716,8 @@ export default function DashboardPage() {
       ) : null}
       {showDriverModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
-          <div className="relative w-full max-w-xl rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-8 text-center shadow-[0_20px_50px_rgba(10,27,63,0.35)]">
-            <p className="text-lg font-semibold text-[#0a1b3f]">
+          <div className="surface-card relative w-full max-w-xl rounded-2xl p-8 text-center">
+            <p className="text-lg font-semibold text-[var(--foreground)]">
               Oops, you are already a driver. Taking you to your dashboard!
             </p>
           </div>
@@ -725,12 +725,12 @@ export default function DashboardPage() {
       )}
       {showCarpoolModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
-          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+          <div className="surface-card w-full max-w-xl rounded-3xl p-6">
             <div className="flex items-start justify-between gap-4">
               <button
                 type="button"
                 onClick={() => setCarpoolModalState(false)}
-                className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+                className="btn-secondary grid h-12 w-12 place-items-center rounded-full p-0"
                 aria-label="Back to dashboard"
               >
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -740,16 +740,16 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setCarpoolModalState(false)}
-                className="rounded-lg px-2 py-1 text-sm text-[#6b5f52] hover:bg-[#efe3d2]"
+                className="btn-ghost rounded-lg px-2 py-1 text-sm text-muted"
                 aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
-            <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
+            <h2 className={`${displayFont.className} mt-4 text-2xl text-[var(--primary)]`}>
               Who are you requesting this carpool as?
             </h2>
-            <p className="mt-2 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-2 text-sm">
               Choose whether you are offering seats as the driver or coordinating as a rider.
             </p>
             <div className="mt-6 grid gap-3">
@@ -757,15 +757,15 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => handleCarpoolTypeSelect("DRIVER")}
-                  className="group rounded-2xl border-2 border-[#0a3570] bg-white p-4 text-left shadow-[0_10px_24px_rgba(10,27,63,0.1)] transition hover:-translate-y-0.5 hover:bg-[#efe3d2] hover:shadow-[0_16px_32px_rgba(10,27,63,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
+                  className="group surface-panel rounded-2xl border-2 p-4 text-left transition hover:-translate-y-0.5 hover:bg-[var(--surface)]"
                 >
-                  <span className="flex items-center justify-between text-sm font-semibold text-[#0a3570]">
+                  <span className="flex items-center justify-between text-sm font-semibold text-[var(--primary)]">
                     <span>Driver on the request</span>
-                    <span className="rounded-full border border-[#0a3570] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[#0a3570] group-hover:text-white">
+                    <span className="rounded-full border border-[var(--primary)] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[var(--primary)] group-hover:text-white">
                       Select
                     </span>
                   </span>
-                  <span className="mt-2 block text-sm text-[#6b5f52]">
+                  <span className="text-muted mt-2 block text-sm">
                     I&apos;m driving and want to find riders to join my trip.
                   </span>
                 </button>
@@ -773,21 +773,21 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => handleCarpoolTypeSelect("RIDER")}
-                className="group rounded-2xl border-2 border-[#0a3570] bg-white p-4 text-left shadow-[0_10px_24px_rgba(10,27,63,0.1)] transition hover:-translate-y-0.5 hover:bg-[#efe3d2] hover:shadow-[0_16px_32px_rgba(10,27,63,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
+                className="group surface-panel rounded-2xl border-2 p-4 text-left transition hover:-translate-y-0.5 hover:bg-[var(--surface)]"
               >
-                <span className="flex items-center justify-between text-sm font-semibold text-[#0a3570]">
+                <span className="flex items-center justify-between text-sm font-semibold text-[var(--primary)]">
                   <span>Rider on request</span>
-                  <span className="rounded-full border border-[#0a3570] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[#0a3570] group-hover:text-white">
+                  <span className="rounded-full border border-[var(--primary)] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[var(--primary)] group-hover:text-white">
                     Select
                   </span>
                 </span>
-                <span className="mt-2 block text-sm text-[#6b5f52]">
+                <span className="text-muted mt-2 block text-sm">
                   I want to find other riders to coordinate a shared trip.
                 </span>
               </button>
             </div>
             {!isDriver ? (
-              <p className="mt-4 text-xs text-[#6b5f52]">
+              <p className="text-muted mt-4 text-xs">
                 Driver carpool creation is only available for users with driver access.
               </p>
             ) : null}
@@ -800,7 +800,7 @@ export default function DashboardPage() {
           <div>
             <BrandMark />
             <h1
-              className={`${displayFont.className} text-3xl sm:text-4xl`}
+              className={`${displayFont.className} mt-6 text-3xl sm:text-4xl`}
             >
               Welcome, {userName || "there"}👋🏽
             </h1>
@@ -813,7 +813,7 @@ export default function DashboardPage() {
             <Link
               href="/account/profile"
               aria-label="Account"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+              className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -829,7 +829,7 @@ export default function DashboardPage() {
             <Link
               href="/in-progress"
               aria-label="Settings"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+              className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -845,7 +845,7 @@ export default function DashboardPage() {
             <Link
               href="/help"
               aria-label="Help"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+              className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -862,7 +862,7 @@ export default function DashboardPage() {
             <Link
               href="/in-progress"
               aria-label="Notifications"
-              className="relative grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+              className="btn-secondary relative grid h-10 w-10 place-items-center rounded-full p-0"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -874,19 +874,16 @@ export default function DashboardPage() {
                 <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7" />
                 <path d="M9 18a3 3 0 0 0 6 0" />
               </svg>
-              <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                5
-              </span>
             </Link>
           </div>
         </header>
 
         {/* Alerts panel with collapse toggle */}
-        <section className="relative mt-8 rounded-2xl border-2 border-[#0a3570] bg-[#f4ecdf] p-6">
+        <section className="surface-card relative mt-8 rounded-2xl p-6">
           <button
             type="button"
             onClick={() => setAlertsOpen((prev) => !prev)}
-            className="absolute -top-4 left-4 flex items-center gap-2 rounded-t-lg bg-[#0a3570] px-4 py-2 text-sm font-semibold text-white"
+            className="absolute -top-4 left-4 flex items-center gap-2 rounded-t-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white"
             aria-expanded={alertsOpen}
           >
             Alerts
@@ -902,7 +899,7 @@ export default function DashboardPage() {
           {alertsOpen ? (
             <ul className="mt-2 space-y-4">
               {alerts.length === 0 ? (
-                <li className="text-sm text-[#6b5f52]">No alerts yet.</li>
+                <li className="text-muted text-sm">No alerts yet.</li>
               ) : null}
               {alerts.map((alert) => (
                 <li
@@ -919,13 +916,13 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-4 py-1 text-xs font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
+                      className="btn-secondary px-4 py-1 text-xs font-semibold"
                     >
                       View
                     </button>
                     <button
                       type="button"
-                      className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-4 py-1 text-xs font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
+                      className="btn-secondary px-4 py-1 text-xs font-semibold"
                     >
                       Remove
                     </button>
@@ -938,42 +935,42 @@ export default function DashboardPage() {
 
         {/* Ride Status banner with upcoming rides and cancel actions. */}
         <section className="mt-6">
-          <div className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
+          <div className="surface-card rounded-2xl p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-[#0a3570]">
+                <h2 className="text-lg font-semibold text-[var(--primary)]">
                   Ride Status
                 </h2>
-                <p className="mt-2 text-sm text-[#6b5f52]">
+                <p className="text-muted mt-2 text-sm">
                   Shows upcoming rides and active requests.
                 </p>
               </div>
-              <span className="rounded-full border border-[#0a3570] bg-[#f6efe6] px-4 py-2 text-xs font-semibold text-[#0a3570]">
+              <span className="btn-secondary px-4 py-2 text-xs font-semibold">
                 {upcomingRides.length} upcoming
               </span>
             </div>
 
             <div className="mt-4 space-y-4">
               {ridesLoading && (
-                <div className="rounded-2xl border border-dashed border-[#0a3570] bg-white/70 p-6 text-center text-sm text-[#6b5f52]">
+                <div className="surface-panel text-muted rounded-2xl border-dashed p-6 text-center text-sm">
                   Loading ride status...
                 </div>
               )}
 
               {!ridesLoading && ridesError && (
-                <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-6 text-center">
+                <div className="surface-panel rounded-2xl p-6 text-center">
                   <p className="text-sm text-red-600">{ridesError}</p>
                 </div>
               )}
 
               {!ridesLoading && !ridesError && upcomingRides.length === 0 && (
-                <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-6 text-center text-sm text-[#6b5f52]">
+                <div className="surface-panel text-muted rounded-2xl p-6 text-center text-sm">
                   No upcoming rides yet.
                 </div>
               )}
 
               {!ridesLoading && !ridesError && cancelError && (
-                <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-4 text-center">
+                <div className="surface-panel rounded-2xl p-4 text-center">
                   <p className="text-sm text-red-600">{cancelError}</p>
                 </div>
               )}
@@ -983,14 +980,14 @@ export default function DashboardPage() {
               {upcomingRides.map((ride) => (
                 <div
                   key={ride.id}
-                  className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5"
+                  className="surface-panel rounded-2xl border-2 p-5"
                 >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <h3 className="text-lg font-semibold text-[#0a3570]">
+                          <h3 className="text-lg font-semibold text-[var(--primary)]">
                             {ride.dropoffLabel}
                           </h3>
-                          <p className="mt-1 text-sm text-[#6b5f52]">
+                          <p className="text-muted mt-1 text-sm">
                             {new Date(ride.pickupAt).toLocaleString([], {
                               month: "short",
                               day: "2-digit",
@@ -1009,10 +1006,10 @@ export default function DashboardPage() {
                           {ride.status}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-[#6b5f52]">
+                      <p className="text-muted mt-2 text-sm">
                         Pickup: {ride.pickupLabel}
                       </p>
-                  <p className="mt-1 text-sm text-[#6b5f52]">
+                  <p className="text-muted mt-1 text-sm">
                     Party size: {ride.partySize} • Cars needed: {ride.carsNeeded}
                   </p>
                   {/* Commented out this code to prevent ride and carpoool UIs from being cluttered by payment message info */}
@@ -1037,8 +1034,8 @@ export default function DashboardPage() {
                   ) : null} */}
                   {/* Driver confirmation card only appears once a driver is matched. */}
                   {ride.status === "MATCHED" && ride.acceptedDriverId ? (
-                    <div className="mt-4 rounded-2xl border border-[#0a3570] bg-white/80 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6b5f52]">
+                    <div className="surface-card mt-4 rounded-2xl p-4">
+                      <p className="text-muted text-xs font-semibold uppercase tracking-[0.2em]">
                         Driver confirmation
                       </p>
                       {(() => {
@@ -1055,10 +1052,10 @@ export default function DashboardPage() {
                           <>
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-[#0a3570]">
+                          <p className="text-sm font-semibold text-[var(--primary)]">
                             {driverProfiles[ride.acceptedDriverId]?.name || "Driver"}
                           </p>
-                          <div className="mt-2 flex items-center gap-2 text-sm text-[#6b5f52]">
+                          <div className="text-muted mt-2 flex items-center gap-2 text-sm">
                             <div className="flex items-center gap-1 text-[#f0b429]">
                               {Array.from({ length: 5 }).map((_, index) => (
                                 <svg
@@ -1076,13 +1073,13 @@ export default function DashboardPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="text-right text-xs text-[#6b5f52]">
+                        <div className="text-muted text-right text-xs">
                           <p>
                             {reviewsCount} reviews
                           </p>
                           <Link
                             href={`/drivers/${ride.acceptedDriverId}/reviews`}
-                            className="mt-2 inline-flex rounded-full border border-[#0a3570] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#e9dcc9]"
+                            className="btn-secondary mt-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
                           >
                             View reviews
                           </Link>
@@ -1112,14 +1109,14 @@ export default function DashboardPage() {
         </section>
 
         {/* Ride History entry point (separate page). */}
-        <section className="mt-6 rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5">
-          <h2 className="text-lg font-semibold text-[#0a3570]">Ride History</h2>
-          <p className="mt-2 text-sm text-[#6b5f52]">
+        <section className="surface-card mt-6 rounded-2xl p-5">
+          <h2 className="text-lg font-semibold text-[var(--primary)]">Ride History</h2>
+          <p className="text-muted mt-2 text-sm">
             Review completed and canceled rides.
           </p>
           <Link
             href="/dashboard/ride-history"
-            className="mt-4 inline-flex items-center rounded-full border border-[#0a3570] bg-[#e9dcc9] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a1b3f] hover:bg-[#dbc8ad]"
+            className="btn-secondary mt-4 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
           >
             View history
           </Link>
@@ -1141,7 +1138,7 @@ export default function DashboardPage() {
               className="btn-primary w-full rounded-none px-5 py-3 text-base"
             />
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="flex-1 rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
+              <div className="surface-panel flex-1 rounded-2xl border-2 p-5">
                 <p className="text-lg font-semibold">
                   Wanna split a ride with a friend?
                 </p>
@@ -1150,14 +1147,14 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setCarpoolModalState(true)}
-                    className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
+                    className="btn-secondary px-5 py-2 text-sm font-semibold"
                   >
                     Create Carpool Request
                   </button>
                   {/* Carpool discovery flow */}
                   <Link
                     href="/carpool/feed"
-                    className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
+                    className="btn-secondary px-5 py-2 text-sm font-semibold"
                   >
                     Join Available Carpool
                   </Link>
@@ -1171,16 +1168,16 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={handleDriverDashboardClick}
-              className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-center text-base font-semibold text-white shadow-[0_8px_20px_rgba(10,27,63,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] hover:shadow-[0_14px_28px_rgba(10,27,63,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
+              className="btn-primary w-full rounded-none px-5 py-3 text-base"
             >
               Offer a Ride
             </button>
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="flex-1 rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">
+              <div className="surface-panel flex-1 rounded-2xl border-2 p-5">
                 <p className="text-lg font-semibold">
                   Have extra seats? Offer a ride today!
                 </p>
-                <p className="text-xs text-[#6b5f52]">
+                <p className="text-muted text-xs">
                   Help others and earn. Verified .edu email required!
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
@@ -1188,7 +1185,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={handleDriverDashboardClick}
-                    className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
+                    className="btn-secondary px-5 py-2 text-sm font-semibold"
                   >
                     Take me to driver dashboard
                   </button>
@@ -1196,7 +1193,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={handleBecomeDriverClick}
-                    className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
+                    className="btn-secondary px-5 py-2 text-sm font-semibold"
                   >
                     Become a driver
                   </button>
@@ -1210,7 +1207,7 @@ export default function DashboardPage() {
           {/* Keep sign-out accessible from the main authenticated hub without
               competing with the landing page entry actions. */}
           <SignOutButton
-            className="rounded-full border border-[#0a3570] bg-[#fdf7ef] px-5 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#e9dcc9] disabled:opacity-60"
+            className="btn-secondary px-5 py-2 text-sm font-semibold disabled:opacity-60"
           />
         </div>
       </div>

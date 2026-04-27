@@ -312,11 +312,11 @@ export default function CarpoolThreadPage() {
   if (loading) {
     return (
       <main
-        className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className} mx-auto max-w-4xl`}
+        className={`page-shell mx-auto max-w-4xl p-6 ${bodyFont.className}`}
       >
         <Link
           href="/carpool/feed"
-          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          className="icon-button h-12 w-12"
           aria-label="Back to carpool feed"
         >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -331,11 +331,11 @@ export default function CarpoolThreadPage() {
   if (error && !carpool) {
     return (
       <main
-        className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className} mx-auto max-w-4xl`}
+        className={`page-shell mx-auto max-w-4xl p-6 ${bodyFont.className}`}
       >
         <Link
           href="/carpool/feed"
-          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          className="icon-button h-12 w-12"
           aria-label="Back to carpool feed"
         >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -379,7 +379,7 @@ export default function CarpoolThreadPage() {
   const riderBadge = phaseBrowse
     ? { label: "Open", className: "bg-green-100 text-green-800" }
     : phaseInterested
-      ? { label: "Pending", className: "bg-[#efe3d2] text-[#6b5f52]" }
+      ? { label: "Pending", className: "bg-[var(--surface)] text-[var(--muted-foreground)]" }
       : phaseConfirmedRider
         ? { label: "Confirmed", className: "bg-green-100 text-green-800" }
         : null;
@@ -388,7 +388,7 @@ export default function CarpoolThreadPage() {
     carpool.status === "OPEN"
       ? "bg-green-100 text-green-800"
       : carpool.status === "PENDING_CONFIRMATIONS"
-        ? "bg-[#efe3d2] text-[#6b5f52]"
+        ? "bg-[var(--surface)] text-[var(--muted-foreground)]"
         : carpool.status === "CONFIRMED"
           ? "bg-blue-100 text-blue-800"
           : "bg-neutral-100 text-neutral-700";
@@ -400,11 +400,11 @@ export default function CarpoolThreadPage() {
 
   return (
     <main
-      className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className} mx-auto max-w-4xl`}
+      className={`page-shell mx-auto max-w-4xl p-6 ${bodyFont.className}`}
     >
       <Link
         href="/carpool/feed"
-        className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+        className="icon-button h-12 w-12"
         aria-label="Back to carpool feed"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -415,7 +415,7 @@ export default function CarpoolThreadPage() {
       <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
         <div className="flex items-start justify-between gap-4 border-b border-neutral-200 pb-4">
           <div className="min-w-0 flex-1">
-            <h1 className={`${displayFont.className} mb-2 text-2xl font-semibold text-[#0a3570]`}>
+            <h1 className={`${displayFont.className} mb-2 text-2xl font-semibold text-[var(--primary)]`}>
               {carpool.destination}
             </h1>
             <div className="space-y-1 text-sm text-neutral-600">
@@ -472,7 +472,7 @@ export default function CarpoolThreadPage() {
       )}
 
       {sessionError && !userId && (
-        <div className="mb-4 mt-4 rounded-xl bg-[#efe3d2] p-3 text-sm text-[#6b5f52]">
+        <div className="surface-panel mb-4 mt-4 rounded-xl p-3 text-sm text-muted">
           {sessionError}
         </div>
       )}
@@ -508,7 +508,7 @@ export default function CarpoolThreadPage() {
             type="button"
             onClick={handleJoin}
             disabled={actionLoading !== ""}
-            className="w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7] disabled:opacity-50"
+            className="btn-secondary w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-50"
           >
             {actionLoading === "join" ? "Joining…" : "I'm interested"}
           </button>
@@ -526,7 +526,7 @@ export default function CarpoolThreadPage() {
               type="button"
               onClick={startLockFlow}
               disabled={actionLoading !== ""}
-              className="rounded-xl bg-[#0a3570] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0a2d5c] disabled:opacity-50"
+              className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
             >
               {actionLoading === "lock" ? "Locking…" : "Lock carpool"}
             </button>
@@ -559,7 +559,7 @@ export default function CarpoolThreadPage() {
               type="button"
               onClick={handleConfirm}
               disabled={actionLoading !== ""}
-              className="mb-3 w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7] disabled:opacity-50"
+              className="btn-secondary mb-3 w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-50"
             >
               {actionLoading === "confirm" ? "Confirming…" : "Confirm participation"}
             </button>
@@ -578,7 +578,7 @@ export default function CarpoolThreadPage() {
       {/* Phase 3: confirmed rider */}
       {phaseConfirmedRider && (
         <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-          <div className="mb-4 rounded-lg bg-[#efe3d2] px-3 py-2 text-sm text-[#6b5f52]">
+          <div className="surface-panel mb-4 rounded-lg px-3 py-2 text-sm text-muted">
             Cancel window closes 2 hours before departure.
             {!canCancelConfirmed && (
               <span className="mt-1 block font-medium">
@@ -590,7 +590,7 @@ export default function CarpoolThreadPage() {
             type="button"
             onClick={handleLeave}
             disabled={actionLoading !== "" || !canCancelConfirmed}
-            className="w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7] disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-secondary w-full rounded-xl py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {actionLoading === "leave" ? "Leaving…" : "Cancel participation"}
           </button>
@@ -668,15 +668,15 @@ export default function CarpoolThreadPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="lock-carpool-title"
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.28)]"
+            className="surface-card w-full max-w-md rounded-2xl p-6"
           >
             <h2
               id="lock-carpool-title"
-              className={`${displayFont.className} text-2xl font-semibold text-[#0a3570]`}
+              className={`${displayFont.className} text-2xl font-semibold text-[var(--primary)]`}
             >
               {carpool.carpoolType === "DRIVER" ? "Lock Driver Carpool?" : "Lock Carpool?"}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">
+            <p className="text-muted mt-3 text-sm leading-6">
               {carpool.carpoolType === "DRIVER"
                 ? "This will lock the carpool and create the ride immediately."
                 : "This will lock the carpool and take you to the request flow with your trip details prefilled."}
@@ -686,7 +686,7 @@ export default function CarpoolThreadPage() {
                 type="button"
                 onClick={() => setLockModalOpen(false)}
                 disabled={actionLoading !== ""}
-                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+                className="btn-secondary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -694,7 +694,7 @@ export default function CarpoolThreadPage() {
                 type="button"
                 onClick={handleLock}
                 disabled={actionLoading !== ""}
-                className="rounded-xl bg-[#0a3570] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0a2d5c] disabled:opacity-50"
+                className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 {actionLoading === "lock" ? "Locking…" : "Continue"}
               </button>

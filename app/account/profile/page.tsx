@@ -263,13 +263,13 @@ export default function ProfilePage() {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
+                  <label className="eyebrow">
                     Name
                   </label>
                   <button
                     type="button"
                     onClick={() => toggleField("legalName")}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d7cab9] bg-[#f6efe6] text-[#6b5f52] transition hover:border-[#0a3570] hover:text-[#0a3570]"
+                    className="btn-secondary h-10 w-10"
                     aria-label={activeField === "legalName" ? "Stop editing name" : "Edit name"}
                   >
                     <PencilIcon />
@@ -284,10 +284,8 @@ export default function ProfilePage() {
                     }))
                   }
                   readOnly={activeField !== "legalName"}
-                  className={`mt-3 w-full rounded-2xl border px-4 py-3 text-sm text-[#0a1b3f] focus:border-[#0a3570] focus:outline-none ${
-                    activeField === "legalName"
-                      ? "border-[#c9b9a3] bg-white"
-                      : "border-[#d7cab9] bg-[#f6efe6] opacity-85"
+                  className={`app-input mt-3 w-full rounded-2xl px-4 py-3 text-sm ${
+                    activeField === "legalName" ? "" : "opacity-85"
                   }`}
                   placeholder="Add your name"
                 />
@@ -295,13 +293,13 @@ export default function ProfilePage() {
 
               <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
+                  <label className="eyebrow">
                     Username
                   </label>
                   <button
                     type="button"
                     onClick={() => toggleField("userName")}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d7cab9] bg-[#f6efe6] text-[#6b5f52] transition hover:border-[#0a3570] hover:text-[#0a3570]"
+                    className="btn-secondary h-10 w-10"
                     aria-label={activeField === "userName" ? "Stop editing username" : "Edit username"}
                   >
                     <PencilIcon />
@@ -316,10 +314,8 @@ export default function ProfilePage() {
                     }))
                   }
                   readOnly={activeField !== "userName"}
-                  className={`mt-3 w-full rounded-2xl border px-4 py-3 text-sm text-[#0a1b3f] focus:border-[#0a3570] focus:outline-none ${
-                    activeField === "userName"
-                      ? "border-[#c9b9a3] bg-white"
-                      : "border-[#d7cab9] bg-[#f6efe6] opacity-85"
+                  className={`app-input mt-3 w-full rounded-2xl px-4 py-3 text-sm ${
+                    activeField === "userName" ? "" : "opacity-85"
                   }`}
                   placeholder="Add username"
                 />
@@ -330,20 +326,20 @@ export default function ProfilePage() {
               <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="w-full">
-                    <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
+                    <label className="eyebrow">
                       Email
                     </label>
                     <input
                       type="text"
                       value={emailValue}
                       readOnly
-                      className="mt-3 w-full rounded-2xl border border-[#d7cab9] bg-[#f6efe6] px-4 py-3 text-sm text-[#0a1b3f] opacity-85"
+                      className="app-input mt-3 w-full rounded-2xl px-4 py-3 text-sm opacity-85"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowEmail((current) => !current)}
-                    className="mt-8 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d7cab9] bg-[#f6efe6] text-[#8a7c6f] transition hover:border-[#0a3570] hover:text-[#0a3570]"
+                    className="btn-secondary mt-8 h-10 w-10"
                     aria-label={showEmail ? "Hide email" : "Show email"}
                   >
                     <EyeIcon crossed={showEmail} />
@@ -352,7 +348,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   disabled
-                  className="mt-5 inline-flex cursor-not-allowed items-center rounded-full border border-[#d7cab9] bg-[#ece2d5] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#8a7c6f] opacity-80"
+                  className="surface-panel mt-5 inline-flex cursor-not-allowed items-center rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted opacity-80"
                 >
                   Change email address
                 </button>
@@ -361,20 +357,20 @@ export default function ProfilePage() {
               <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="w-full">
-                    <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
+                    <label className="eyebrow">
                       Password
                     </label>
                     <input
                       type="text"
                       value={passwordValue}
                       readOnly
-                      className="mt-3 w-full rounded-2xl border border-[#d7cab9] bg-[#f6efe6] px-4 py-3 text-sm text-[#0a1b3f] opacity-85"
+                      className="app-input mt-3 w-full rounded-2xl px-4 py-3 text-sm opacity-85"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
-                    className="mt-8 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d7cab9] bg-[#f6efe6] text-[#8a7c6f] transition hover:border-[#0a3570] hover:text-[#0a3570]"
+                    className="btn-secondary mt-8 h-10 w-10"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     <EyeIcon crossed={showPassword} />

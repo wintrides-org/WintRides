@@ -2,17 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 type AnswerBlock =
   | { type: "paragraph"; text: string }
@@ -39,7 +30,7 @@ const sections: FAQSection[] = [
         answer: [
           {
             type: "paragraph",
-            text: "WintRides is a centralized ride-sharing platform built for college students on rural and suburban campuses. Think of it as Uber for college campuses — it lets students request, offer, and share rides around campus towns and to key destinations like airports.",
+            text: "WintRides is a centralized ride-sharing platform built for college students on rural and suburban campuses. Think of it as Uber for college campuses: it lets students request, offer, and share rides around campus towns and to key destinations like airports.",
           },
         ],
       },
@@ -53,8 +44,8 @@ const sections: FAQSection[] = [
           {
             type: "list",
             items: [
-              "Riders — students who need reliable, affordable transportation.",
-              "Drivers — students who want to earn extra income by offering rides in a safe, familiar environment.",
+              "Riders: students who need reliable, affordable transportation.",
+              "Drivers: students who want to earn extra income by offering rides in a safe, familiar environment.",
             ],
           },
         ],
@@ -64,7 +55,7 @@ const sections: FAQSection[] = [
         answer: [
           {
             type: "paragraph",
-            text: "Rides are currently priced at approximately $7 per rider. Pricing is based on the number of riders in a trip — the more people in a single ride, the higher the total cost of a trip.",
+            text: "Rides are currently priced at approximately $7 per rider. Pricing is based on the number of riders in a trip: the more people in a single ride, the higher the total cost of a trip.",
           },
           {
             type: "note",
@@ -87,8 +78,8 @@ const sections: FAQSection[] = [
           {
             type: "list",
             items: [
-              "Request a ride — book a dedicated trip to your destination.",
-              "Carpool — find other students heading the same way and share the cost.",
+              "Request a ride: book a dedicated trip to your destination.",
+              "Carpool: find other students heading the same way and share the cost.",
             ],
           },
         ],
@@ -98,7 +89,7 @@ const sections: FAQSection[] = [
         answer: [
           {
             type: "paragraph",
-            text: "WintRides is designed around student needs — reliable scheduled rides, student-friendly pricing, and easy coordination for carpooling with people on your campus.",
+            text: "WintRides is designed around student needs: reliable scheduled rides, student-friendly pricing, and easy coordination for carpooling with people on your campus.",
           },
         ],
       },
@@ -117,8 +108,8 @@ const sections: FAQSection[] = [
           {
             type: "list",
             items: [
-              "Offer a ride — pick up listed ride requests and earn income.",
-              "Carpool — offer spare seats on trips you're already making to monetize rides you'd take anyway.",
+              "Offer a ride: pick up listed ride requests and earn income.",
+              "Carpool: offer spare seats on trips you're already making to monetize rides you'd take anyway.",
             ],
           },
         ],
@@ -128,7 +119,7 @@ const sections: FAQSection[] = [
         answer: [
           {
             type: "paragraph",
-            text: "Yes — WintRides operates within a familiar campus community, connecting you with fellow students rather than strangers from the general public.",
+            text: "Yes: WintRides operates within a familiar campus community, connecting you with fellow students rather than strangers from the general public.",
           },
         ],
       },
@@ -156,7 +147,7 @@ const sections: FAQSection[] = [
         ],
       },
       {
-        question: "I'm testing the driver flow — what should I enter for my license?",
+        question: "I'm testing the driver flow. What should I enter for my license?",
         answer: [
           {
             type: "paragraph",
@@ -165,7 +156,7 @@ const sections: FAQSection[] = [
         ],
       },
       {
-        question: "Driver onboarding seems stuck — what do I do?",
+        question: "Driver onboarding seems stuck. What do I do?",
         answer: [
           {
             type: "paragraph",
@@ -176,7 +167,7 @@ const sections: FAQSection[] = [
             items: [
               'Keep going through all the Stripe steps until your driver dashboard shows "Payment setup complete."',
               "If it hasn't updated, reload the page.",
-              'If it\'s still stuck, go to your Account → Payment page and click the "Review payment setup" button.',
+              'If it is still stuck, go to your Account > Payment page and click the "Review payment setup" button.',
             ],
           },
         ],
@@ -198,7 +189,7 @@ const sections: FAQSection[] = [
 
 function FAQAnswer({ blocks }: { blocks: AnswerBlock[] }) {
   return (
-    <div className="space-y-4 border-t border-[#d5c5b2] px-6 pb-6 pt-5 text-sm leading-7 text-[#24324d] sm:px-8">
+    <div className="space-y-4 border-t px-6 pb-6 pt-5 text-sm leading-7 sm:px-8">
       {blocks.map((block, index) => {
         if (block.type === "paragraph") {
           return <p key={index}>{block.text}</p>;
@@ -218,10 +209,7 @@ function FAQAnswer({ blocks }: { blocks: AnswerBlock[] }) {
 
         if (block.type === "note") {
           return (
-            <div
-              key={index}
-              className="rounded-2xl border border-[#d8c3a6] bg-[#f6ead7] px-4 py-3 text-[#6b4e1f]"
-            >
+            <div key={index} className="surface-panel rounded-2xl px-4 py-3 text-muted">
               {block.text}
             </div>
           );
@@ -234,7 +222,7 @@ function FAQAnswer({ blocks }: { blocks: AnswerBlock[] }) {
               href={block.href}
               target="_blank"
               rel="noreferrer"
-              className="font-semibold text-[#0a3570] underline decoration-[#0a3570]/50 underline-offset-4 hover:text-[#092a59]"
+              className="font-semibold text-[var(--primary)] underline decoration-[color-mix(in_srgb,var(--primary)_50%,transparent)] underline-offset-4 hover:text-[var(--primary-hover)]"
             >
               {block.linkLabel}
             </a>
@@ -249,11 +237,7 @@ function FAQAnswer({ blocks }: { blocks: AnswerBlock[] }) {
 function TopRightIcons() {
   return (
     <div className="flex items-center gap-3">
-      <Link
-        href="/account/profile"
-        aria-label="Account"
-        className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-      >
+      <Link href="/account/profile" aria-label="Account" className="icon-button h-10 w-10">
         <svg
           viewBox="0 0 24 24"
           className="h-5 w-5"
@@ -265,11 +249,7 @@ function TopRightIcons() {
           <path d="M4 20c2.2-4 13.8-4 16 0" />
         </svg>
       </Link>
-      <Link
-        href="/in-progress"
-        aria-label="Settings"
-        className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-      >
+      <Link href="/in-progress" aria-label="Settings" className="icon-button h-10 w-10">
         <svg
           viewBox="0 0 24 24"
           className="h-5 w-5"
@@ -284,7 +264,7 @@ function TopRightIcons() {
       <Link
         href="/help"
         aria-label="Help"
-        className="grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] bg-[#e9dcc9] text-[#0a3570]"
+        className="icon-button h-10 w-10 bg-[color-mix(in_srgb,var(--primary)_10%,var(--background))]"
       >
         <svg
           viewBox="0 0 24 24"
@@ -298,11 +278,7 @@ function TopRightIcons() {
           <circle cx="12" cy="17" r="1" />
         </svg>
       </Link>
-      <Link
-        href="/in-progress"
-        aria-label="Notifications"
-        className="relative grid h-10 w-10 place-items-center rounded-full border border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-      >
+      <Link href="/in-progress" aria-label="Notifications" className="icon-button h-10 w-10">
         <svg
           viewBox="0 0 24 24"
           className="h-5 w-5"
@@ -313,9 +289,6 @@ function TopRightIcons() {
           <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7" />
           <path d="M9 18a3 3 0 0 0 6 0" />
         </svg>
-        <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-semibold text-white">
-          5
-        </span>
       </Link>
     </div>
   );
@@ -332,13 +305,10 @@ export default function HelpPage() {
   }
 
   return (
-    <main className={`${bodyFont.className} min-h-screen bg-[#f4ecdf] text-[#0a1b3f]`}>
+    <main className="page-shell">
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-10">
         <header className="flex flex-wrap items-start justify-between gap-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-full border border-[#0a3570] px-4 py-2 text-sm font-semibold text-[#0a3570] transition hover:bg-[#e9dcc9]"
-          >
+          <Link href="/dashboard" className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold">
             <svg
               viewBox="0 0 24 24"
               className="h-4 w-4"
@@ -354,21 +324,16 @@ export default function HelpPage() {
         </header>
 
         <section className="mt-10">
-          <h1 className={`${displayFont.className} text-4xl text-[#0a1b3f] sm:text-5xl`}>
-            WintRides FAQ
-          </h1>
-          <p className="mt-3 max-w-3xl text-lg text-[#6b5f52] sm:text-xl">
+          <h1 className={`${displayFont.className} text-4xl sm:text-5xl`}>WintRides FAQ</h1>
+          <p className="text-muted mt-3 max-w-3xl text-lg sm:text-xl">
             Reliable, affordable rides for college students on rural and suburban campuses.
           </p>
         </section>
 
         <div className="mt-12 space-y-12">
           {sections.map((section) => (
-            <section
-              key={section.title}
-              className="border-t border-[#d8cdbf] pt-8 first:border-t-0 first:pt-0"
-            >
-              <div className="mb-6 inline-flex rounded-full border border-[#0a3570] bg-[#e7ddc9] px-5 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#0a3570]">
+            <section key={section.title} className="border-t pt-8 first:border-t-0 first:pt-0">
+              <div className="btn-secondary mb-6 px-5 py-2 text-sm font-semibold uppercase tracking-[0.18em]">
                 {section.title}
               </div>
 
@@ -378,20 +343,17 @@ export default function HelpPage() {
                   const isOpen = Boolean(openItems[itemKey]);
 
                   return (
-                    <article
-                      key={item.question}
-                      className="overflow-hidden rounded-[28px] border border-[#c9b9a5] bg-[#fbf7f1] shadow-[0_6px_18px_rgba(10,27,63,0.06)]"
-                    >
+                    <article key={item.question} className="surface-card overflow-hidden rounded-[28px]">
                       <button
                         type="button"
                         onClick={() => toggleItem(itemKey)}
                         aria-expanded={isOpen}
-                        className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-lg font-semibold text-[#1d2330] sm:px-8 sm:text-xl"
+                        className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-lg font-semibold sm:px-8 sm:text-xl"
                       >
                         <span>{item.question}</span>
                         <svg
                           viewBox="0 0 24 24"
-                          className={`h-6 w-6 shrink-0 text-[#7e776b] transition-transform ${
+                          className={`text-muted h-6 w-6 shrink-0 transition-transform ${
                             isOpen ? "rotate-180" : ""
                           }`}
                           fill="currentColor"

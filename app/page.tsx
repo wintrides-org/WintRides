@@ -129,16 +129,16 @@ export default function HomePage() {
       />
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center">
         <div
-          className="w-full rounded-[36px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--background)_82%,transparent)] p-6 shadow-[var(--shadow-soft)] backdrop-blur md:p-8"
+          className="mx-auto w-full max-w-4xl rounded-[36px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--background)_82%,transparent)] p-6 shadow-[var(--shadow-soft)] backdrop-blur md:p-8"
         >
-          <section className="mx-auto flex w-full max-w-3xl flex-col justify-between gap-10 rounded-[28px] bg-[color:color-mix(in_srgb,var(--background)_82%,transparent)] p-8 text-center">
+          <section className="mx-auto flex w-full max-w-2xl flex-col justify-between gap-12 rounded-[28px] bg-[color:color-mix(in_srgb,var(--background)_82%,transparent)] px-8 py-12 text-center md:px-10 md:py-14">
             <div>
               <p className="eyebrow">Campus ridesharing</p>
               <div className="mt-5 flex justify-center">
                 <BrandMark className="text-3xl" />
               </div>
               <h1 className="font-heading mx-auto mt-10 max-w-xl text-5xl leading-[1.02] sm:text-6xl">
-                Your Campus, 
+                Your Campus 
                 <br></br>
                 Your Rides
               </h1>
