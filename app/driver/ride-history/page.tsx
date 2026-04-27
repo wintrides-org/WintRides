@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import BrandMark from "@/components/BrandMark";
 import { estimatePriceRange } from "@/lib/requestValidation";
 
 type RideRequestRow = {
@@ -102,7 +101,6 @@ export default function DriverRideHistoryPage() {
             </svg>
           </Link>
           <div>
-            <BrandMark />
             <h1 className={`${displayFont.className} text-3xl text-[var(--primary)]`}>Ride History</h1>
             <p className="text-muted mt-1 text-sm">Completed rides you've finished.</p>
           </div>

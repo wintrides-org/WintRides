@@ -230,7 +230,7 @@ export default function RequestForm({
       <div className="mx-auto w-full max-w-xl">
         <div className="surface-card rounded-[32px] p-8">
           <div className="flex items-center justify-between gap-4">
-            <BrandMark />
+            <BrandMark href="/dashboard" />
             <Link
               href="/dashboard?requestOptions=1"
               className="btn-secondary px-4 py-2 text-sm"

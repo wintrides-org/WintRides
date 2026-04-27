@@ -98,7 +98,7 @@ export default function AccountShell({
           aria-label="Account navigation"
         >
           <div className="flex items-center gap-4">
-            <BrandMark compact light />
+            <BrandMark href="/dashboard" compact light />
             {!collapsed ? (
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em]">Account</p>
@@ -172,7 +172,7 @@ export default function AccountShell({
         <main className="flex-1 px-8 py-10">
           <div className="mx-auto w-full max-w-5xl">
             <div className="app-topbar mb-6 flex items-center justify-between rounded-[28px] px-5 py-4">
-              <BrandMark />
+              <BrandMark href="/dashboard" />
               <Link href="/dashboard" className="btn-secondary px-4 py-2 text-sm">
                 Back to rider dashboard
               </Link>

@@ -798,7 +798,7 @@ export default function DashboardPage() {
         {/* Header with greeting + MVP utility icons */}
         <header className="app-topbar flex flex-wrap items-start justify-between gap-6 rounded-[30px] px-5 py-5">
           <div>
-            <BrandMark />
+            <BrandMark href="/dashboard" />
             <h1
               className={`${displayFont.className} mt-6 text-3xl sm:text-4xl`}
             >

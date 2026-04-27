@@ -15,6 +15,8 @@ import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 import BrandMark from "@/components/BrandMark";
 
 const displayFont = { className: "font-heading" };
+const TOP_RATED_MIN_RATING = 4.8;
+const TOP_RATED_MIN_REVIEWS = 5;
 // Mock alerts on the driver's profile: has been replaced with real requests
 const mockPings = [
   {
@@ -58,6 +60,20 @@ const CANCELED_CARD_VISIBILITY_MS = 30 * 60 * 1000;
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function getInitials(name: string, fallback: string): string {
+  const source = (name || fallback).trim();
+  if (!source) return "WR";
+
+  const letters = source
+    .split(/\s+/)
+    .map((part) => part[0] || "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return letters || "WR";
 }
 
 export default function DriverDashboardPage() {
@@ -112,6 +128,10 @@ export default function DriverDashboardPage() {
       };
     }[]
   >([]);
+  const driverInitials = getInitials(driverName, driverUserName);
+  const isTopRated =
+    driverRating >= TOP_RATED_MIN_RATING &&
+    driverReviewsCount >= TOP_RATED_MIN_REVIEWS;
 
   // Shows intro page
   useEffect(() => {
@@ -488,16 +508,7 @@ export default function DriverDashboardPage() {
         <>
         {/* Main dashboard layout once the intro has finished. */}
         <header className="app-topbar flex items-center justify-between gap-4 rounded-[30px] px-5 py-4">
-          <BrandMark />
-          <Link
-            href="/dashboard"
-            className="icon-button h-12 w-12"
-            aria-label="Back to dashboard"
-          >
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </Link>
+          <BrandMark href="/dashboard" />
 
           {/* Quick action icons (profile, settings, home, help). */}
           <div className="flex items-center gap-3 text-[var(--primary)]">
@@ -549,15 +560,20 @@ export default function DriverDashboardPage() {
           <aside className="space-y-6">
             {/* Driver profile card with rating and review link. */}
             <div className="surface-card rounded-3xl p-5 text-center">
-              <div className="surface-panel relative mx-auto h-32 w-32 overflow-hidden rounded-2xl border-2 border-[var(--primary)]">
-                <img
-                  src="/driver_profile.png"
-                  alt="Driver profile"
-                  className="h-full w-full object-cover"
-                />
-                <span className="absolute -right-2 top-2 rounded bg-[#1dbf73] px-2 py-1 text-[10px] font-semibold text-white">
-                  TOP RATED
-                </span>
+              <div className="relative mx-auto h-32 w-32">
+                <div className="surface-panel grid h-full w-full place-items-center rounded-full border-2 border-[var(--border-strong)]">
+                  <span
+                    className={`${displayFont.className} text-4xl text-[var(--primary)]`}
+                    aria-label="Driver initials"
+                  >
+                    {driverInitials}
+                  </span>
+                </div>
+                {isTopRated ? (
+                  <span className="absolute -right-2 top-2 rounded-full bg-[var(--primary)] px-2 py-1 text-[10px] font-semibold text-white shadow-[var(--shadow-strong)]">
+                    TOP RATED
+                  </span>
+                ) : null}
               </div>
               <h2 className={`${displayFont.className} mt-4 text-2xl text-[var(--primary)]`}>
                 {driverName || "Driver"}
@@ -588,7 +604,7 @@ export default function DriverDashboardPage() {
               </p>
               <Link
                 href={driverId ? `/drivers/${driverId}/reviews` : "/in-progress"}
-                className="mt-4 inline-flex rounded-full bg-[#9aa7b9] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.12)]"
+                className="btn-secondary mt-4 px-5 py-2 text-sm font-semibold"
               >
                 View all reviews
               </Link>
@@ -597,9 +613,7 @@ export default function DriverDashboardPage() {
             {/* Availability toggle card (client-side only for MVP). */}
             <div className="surface-card rounded-3xl p-5">
               <div
-                className={`flex items-center justify-between gap-3 rounded-full border-2 border-[var(--primary)] px-3 py-2 ${
-                  isAvailable ? "bg-[#1dbf73]" : "bg-[#ff4b4b]"
-                }`}
+                className="surface-panel flex items-center justify-between gap-3 rounded-full border-2 border-[var(--primary)] px-3 py-2"
               >
                 <span className="text-sm font-semibold text-[var(--primary)]">Availability</span>
                 <div className="flex items-center gap-2">
@@ -609,8 +623,8 @@ export default function DriverDashboardPage() {
                     disabled={isAvailabilityUpdating || isAvailable === false}
                     className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
-                        ? "bg-transparent text-[var(--primary)]"
-                        : "bg-[#ff2d2d] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
+                        ? "btn-secondary"
+                        : "btn-primary"
                     }`}
                   >
                     {isAvailabilityUpdating && isAvailable === false ? "Updating..." : "OFF"}
@@ -622,9 +636,9 @@ export default function DriverDashboardPage() {
                     aria-disabled={licenseStatus === "expired"}
                     className={`rounded-full px-4 py-1 text-sm font-semibold transition disabled:opacity-60 ${
                       isAvailable
-                        ? "bg-[#12b861] text-white shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
-                        : "bg-transparent text-[var(--primary)]"
-                    } ${licenseStatus === "expired" ? "cursor-not-allowed bg-[#d3d3d3] text-[#7a6f63] shadow-none" : ""}`}
+                        ? "btn-primary"
+                        : "btn-secondary"
+                    } ${licenseStatus === "expired" ? "cursor-not-allowed border-[var(--border)] bg-[var(--surface)] text-[var(--muted-foreground)] shadow-none" : ""}`}
                   >
                     {isAvailabilityUpdating && isAvailable === true ? "Updating..." : "ON"}
                   </button>
@@ -640,7 +654,7 @@ export default function DriverDashboardPage() {
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_10%,var(--background))] px-3 py-1 text-xs text-[var(--primary)]">
                   {/* Badge icon draws attention to the reminder. */}
                   <span
-                    className="grid h-4 w-4 place-items-center rounded-full bg-[#ff4b4b] text-[10px] font-semibold text-white badge-pulse"
+                    className="grid h-4 w-4 place-items-center rounded-full bg-[var(--primary)] text-[10px] font-semibold text-white badge-pulse"
                     aria-hidden="true"
                   >
                     !
@@ -662,11 +676,11 @@ export default function DriverDashboardPage() {
                       0%,
                       100% {
                         transform: scale(1);
-                        box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.35);
+                        box-shadow: 0 0 0 0 rgba(4, 55, 242, 0.35);
                       }
                       50% {
                         transform: scale(1.06);
-                        box-shadow: 0 0 0 8px rgba(255, 75, 75, 0);
+                        box-shadow: 0 0 0 8px rgba(4, 55, 242, 0);
                       }
                     }
                   `}</style>
@@ -713,7 +727,7 @@ export default function DriverDashboardPage() {
                 </Link>
               </div>
               {pingsOpen ? (
-                <div className="rounded-b-3xl bg-[#d9b58c] px-5 py-4">
+                <div className="surface-panel rounded-b-3xl px-5 py-4">
                   {/* Only show requests when the driver is available. */}
                   {isAvailable ? (
                     <div className="space-y-3">
@@ -801,7 +815,7 @@ export default function DriverDashboardPage() {
                       key={request.id}
                       className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
                         request.status === "CANCELED"
-                          ? "driver-canceled-card border-[#b42318] bg-[#fde9e7]"
+                          ? "driver-canceled-card border-[var(--border-strong)] bg-[var(--surface)]"
                           : "border-[var(--primary)] bg-[var(--surface)]"
                       }`}
                     >
@@ -820,7 +834,7 @@ export default function DriverDashboardPage() {
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           request.status === "CANCELED"
-                            ? "bg-[#f7c7c3] text-[#8a1c17]"
+                            ? "surface-panel text-muted"
                             : "bg-[color-mix(in_srgb,var(--primary)_12%,var(--background))] text-[var(--primary)]"
                         }`}
                       >
@@ -828,11 +842,7 @@ export default function DriverDashboardPage() {
                       </span>
                       <Link
                         href="/driver/upcoming"
-                        className={`rounded-full border bg-white px-3 py-1 text-xs font-semibold hover:bg-[#efe3d2] ${
-                          request.status === "CANCELED"
-                            ? "border-[#b42318] text-[#8a1c17]"
-                            : "border-[var(--primary)] text-[var(--primary)]"
-                        }`}
+                        className="btn-secondary px-3 py-1 text-xs font-semibold"
                       >
                         View
                       </Link>
@@ -881,7 +891,7 @@ export default function DriverDashboardPage() {
                 </span>
               </button>
               {paymentOpen ? (
-                <div className="bg-[#d9b58c] px-5 py-4">
+                <div className="surface-panel px-5 py-4">
                   <div className="space-y-3 text-sm">
                     <p className="text-muted">
                       {stripePayoutReady
