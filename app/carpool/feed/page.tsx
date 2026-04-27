@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
@@ -29,24 +29,7 @@ export default function CarpoolFeedPage() {
   const [destinationFilter, setDestinationFilter] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<string>("");
 
-  useEffect(() => {
-    fetchCarpools();
-  }, [destinationFilter, dateFilter]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (!res.ok) return;
-        const data = await res.json();
-        setUserId(data?.user?.id || "");
-      } catch {
-        /* guest feed */
-      }
-    })();
-  }, []);
-
-  async function fetchCarpools() {
+  const fetchCarpools = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -69,12 +52,29 @@ export default function CarpoolFeedPage() {
 
       const data = await res.json();
       setCarpools(data.carpools || []);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load carpools");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load carpools");
     } finally {
       setLoading(false);
     }
-  }
+  }, [dateFilter, destinationFilter]);
+
+  useEffect(() => {
+    fetchCarpools();
+  }, [fetchCarpools]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUserId(data?.user?.id || "");
+      } catch {
+        /* guest feed */
+      }
+    })();
+  }, []);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -104,7 +104,9 @@ export default function CarpoolFeedPage() {
           </div>
           <button
             type="button"
-            onClick={() => router.push("/carpool/create")}
+            // Route creation through the dashboard chooser so role selection has
+            // the same modal-backed flow everywhere in the app.
+            onClick={() => router.push("/dashboard?carpoolOptions=1")}
             className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
           >
             Create Carpool
@@ -180,7 +182,7 @@ export default function CarpoolFeedPage() {
           </p>
           <button
             type="button"
-            onClick={() => router.push("/carpool/create")}
+            onClick={() => router.push("/dashboard?carpoolOptions=1")}
             className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
           >
             Create Carpool

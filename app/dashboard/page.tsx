@@ -28,10 +28,12 @@
 // This means it shows the page before it checks if the user is logged in for that session
 // and uses local UI state (alerts, menus).
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import RequestButton from "@/components/requestbutton";
+import SignOutButton from "@/components/SignOutButton";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
+import type { CarpoolType } from "@/types/carpool";
 
 // set up the display and body font for consistency through the page
 const displayFont = Playfair_Display({
@@ -130,6 +132,9 @@ function buildAuthHeaders(sessionToken: string | null): HeadersInit | undefined 
 
 export default function DashboardPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const showCarpoolModal = searchParams.get("carpoolOptions") === "1";
 
   // Alerts pulled from the notifications API and rendered in the Alerts panel.
   const [alerts, setAlerts] = useState<
@@ -591,6 +596,26 @@ export default function DashboardPage() {
     }, 3000);
   };
 
+  // Mirror the carpool chooser state into the dashboard URL so carpool pages
+  // can send riders back to the chooser without adding a separate route.
+  function setCarpoolModalState(nextOpen: boolean) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextOpen) {
+      params.set("carpoolOptions", "1");
+    } else {
+      params.delete("carpoolOptions");
+    }
+
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }
+
+  // Carry the chosen role into the create page so the form can start in the
+  // correct mode instead of asking again.
+  function handleCarpoolTypeSelect(carpoolType: CarpoolType) {
+    router.push(`/carpool/create?carpoolType=${carpoolType}`);
+  }
+
   const reviewPromptRide =
     completedReviewCandidates
       .filter(
@@ -707,6 +732,77 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      {showCarpoolModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
+          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+            <div className="flex items-start justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => setCarpoolModalState(false)}
+                className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+                aria-label="Back to dashboard"
+              >
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCarpoolModalState(false)}
+                className="rounded-lg px-2 py-1 text-sm text-[#6b5f52] hover:bg-[#efe3d2]"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+            <h2 className={`${displayFont.className} mt-4 text-2xl text-[#0a3570]`}>
+              Who are you requesting this carpool as?
+            </h2>
+            <p className="mt-2 text-sm text-[#6b5f52]">
+              Choose whether you are offering seats as the driver or coordinating as a rider.
+            </p>
+            <div className="mt-6 grid gap-3">
+              {isDriver ? (
+                <button
+                  type="button"
+                  onClick={() => handleCarpoolTypeSelect("DRIVER")}
+                  className="group rounded-2xl border-2 border-[#0a3570] bg-white p-4 text-left shadow-[0_10px_24px_rgba(10,27,63,0.1)] transition hover:-translate-y-0.5 hover:bg-[#efe3d2] hover:shadow-[0_16px_32px_rgba(10,27,63,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
+                >
+                  <span className="flex items-center justify-between text-sm font-semibold text-[#0a3570]">
+                    <span>Driver on the request</span>
+                    <span className="rounded-full border border-[#0a3570] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[#0a3570] group-hover:text-white">
+                      Select
+                    </span>
+                  </span>
+                  <span className="mt-2 block text-sm text-[#6b5f52]">
+                    I&apos;m driving and want to find riders to join my trip.
+                  </span>
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => handleCarpoolTypeSelect("RIDER")}
+                className="group rounded-2xl border-2 border-[#0a3570] bg-white p-4 text-left shadow-[0_10px_24px_rgba(10,27,63,0.1)] transition hover:-translate-y-0.5 hover:bg-[#efe3d2] hover:shadow-[0_16px_32px_rgba(10,27,63,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
+              >
+                <span className="flex items-center justify-between text-sm font-semibold text-[#0a3570]">
+                  <span>Rider on request</span>
+                  <span className="rounded-full border border-[#0a3570] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] transition group-hover:bg-[#0a3570] group-hover:text-white">
+                    Select
+                  </span>
+                </span>
+                <span className="mt-2 block text-sm text-[#6b5f52]">
+                  I want to find other riders to coordinate a shared trip.
+                </span>
+              </button>
+            </div>
+            {!isDriver ? (
+              <p className="mt-4 text-xs text-[#6b5f52]">
+                Driver carpool creation is only available for users with driver access.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-10 text-[#0a1b3f]">
         {/* Header with greeting + MVP utility icons */}
         <header className="flex flex-wrap items-start justify-between gap-6">
@@ -1059,12 +1155,13 @@ export default function DashboardPage() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {/* Carpool creation flow */}
-                  <Link
-                    href="/carpool/create"
+                  <button
+                    type="button"
+                    onClick={() => setCarpoolModalState(true)}
                     className="rounded-full border border-[#0a3570] bg-[#e9dcc9] px-5 py-2 text-sm font-semibold text-[#0a1b3f] hover:bg-[#dbc8ad]"
                   >
                     Create Carpool Request
-                  </Link>
+                  </button>
                   {/* Carpool discovery flow */}
                   <Link
                     href="/carpool/feed"
@@ -1115,6 +1212,14 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-12 flex justify-end">
+          {/* Keep sign-out accessible from the main authenticated hub without
+              competing with the landing page entry actions. */}
+          <SignOutButton
+            className="rounded-full border border-[#0a3570] bg-[#fdf7ef] px-5 py-2 text-sm font-semibold text-[#0a3570] hover:bg-[#e9dcc9] disabled:opacity-60"
+          />
         </div>
       </div>
     </main>

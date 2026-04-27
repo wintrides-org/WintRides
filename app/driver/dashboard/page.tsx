@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 
 // Defines the fonts used throughout the page
 const displayFont = Playfair_Display({
@@ -929,7 +930,7 @@ export default function DriverDashboardPage() {
       {confirmCard ? (
         <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm text-[#0a1b3f]">{confirmCard}</p>
+            <PaymentsSupportMessage message={confirmCard} className="text-sm text-[#0a1b3f]" />
             <button
               type="button"
               onClick={() => setConfirmCard("")}

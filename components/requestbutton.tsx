@@ -7,7 +7,7 @@ imports necessary objects
 // useState: lets us store component state (is the modal open or close?)
 // useMemo: lets us define data once without recreating it on every render
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation"; // allows navigation to another page
+import { usePathname, useRouter, useSearchParams } from "next/navigation"; // allows navigation to another page
 import type { RequestType } from "@/types/request"; // imports teh request types we defined in types/request
 
 /* 
@@ -32,7 +32,11 @@ export default function RequestButton({
   unstyled = false,
 }: RequestButtonProps) {
   const router = useRouter(); // define a router object for navigation
-  const [open, setOpen] = useState(false); // contols whether the modal is visible 
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [localOpen, setLocalOpen] = useState(false); // contols whether the modal is visible 
+  const requestOptionsOpen = searchParams.get("requestOptions") === "1";
+  const open = localOpen || requestOptionsOpen;
 
   // Defines the three request options shown in the modal
   // useMemo ensures this array is not created on every render
@@ -62,8 +66,24 @@ export default function RequestButton({
 
   // Called when the user clicks one of the options
   function onSelect(option: Option) {
-    setOpen(false); // Close the modal
+    setLocalOpen(false); // Close the modal
     router.push(option.href); // Navigate to the correct page
+  }
+
+  // Mirror the modal state into the dashboard URL so other pages can deep-link
+  // back into the chooser without introducing a separate route.
+  function setModalState(nextOpen: boolean) {
+    setLocalOpen(nextOpen);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextOpen) {
+      params.set("requestOptions", "1");
+    } else {
+      params.delete("requestOptions");
+    }
+
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
   }
 
   return (
@@ -71,7 +91,7 @@ export default function RequestButton({
       {/* The main Request button*/}
       <button
         type="button"
-        onClick={() => setOpen(true)} // Open modal
+        onClick={() => setModalState(true)} // Open modal
         className={
           unstyled
             ? className
@@ -93,7 +113,7 @@ export default function RequestButton({
           <button
             type="button"
             className="absolute inset-0 bg-black/50"
-            onClick={() => setOpen(false)}
+            onClick={() => setModalState(false)}
             aria-label="Close modal"
           />
 
@@ -112,7 +132,7 @@ export default function RequestButton({
               {/* Close button */}
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => setModalState(false)}
                 className="rounded-lg px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
                 aria-label="Close modal"
               >
@@ -141,7 +161,7 @@ export default function RequestButton({
             <div className="mt-4 flex justify-end">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => setModalState(false)}
                 className="rounded-xl px-4 py-2 text-sm border border-neutral-200 hover:bg-neutral-50"
               >
                 Cancel

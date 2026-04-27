@@ -79,8 +79,13 @@ export async function PATCH(
 
     // If the locked carpool already created a shared ride request, cancel the
     // downstream ride and release any uncaptured authorizations.
-    const rideRequest = await prisma.rideRequest.findUnique({
-      where: { carpoolId: id },
+    const rideRequest = await prisma.rideRequest.findFirst({
+      where: {
+        OR: [
+          { sourceCarpoolId: id },
+          { carpoolId: id },
+        ],
+      },
       select: { id: true },
     });
 

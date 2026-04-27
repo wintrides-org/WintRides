@@ -12,6 +12,32 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
 
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+type GoogleAccountsWindow = Window & {
+  google?: {
+    accounts?: {
+      id?: {
+        initialize: (config: {
+          client_id: string;
+          callback: (response: GoogleCredentialResponse) => void;
+        }) => void;
+        renderButton: (
+          element: HTMLElement,
+          options: {
+            theme: string;
+            size: string;
+            text: string;
+            shape: string;
+          }
+        ) => void;
+      };
+    };
+  };
+};
+
 export default function HomePage() {
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
@@ -19,12 +45,13 @@ export default function HomePage() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   useEffect(() => { // Handle client-side navigation when GIS is already loaded.
-    if ((window as any)?.google?.accounts?.id) { // Detect the loaded GIS script.
+    const googleWindow = window as GoogleAccountsWindow;
+    if (googleWindow.google?.accounts?.id) { // Detect the loaded GIS script.
       setGoogleReady(true); // Mark Google as ready without waiting for onLoad.
     }
   }, []);
 
-  async function handleGoogleCredentialResponse(response: { credential?: string }) {
+  async function handleGoogleCredentialResponse(response: GoogleCredentialResponse) {
     setGoogleError("");
     const idToken = response?.credential;
     if (!idToken) {
@@ -50,8 +77,8 @@ export default function HomePage() {
       }
 
       window.location.href = "/dashboard";
-    } catch (e: any) {
-      setGoogleError(e?.message || "Google sign-in failed");
+    } catch (e: unknown) {
+      setGoogleError(e instanceof Error ? e.message : "Google sign-in failed");
     }
   }
 
@@ -64,7 +91,7 @@ export default function HomePage() {
       return;
     }
 
-    const google = (window as any)?.google;
+    const google = (window as GoogleAccountsWindow).google;
     if (!google?.accounts?.id || !googleButtonRef.current) {
       return;
     }

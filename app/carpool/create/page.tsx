@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Playfair_Display, Work_Sans } from "next/font/google";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 import type { CarpoolType, TimeWindow } from "@/types/carpool";
 
 const displayFont = Playfair_Display({
@@ -20,6 +21,10 @@ type FieldErrors = Partial<Record<"destination" | "date" | "timeStart" | "timeEn
 
 export default function CreateCarpoolPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // When the rider arrives from the dashboard chooser, preserve the selected
+  // role so the create form can render the matching state immediately.
+  const requestedCarpoolType = searchParams.get("carpoolType");
   const [canChooseCarpoolType, setCanChooseCarpoolType] = useState(false);
   const [carpoolType, setCarpoolType] = useState<CarpoolType | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -88,8 +93,12 @@ export default function CreateCarpoolPage() {
         
         // determines whether to give an option to choose requesting as a driver
         const isDriver = Boolean(data?.user?.isDriver);
+        const initialCarpoolType =
+          requestedCarpoolType === "DRIVER" || requestedCarpoolType === "RIDER"
+            ? requestedCarpoolType
+            : null;
         setCanChooseCarpoolType(isDriver);
-        setCarpoolType(isDriver ? null : "RIDER");
+        setCarpoolType(isDriver ? initialCarpoolType : "RIDER");
       } catch (error: unknown) {
         if (!ignore) {
           setCanChooseCarpoolType(false);
@@ -108,7 +117,7 @@ export default function CreateCarpoolPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [requestedCarpoolType]);
 
   // Validation helpers
   function validateTextLocation(label: string) {
@@ -227,9 +236,9 @@ export default function CreateCarpoolPage() {
     >
       <div className="mx-auto w-full max-w-xl">
         <Link
-          href="/carpool/feed"
+          href="/dashboard?carpoolOptions=1"
           className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-          aria-label="Back to carpool feed"
+          aria-label="Back to carpool options"
         >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 18l-6-6 6-6" />
@@ -464,7 +473,7 @@ export default function CreateCarpoolPage() {
         </div>
 
         {submitError ? (
-          <p className="text-sm text-red-600">{submitError}</p>
+          <PaymentsSupportMessage message={submitError} className="text-sm text-red-600" />
         ) : null}
           </>
         ) : null}
