@@ -215,7 +215,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#0a3570] bg-white/70 p-6 text-sm text-[#6b5f52]">
+      <div className="surface-panel rounded-2xl border-dashed p-6 text-sm text-[var(--muted-foreground)]">
         Loading profile...
       </div>
     );
@@ -224,44 +224,44 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
+        <p className="eyebrow">
           Account
         </p>
         <h1 className="font-heading mt-2 text-3xl font-semibold">Profile</h1>
-        <p className="mt-2 text-sm text-[#6b5f52]">
+        <p className="text-muted mt-2 text-sm">
           Update your personal information. Email changes stay disabled until the verification flow is built.
         </p>
       </header>
 
-      <section className="overflow-hidden rounded-[32px] border border-[#d7c6b0] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(246,239,230,0.95))] shadow-[0_18px_40px_rgba(10,27,63,0.08)]">
-        <div className="border-b border-[#e0d2bf] px-8 py-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6b5f52]">
+      <section className="surface-card overflow-hidden rounded-[32px]">
+        <div className="border-b border-[var(--border)] px-8 py-6">
+          <p className="eyebrow">
             Bio + Personal Information
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-[#0a3570]">
+          <h2 className="mt-2 text-2xl font-semibold text-[var(--primary)]">
             Update your personal information
           </h2>
         </div>
 
         <div className="grid gap-8 px-8 py-8 lg:grid-cols-[260px_1fr]">
-          <aside className="flex flex-col items-center justify-start rounded-[28px] border border-[#d8cab7] bg-[#fbf6ef] px-6 py-8 text-center">
-            <div className="grid h-40 w-40 place-items-center rounded-full border-2 border-[#0a3570] bg-white text-4xl font-semibold text-[#0a3570]">
+          <aside className="surface-panel flex flex-col items-center justify-start rounded-[28px] px-6 py-8 text-center">
+            <div className="grid h-40 w-40 place-items-center rounded-full border-2 border-[var(--primary)] bg-[var(--background)] text-4xl font-semibold text-[var(--primary)]">
               {profileInitials}
             </div>
-            <p className="mt-5 text-xl font-semibold text-[#0a1b3f]">
+            <p className="mt-5 text-xl font-semibold text-[var(--foreground)]">
               {draft.legalName || "Name"}
             </p>
-            <p className="mt-1 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-1 text-sm">
               @{draft.userName || "username"}
             </p>
-            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-[#8a7c6f]">
+            <p className="text-muted mt-4 text-xs uppercase tracking-[0.2em]">
               Photo upload coming later
             </p>
           </aside>
 
           <div className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-[24px] border border-[#d8cab7] bg-white/90 p-6">
+              <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
                     Name
@@ -293,7 +293,7 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div className="rounded-[24px] border border-[#d8cab7] bg-white/90 p-6">
+              <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
                     Username
@@ -327,7 +327,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-[24px] border border-[#d8cab7] bg-white/90 p-6">
+              <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="w-full">
                     <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              <div className="rounded-[24px] border border-[#d8cab7] bg-white/90 p-6">
+              <div className="surface-panel rounded-[24px] p-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="w-full">
                     <label className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6b5f52]">
@@ -383,9 +383,9 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[#d8cab7] bg-[#f8f0e5] p-5">
+            <div className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-[24px] p-5">
               <div className="space-y-1">
-                <p className="text-sm text-[#6b5f52]">
+                <p className="text-muted text-sm">
                   Username changes save to the database. Name remains local until a shared profile-name field is added.
                 </p>
                 {saveError ? (
@@ -396,7 +396,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saveState === "saving"}
-                className="inline-flex min-w-[170px] items-center justify-center rounded-full border border-[#0a3570] bg-[#0a3570] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#082b5a] disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn-primary min-w-[170px] px-5 py-3 text-xs uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {saveLabel}
               </button>

@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
+import BrandMark from "@/components/BrandMark";
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -112,10 +113,10 @@ export default function HomePage() {
 
   return (
     <main
-      className="min-h-screen px-6 py-12 text-[#1f2b37] flex items-center justify-center"
+      className="min-h-screen px-6 py-10"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(251,247,241,0.88), rgba(251,247,241,0.88)), url('/campus.jpg')",
+          "linear-gradient(rgba(255,255,255,0.62), rgba(255,255,255,0.72)), url('/campus.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -126,58 +127,51 @@ export default function HomePage() {
         defer
         onLoad={() => setGoogleReady(true)}
       />
-      {/* Centered card container to mimic the screenshot style */}
-      <div className="card-reveal w-full max-w-2xl rounded-3xl bg-[#fdfaf5] px-10 py-14 shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
-        <div className="text-center">
-          {/* Brand wordmark */}
-          <p className="font-brand text-[6.00rem] tracking-wide text-[#b28762]">
-            WintRides
-          </p>
-
-          {/* Main headline */}
-          <h1 className="font-body mt-0 text-[2.75rem] font-semibold leading-tight text-[#1E3A5F]">
-            Your Campus, your ride
-          </h1>
-
-          {/* Supporting message */}
-          <p className="font-body mt-6 text-[1.25rem] text-[#b28762]">
-            Got a car? Make it count. Need a ride, tap and go
-          </p>
-
-          {/* Primary call-to-action */}
-          <div className="mt-9">
-            <Link
-              href="/register"
-              className="pulse-soft inline-flex items-center justify-center rounded-full bg-[#e6c07a] px-12 py-4 text-[1.125rem] font-nunito font-medium text-white shadow-[0_8px_20px_rgba(230,192,122,0.35)] transition hover:translate-y-[-1px] hover:bg-[#ddb76d]"
-            >
-              Sign Up
-            </Link>
-          </div>
-
-          {/* Secondary link for existing users */}
-          <p className="font-body mt-8 text-sm text-[#6a7680]">
-            Already signed up?{" "}
-            <Link
-              href="/signin"
-              className="font-body font-medium text-[#2f6db3] underline"
-            >
-              Sign in
-            </Link>
-          </p>
-
-          <div className="mt-6 grid gap-3">
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-neutral-300" />
-              <span className="text-xs text-neutral-500">or</span>
-              <span className="h-px flex-1 bg-neutral-300" />
-            </div>
-            <div ref={googleButtonRef} className="flex justify-center" />
-            {googleError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                {googleError}
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center">
+        <div
+          className="w-full rounded-[36px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--background)_82%,transparent)] p-6 shadow-[var(--shadow-soft)] backdrop-blur md:p-8"
+        >
+          <section className="mx-auto flex w-full max-w-3xl flex-col justify-between gap-10 rounded-[28px] bg-[color:color-mix(in_srgb,var(--background)_82%,transparent)] p-8 text-center">
+            <div>
+              <p className="eyebrow">Campus ridesharing</p>
+              <div className="mt-5 flex justify-center">
+                <BrandMark className="text-3xl" />
               </div>
-            )}
-          </div>
+              <h1 className="font-heading mx-auto mt-10 max-w-xl text-5xl leading-[1.02] sm:text-6xl">
+                Your Campus, 
+                <br></br>
+                Your Rides
+              </h1>
+              <p className="text-muted mx-auto mt-5 max-w-lg text-lg leading-8">
+                Got a car? Make it count. Need a ride? Tap and go.
+              </p>
+            </div>
+
+            <div className="grid justify-center gap-4">
+              <div className="grid gap-4 sm:flex sm:flex-wrap sm:justify-center">
+              <Link href="/register" className="btn-primary pulse-soft px-8 py-4 text-base">
+                Create account
+              </Link>
+              <Link href="/signin" className="btn-secondary px-8 py-4 text-base">
+                Sign in
+              </Link>
+              </div>
+
+              <div className="mx-auto mt-2 grid w-full max-w-md gap-3">
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-[var(--border)]" />
+                <span className="text-muted text-xs">Continue with Google</span>
+                <span className="h-px flex-1 bg-[var(--border)]" />
+              </div>
+              <div ref={googleButtonRef} className="flex justify-center" />
+              {googleError && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                  {googleError}
+                </div>
+              )}
+            </div>
+            </div>
+          </section>
         </div>
       </div>
     </main>

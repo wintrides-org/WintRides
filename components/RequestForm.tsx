@@ -3,14 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
-
-// Defines the fonts used on the page for consistency
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+import BrandMark from "@/components/BrandMark";
 import type { RequestType } from "@/types/request";
 import type {
   NormalizedRequest,
@@ -22,7 +16,6 @@ type FieldErrors = Partial<
   Record<"partySize" | "pickup" | "dropoff" | "pickupAt" | "carsNeeded", string>
 >;
 
-// Defines the base  structure for a request: group, immediate, and scheduled requests (including carpool initiated) build on top of this
 type RequestFormProps = {
   requestType: RequestType;
   title: string;
@@ -40,17 +33,16 @@ type RequestFormProps = {
   };
 };
 
-// makes quote draft align with the types in "NormalizedRequest" under lib/requestValidation
 type QuoteDraft = NormalizedRequest;
 
-// Basic input sanity checks for MVP validation.
 function isAllDigits(s: string) {
   return /^\d+$/.test(s.trim());
 }
+
 function isTooShort(s: string) {
   return s.trim().length < 3;
 }
-// Validates entries to the "pickup" and "dropoff" fields. Currently, validates > 3 items and not all digits 
+
 function validateTextLocation(label: string) {
   const trimmed = label.trim();
   if (!trimmed) return "Required.";
@@ -60,7 +52,6 @@ function validateTextLocation(label: string) {
 }
 
 export default function RequestForm({
-  // Basically says use the default fields as attributes OR replace with the RequestFormProps for a given request flow if different
   requestType,
   title,
   description,
@@ -69,7 +60,6 @@ export default function RequestForm({
   initialValues,
 }: RequestFormProps) {
   const router = useRouter();
-  // Suggested pickup chips for fast entry.
   const suggestedPickups = useMemo(
     () => [
       "Smith College",
@@ -82,7 +72,6 @@ export default function RequestForm({
     []
   );
 
-  // Defines form inputs.
   const [partySize, setPartySize] = useState<number>(initialValues?.partySize ?? 1);
   const [bookedForSelf, setBookedForSelf] = useState(true);
   const [pickup, setPickup] = useState<string>(initialValues?.pickup ?? "");
@@ -90,19 +79,14 @@ export default function RequestForm({
   const [dropoff, setDropoff] = useState<string>(initialValues?.dropoff ?? "");
   const [pickupAtInput, setPickupAtInput] = useState<string>(initialValues?.pickupAtInput ?? "");
   const [carsNeeded, setCarsNeeded] = useState<number>(initialValues?.carsNeeded ?? 1);
-  // UX state (errors and submission feedback).
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
-  // Quote step state (modal + payload preview).
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteDraft, setQuoteDraft] = useState<QuoteDraft | null>(null);
-  const [quoteEstimates, setQuoteEstimates] = useState<QuoteEstimates | null>(
-    null
-  );
+  const [quoteEstimates, setQuoteEstimates] = useState<QuoteEstimates | null>(null);
 
-  // Scheduled/group pickup time validation.
   function validatePickupAt(input: string) {
     if (!input.trim()) return "Required.";
     const parsed = new Date(input);
@@ -111,7 +95,6 @@ export default function RequestForm({
     return undefined;
   }
 
-  // Full form validation based on the active flow.
   function validateForm(): boolean {
     const next: FieldErrors = {};
 
@@ -130,17 +113,14 @@ export default function RequestForm({
       if (pickupAtErr) next.pickupAt = pickupAtErr;
     }
 
-    if (showCarsNeeded) {
-      if (!Number.isFinite(carsNeeded) || carsNeeded < 1) {
-        next.carsNeeded = "Must be at least 1 car.";
-      }
+    if (showCarsNeeded && (!Number.isFinite(carsNeeded) || carsNeeded < 1)) {
+      next.carsNeeded = "Must be at least 1 car.";
     }
 
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  // Build the shared request payload for quote/submit.
   function buildPayload(): QuoteInput {
     return {
       type: requestType,
@@ -155,7 +135,6 @@ export default function RequestForm({
     };
   }
 
-  // Step 1: validate and open the quote modal.
   async function onSubmit() {
     setSubmitError("");
     setSubmitSuccess(false);
@@ -172,7 +151,6 @@ export default function RequestForm({
       });
 
       const body = await res.json().catch(() => null);
-
       if (!res.ok) {
         throw new Error(body?.error || body?.message || "Quote failed.");
       }
@@ -195,7 +173,6 @@ export default function RequestForm({
     }
   }
 
-  // Step 2: confirm quote and create the request.
   async function onConfirmQuote() {
     if (!quoteDraft) return;
     setSubmitting(true);
@@ -208,7 +185,6 @@ export default function RequestForm({
       });
 
       const body = await res.json().catch(() => null);
-
       if (!res.ok) {
         throw new Error(body?.error || body?.message || "Request failed.");
       }
@@ -225,9 +201,8 @@ export default function RequestForm({
             type: quoteDraft.type,
           })
         );
-      } catch {
-        // Ignore storage errors for MVP.
-      }
+      } catch {}
+
       router.push("/request/success");
       setQuoteOpen(false);
       setQuoteDraft(null);
@@ -240,12 +215,10 @@ export default function RequestForm({
     }
   }
 
-  // Close quote modal without losing form inputs.
   function onEditQuote() {
     setQuoteOpen(false);
   }
 
-  // Abandon the request from the quote step.
   function onCancelQuote() {
     setQuoteOpen(false);
     setQuoteDraft(null);
@@ -253,311 +226,297 @@ export default function RequestForm({
   }
 
   return (
-    <main
-      className={`min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f] ${bodyFont.className}`}
-    >
+    <main className="app-shell min-h-screen px-6 py-12 text-[var(--foreground)]">
       <div className="mx-auto w-full max-w-xl">
-        <Link
-          href="/dashboard?requestOptions=1"
-          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-          aria-label="Back to request options"
-        >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <h1 className="font-heading mt-6 text-3xl font-semibold text-[#0a3570]">
-          {title}
-        </h1>
-        <p className="mt-1 text-sm text-[#6b5f52]">{description}</p>
+        <div className="surface-card rounded-[32px] p-8">
+          <div className="flex items-center justify-between gap-4">
+            <BrandMark />
+            <Link
+              href="/dashboard?requestOptions=1"
+              className="btn-secondary px-4 py-2 text-sm"
+              aria-label="Back to request options"
+            >
+              Back
+            </Link>
+          </div>
 
-      <div className="mt-6 grid gap-4">
-        <div className="grid gap-1">
-          <label className="text-sm font-medium">Who is this ride for?</label>
-          <div className="grid gap-2 rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-3">
-            <label className="flex items-start gap-3">
+          <h1 className="font-heading mt-8 text-3xl font-semibold text-[var(--primary)]">
+            {title}
+          </h1>
+          <p className="text-muted mt-1 text-sm">{description}</p>
+
+          <div className="mt-6 grid gap-4">
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Who is this ride for?</label>
+              <div className="surface-panel grid gap-2 rounded-2xl p-3">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="radio"
+                    name="bookedForSelf"
+                    checked={bookedForSelf}
+                    onChange={() => setBookedForSelf(true)}
+                    className="mt-1"
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">Myself</span>
+                    <span className="text-muted block text-xs">
+                      GPS-based rider sharing can be requested later if you consent.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3">
+                  <input
+                    type="radio"
+                    name="bookedForSelf"
+                    checked={!bookedForSelf}
+                    onChange={() => setBookedForSelf(false)}
+                    className="mt-1"
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">Someone else</span>
+                    <span className="text-muted block text-xs">
+                      Pickup and drop-off pins stay authoritative for third-party bookings.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Number of riders</label>
               <input
-                type="radio"
-                name="bookedForSelf"
-                checked={bookedForSelf}
-                onChange={() => setBookedForSelf(true)}
-                className="mt-1"
+                type="number"
+                min={1}
+                value={partySize}
+                onChange={(e) => setPartySize(Number(e.target.value))}
+                className="app-input rounded-xl p-3"
               />
-              <span className="text-sm text-[#1e3a5f]">
-                <span className="font-medium">Myself</span>
-                <span className="block text-xs text-[#6b5f52]">
-                  GPS-based rider sharing can be requested later if you consent.
-                </span>
-              </span>
-            </label>
-            <label className="flex items-start gap-3">
+              {errors.partySize ? <p className="text-sm text-red-600">{errors.partySize}</p> : null}
+            </div>
+
+            <div className="grid gap-2">
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">Pick-up location</label>
+                <input
+                  value={pickup}
+                  onChange={(e) => setPickup(e.target.value)}
+                  placeholder="Type a location (e.g., Campus Center)"
+                  className="app-input rounded-xl p-3"
+                />
+                {errors.pickup ? (
+                  <p className="text-sm text-red-600">{errors.pickup}</p>
+                ) : (
+                  <p className="text-muted text-xs">Be specific so your driver can find you.</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {suggestedPickups.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPickup(p)}
+                    className="btn-secondary px-3 py-1 text-sm"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">
+                  Pick-up notes <span className="text-muted">(optional)</span>
+                </label>
+                <textarea
+                  value={pickupNotes}
+                  onChange={(e) => setPickupNotes(e.target.value)}
+                  placeholder="e.g., back entrance near the road"
+                  className="app-input min-h-[84px] rounded-xl p-3"
+                />
+              </div>
+            </div>
+
+            {showPickupAt ? (
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">Pick-up time</label>
+                <input
+                  type="datetime-local"
+                  value={pickupAtInput}
+                  onChange={(e) => setPickupAtInput(e.target.value)}
+                  className="app-input rounded-xl p-3"
+                />
+                {errors.pickupAt ? <p className="text-sm text-red-600">{errors.pickupAt}</p> : null}
+              </div>
+            ) : null}
+
+            {showCarsNeeded ? (
+              <div className="grid gap-1">
+                <label className="text-sm font-medium">Cars needed</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={carsNeeded}
+                  onChange={(e) => setCarsNeeded(Number(e.target.value))}
+                  className="app-input rounded-xl p-3"
+                />
+                {errors.carsNeeded ? <p className="text-sm text-red-600">{errors.carsNeeded}</p> : null}
+              </div>
+            ) : null}
+
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Destination</label>
               <input
-                type="radio"
-                name="bookedForSelf"
-                checked={!bookedForSelf}
-                onChange={() => setBookedForSelf(false)}
-                className="mt-1"
+                value={dropoff}
+                onChange={(e) => setDropoff(e.target.value)}
+                placeholder="Type your destination"
+                className="app-input rounded-xl p-3"
               />
-              <span className="text-sm text-[#1e3a5f]">
-                <span className="font-medium">Someone else</span>
-                <span className="block text-xs text-[#6b5f52]">
-                  Pickup and drop-off pins stay authoritative for third-party bookings.
-                </span>
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <div className="grid gap-1">
-          <label className="text-sm font-medium">Number of riders</label>
-          <input
-            type="number"
-            min={1}
-            value={partySize}
-            onChange={(e) => setPartySize(Number(e.target.value))}
-            className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-          />
-          {errors.partySize ? (
-            <p className="text-sm text-red-600">{errors.partySize}</p>
-          ) : null}
-        </div>
-
-        <div className="grid gap-2">
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Pick-up location</label>
-            <input
-              value={pickup}
-              onChange={(e) => setPickup(e.target.value)}
-              placeholder="Type a location (e.g., Campus Center)"
-              className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-            />
-            {errors.pickup ? (
-              <p className="text-sm text-red-600">{errors.pickup}</p>
-            ) : (
-              <p className="text-xs text-neutral-500">
-                Be specific so your driver can find you.
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {suggestedPickups.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPickup(p)}
-                className="rounded-full border border-[#1e3a5f] bg-[#e7c59a] px-3 py-1 text-sm font-medium text-[#1e3a5f] shadow-[0_6px_12px_rgba(10,27,63,0.08)] transition hover:bg-[#ddb680]"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">
-              Pick-up notes <span className="text-neutral-500">(optional)</span>
-            </label>
-            <textarea
-              value={pickupNotes}
-              onChange={(e) => setPickupNotes(e.target.value)}
-              placeholder="e.g., back entrance near the road"
-              className="min-h-[84px] rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-            />
-          </div>
-        </div>
-
-        {showPickupAt ? (
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Pick-up time</label>
-            <input
-              type="datetime-local"
-              value={pickupAtInput}
-              onChange={(e) => setPickupAtInput(e.target.value)}
-              className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-            />
-            {errors.pickupAt ? (
-              <p className="text-sm text-red-600">{errors.pickupAt}</p>
-            ) : null}
-          </div>
-        ) : null}
-
-        {showCarsNeeded ? (
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Cars needed</label>
-            <input
-              type="number"
-              min={1}
-              value={carsNeeded}
-              onChange={(e) => setCarsNeeded(Number(e.target.value))}
-              className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-            />
-            {errors.carsNeeded ? (
-              <p className="text-sm text-red-600">{errors.carsNeeded}</p>
-            ) : null}
-          </div>
-        ) : null}
-
-        <div className="grid gap-1">
-          <label className="text-sm font-medium">Destination</label>
-          <input
-            value={dropoff}
-            onChange={(e) => setDropoff(e.target.value)}
-            placeholder="Type your destination"
-            className="rounded-xl border border-[#1e3a5f] bg-[#f7efe7] p-3 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-          />
-          {errors.dropoff ? (
-            <p className="text-sm text-red-600">{errors.dropoff}</p>
-          ) : null}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={submitting}
-            className="rounded-full bg-[#0a3570] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] disabled:opacity-50"
-          >
-            {submitting ? "Submitting..." : "Confirm & Request"}
-          </button>
-
-          {submitSuccess ? (
-            <span className="text-sm text-green-700">Request sent.</span>
-          ) : null}
-        </div>
-
-        <p className="mt-2 text-xs text-neutral-500">
-          You’ll review a quote before confirming.
-        </p>
-        {submitError ? (
-          <PaymentsSupportMessage message={submitError} className="text-sm text-red-600" />
-        ) : null}
-      </div>
-
-      {quoteOpen && quoteDraft ? (
-        <div
-          className="fixed inset-0 z-50"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm quote"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/50"
-            onClick={onEditQuote}
-            aria-label="Close quote"
-          />
-
-          <div className="absolute left-1/2 top-1/2 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#fdf9f3] p-5 text-[#1e3a5f] shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Review your quote</h2>
-                <p className="mt-1 text-sm text-neutral-600">
-                  Confirm to place your request, or edit details.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onEditQuote}
-                className="rounded-lg px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
-                aria-label="Close modal"
-              >
-                ✕
-              </button>
+              {errors.dropoff ? <p className="text-sm text-red-600">{errors.dropoff}</p> : null}
             </div>
 
-            <div className="mt-4 grid gap-3 text-sm text-neutral-700">
-              <div>
-                <span className="font-medium">Pickup:</span> {quoteDraft.pickup.label}
-              </div>
-              <div>
-                <span className="font-medium">Destination:</span> {quoteDraft.dropoff.label}
-              </div>
-              <div>
-                <span className="font-medium">Riders:</span> {quoteDraft.partySize}
-              </div>
-              <div>
-                <span className="font-medium">Booking for:</span>{" "}
-                {quoteDraft.bookedForSelf ? "Myself" : "Someone else"}
-              </div>
-              {showPickupAt ? (
-                <div>
-                  <span className="font-medium">Pickup time:</span>{" "}
-                  {new Date(quoteDraft.pickupAt).toLocaleString([], {
-                    year: "numeric",
-                    month: "short",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              ) : (
-                <div>
-                  <span className="font-medium">Pickup time:</span>{" "}
-                  {new Date(quoteDraft.pickupAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              )}
-              {showCarsNeeded ? (
-                <div>
-                  <span className="font-medium">Cars needed:</span>{" "}
-                  {quoteDraft.carsNeeded}
-                </div>
-              ) : null}
-              {quoteDraft.pickupNotes ? (
-                <div>
-                  <span className="font-medium">Pickup notes:</span>{" "}
-                  {quoteDraft.pickupNotes}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="mt-4 rounded-2xl border p-4">
-              <div className="text-sm font-medium">Estimates</div>
-              <div className="mt-2 text-sm text-neutral-700">
-                Estimated wait time:{" "}
-                <span className="font-medium">
-                  {quoteEstimates ? `${quoteEstimates.waitMinutes} min` : "—"}
-                </span>
-              </div>
-              <div className="mt-1 text-sm text-neutral-700">
-                Estimated price range:{" "}
-                <span className="font-medium">
-                  {quoteEstimates
-                    ? `$${quoteEstimates.priceMin}–$${quoteEstimates.priceMax}`
-                    : "—"}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={onEditQuote}
-                className="rounded-full border border-[#1e3a5f] px-4 py-2 text-sm font-medium text-[#1e3a5f] transition hover:bg-[#efe3d2]"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={onCancelQuote}
-                className="rounded-full border border-[#1e3a5f] px-4 py-2 text-sm font-medium text-[#1e3a5f] transition hover:bg-[#efe3d2]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onConfirmQuote}
+                onClick={onSubmit}
                 disabled={submitting}
-                className="rounded-full bg-[#0a3570] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] disabled:opacity-50"
+                className="btn-primary px-5 py-3 text-sm disabled:opacity-50"
               >
-                {submitting ? "Submitting..." : "Confirm request"}
+                {submitting ? "Submitting..." : "Confirm & Request"}
               </button>
+
+              {submitSuccess ? <span className="text-sm text-green-700">Request sent.</span> : null}
             </div>
+
+            <p className="text-muted mt-2 text-xs">You&apos;ll review a quote before confirming.</p>
+            {submitError ? (
+              <PaymentsSupportMessage message={submitError} className="text-sm text-red-600" />
+            ) : null}
           </div>
+
+          {quoteOpen && quoteDraft ? (
+            <div
+              className="fixed inset-0 z-50"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm quote"
+            >
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/50"
+                onClick={onEditQuote}
+                aria-label="Close quote"
+              />
+
+              <div className="surface-card absolute left-1/2 top-1/2 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 text-[var(--foreground)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">Review your quote</h2>
+                    <p className="text-muted mt-1 text-sm">
+                      Confirm to place your request, or edit details.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onEditQuote}
+                    className="rounded-lg px-2 py-1 text-sm text-[var(--muted-foreground)] hover:bg-[var(--surface)]"
+                    aria-label="Close modal"
+                  >
+                    x
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3 text-sm">
+                  <div>
+                    <span className="font-medium">Pickup:</span> {quoteDraft.pickup.label}
+                  </div>
+                  <div>
+                    <span className="font-medium">Destination:</span> {quoteDraft.dropoff.label}
+                  </div>
+                  <div>
+                    <span className="font-medium">Riders:</span> {quoteDraft.partySize}
+                  </div>
+                  <div>
+                    <span className="font-medium">Booking for:</span>{" "}
+                    {quoteDraft.bookedForSelf ? "Myself" : "Someone else"}
+                  </div>
+                  {showPickupAt ? (
+                    <div>
+                      <span className="font-medium">Pickup time:</span>{" "}
+                      {new Date(quoteDraft.pickupAt).toLocaleString([], {
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="font-medium">Pickup time:</span>{" "}
+                      {new Date(quoteDraft.pickupAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  )}
+                  {showCarsNeeded ? (
+                    <div>
+                      <span className="font-medium">Cars needed:</span> {quoteDraft.carsNeeded}
+                    </div>
+                  ) : null}
+                  {quoteDraft.pickupNotes ? (
+                    <div>
+                      <span className="font-medium">Pickup notes:</span> {quoteDraft.pickupNotes}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="surface-panel mt-4 rounded-2xl p-4">
+                  <div className="text-sm font-medium">Estimates</div>
+                  <div className="mt-2 text-sm">
+                    Estimated wait time:{" "}
+                    <span className="font-medium">
+                      {quoteEstimates ? `${quoteEstimates.waitMinutes} min` : "-"}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm">
+                    Estimated price range:{" "}
+                    <span className="font-medium">
+                      {quoteEstimates
+                        ? `$${quoteEstimates.priceMin}-$${quoteEstimates.priceMax}`
+                        : "-"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={onEditQuote}
+                    className="btn-secondary px-4 py-2 text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCancelQuote}
+                    className="btn-secondary px-4 py-2 text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onConfirmQuote}
+                    disabled={submitting}
+                    className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    {submitting ? "Submitting..." : "Confirm request"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
       </div>
     </main>
   );

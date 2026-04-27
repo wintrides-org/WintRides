@@ -32,19 +32,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import RequestButton from "@/components/requestbutton";
 import SignOutButton from "@/components/SignOutButton";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import BrandMark from "@/components/BrandMark";
 import type { CarpoolType } from "@/types/carpool";
 
-// set up the display and body font for consistency through the page
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 const REVIEW_WINDOW_DAYS = 7;
 const REVIEW_PROMPT_DISMISSALS_KEY = "dismissedReviewPromptRideIds";
@@ -556,7 +547,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <main
-        className={`min-h-screen bg-[#f4ecdf] bg-[radial-gradient(circle_at_top,_#f9f2e8,_#f4ecdf_60%)] ${bodyFont.className}`}
+        className="app-shell min-h-screen"
       >
         <div className="flex items-center justify-center min-h-[400px]">
           <p className="text-[#6b5f52]">Loading...</p>
@@ -656,7 +647,7 @@ export default function DashboardPage() {
 
   return (
     <main
-      className={`min-h-screen bg-[#f4ecdf] bg-[radial-gradient(circle_at_top,_#f9f2e8,_#f4ecdf_60%)] ${bodyFont.className}`}
+      className="app-shell min-h-screen"
     >
       {reviewPromptRide && !cancelModalRide && !showDriverModal ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-6">
@@ -803,16 +794,17 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : null}
-      <div className="mx-auto max-w-6xl px-6 pb-16 pt-10 text-[#0a1b3f]">
+      <div className="mx-auto max-w-6xl px-6 pb-16 pt-10 text-[var(--foreground)]">
         {/* Header with greeting + MVP utility icons */}
-        <header className="flex flex-wrap items-start justify-between gap-6">
+        <header className="app-topbar flex flex-wrap items-start justify-between gap-6 rounded-[30px] px-5 py-5">
           <div>
+            <BrandMark />
             <h1
               className={`${displayFont.className} text-3xl sm:text-4xl`}
             >
               Welcome, {userName || "there"}👋🏽
             </h1>
-            <p className="mt-1 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-1 text-sm">
               Ready for your next ride?
             </p>
           </div>
@@ -1135,7 +1127,7 @@ export default function DashboardPage() {
 
         {/* Primary prompt */}
         <h2
-          className={`${displayFont.className} mt-10 text-center text-3xl sm:text-4xl`}
+          className="font-heading mt-10 text-center text-3xl sm:text-4xl"
         >
           What would you like to do today?
         </h2>
@@ -1146,7 +1138,7 @@ export default function DashboardPage() {
             <RequestButton
               label="Request a Ride"
               unstyled
-              className="w-full rounded-none bg-[#0a3570] px-5 py-3 text-base font-semibold text-white shadow-[0_8px_20px_rgba(10,27,63,0.18)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c] hover:shadow-[0_14px_28px_rgba(10,27,63,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a3570] focus-visible:ring-offset-2"
+              className="btn-primary w-full rounded-none px-5 py-3 text-base"
             />
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="flex-1 rounded-2xl border-2 border-[#0a3570] bg-[#f8efe3] p-5">

@@ -11,6 +11,33 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
+import BrandMark from "@/components/BrandMark";
+
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+type GoogleAccountsWindow = Window & {
+  google?: {
+    accounts?: {
+      id?: {
+        initialize: (config: {
+          client_id: string;
+          callback: (response: GoogleCredentialResponse) => void;
+        }) => void;
+        renderButton: (
+          element: HTMLElement,
+          options: {
+            theme: string;
+            size: string;
+            text: string;
+            shape: string;
+          }
+        ) => void;
+      };
+    };
+  };
+};
 
 export default function SignInClient() {
   const router = useRouter();
@@ -30,12 +57,12 @@ export default function SignInClient() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // Read the Google client ID.
 
   useEffect(() => { // Handle client-side navigation when GIS is already loaded.
-    if ((window as any)?.google?.accounts?.id) { // Detect the loaded GIS script.
+    if ((window as GoogleAccountsWindow)?.google?.accounts?.id) { // Detect the loaded GIS script.
       setGoogleReady(true); // Mark Google as ready without waiting for onLoad.
     }
   }, []);
 
-  async function handleGoogleCredentialResponse(response: { credential?: string }) { // Handle GIS credential response.
+  async function handleGoogleCredentialResponse(response: GoogleCredentialResponse) { // Handle GIS credential response.
     setGoogleError(""); // Clear any previous Google error message.
     const idToken = response?.credential; // Extract the ID token from the response.
     if (!idToken) { // Guard against missing credentials.
@@ -61,8 +88,8 @@ export default function SignInClient() {
       }
 
       router.push(next && next.startsWith("/") ? next : "/dashboard"); // Redirect on success.
-    } catch (e: any) { // Catch and display errors from the exchange.
-      setGoogleError(e?.message || "Google sign-in failed"); // Show a fallback error message.
+    } catch (e: unknown) { // Catch and display errors from the exchange.
+      setGoogleError(e instanceof Error ? e.message : "Google sign-in failed"); // Show a fallback error message.
     }
   }
 
@@ -75,7 +102,7 @@ export default function SignInClient() {
       return; // Stop initialization without a client ID.
     }
 
-    const google = (window as any)?.google; // Access the global GIS object.
+    const google = (window as GoogleAccountsWindow)?.google; // Access the global GIS object.
     if (!google?.accounts?.id || !googleButtonRef.current) { // Verify GIS and the button ref.
       return; // Exit if the GIS library or button ref is missing.
     }
@@ -148,15 +175,15 @@ export default function SignInClient() {
       // This supports post-signup driver intent flows.
       const nextPath = next && next.startsWith("/") ? next : "/dashboard";
       router.push(nextPath);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong. Please try again.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#f4ecdf] p-6">
+    <main className="app-shell min-h-screen px-6 py-10">
       <Script
         src="https://accounts.google.com/gsi/client"
         async
@@ -164,21 +191,19 @@ export default function SignInClient() {
         onLoad={() => setGoogleReady(true)}
       />
       <div className="mx-auto max-w-xl">
-      <Link
-        href="/"
-        className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-        aria-label="Back to home"
-      >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </Link>
-      <h1 className="mt-6 text-2xl font-semibold">Sign In</h1>
-      <p className="mt-1 text-sm text-neutral-600">
-        Sign in to your WintRides account.
+      <div className="surface-card rounded-[32px] p-8">
+      <div className="flex items-center justify-between gap-4">
+        <BrandMark />
+        <Link href="/" className="btn-ghost rounded-full px-4 py-2 text-sm font-semibold">
+          Back
+        </Link>
+      </div>
+      <h1 className="font-heading mt-8 text-4xl">Sign in</h1>
+      <p className="text-muted mt-2 text-sm">
+        Access your WintRides account to request rides, drive, or manage payments.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+      <form onSubmit={onSubmit} className="mt-8 grid gap-4">
         {/* Email */}
         <div className="grid gap-1">
           <label htmlFor="email" className="text-sm font-medium">
@@ -190,7 +215,7 @@ export default function SignInClient() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your.name@university.edu"
-            className="rounded-xl border p-3"
+            className="app-input rounded-2xl p-3"
             disabled={submitting}
           />
           {errors.email ? (
@@ -209,7 +234,7 @@ export default function SignInClient() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="rounded-xl border p-3"
+            className="app-input rounded-2xl p-3"
             disabled={submitting}
           />
           {errors.password ? (
@@ -221,9 +246,9 @@ export default function SignInClient() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-4 rounded-xl bg-[#0437F2] px-4 py-3 font-medium text-white hover:bg-[#032cc2] disabled:cursor-not-allowed disabled:bg-neutral-400"
+          className="btn-primary mt-4 px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Signing In..." : "Sign In"}
+          {submitting ? "Signing in..." : "Sign in"}
         </button>
 
         {/* Error Message */}
@@ -235,17 +260,17 @@ export default function SignInClient() {
 
         {/* Register Link */}
         <p className="mt-4 text-center text-sm text-neutral-600">
-          Don't have an account?{" "}
-          <Link href="/register" className="font-medium text-black hover:underline">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-medium text-[var(--primary)] hover:underline">
             Create one
           </Link>
         </p>
 
         <div className="mt-4 grid gap-3">
           <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-neutral-300" />
-            <span className="text-xs text-neutral-500">or</span>
-            <span className="h-px flex-1 bg-neutral-300" />
+            <span className="h-px flex-1 bg-[var(--border)]" />
+            <span className="text-muted text-xs">or</span>
+            <span className="h-px flex-1 bg-[var(--border)]" />
           </div>
           <div ref={googleButtonRef} className="flex justify-center" />
           {googleError && (
@@ -255,6 +280,7 @@ export default function SignInClient() {
           )}
         </div>
       </form>
+      </div>
       </div>
     </main>
   );

@@ -10,19 +10,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
 import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
+import BrandMark from "@/components/BrandMark";
 
-// Defines the fonts used throughout the page
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 // Mock alerts on the driver's profile: has been replaced with real requests
 const mockPings = [
   {
@@ -442,7 +434,7 @@ export default function DriverDashboardPage() {
 
   return (
     <main
-      className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
+      className="app-shell min-h-screen px-6 py-10 text-[var(--foreground)]"
     >
       <div className="mx-auto w-full max-w-6xl">
         {/* Intro splash (brief confetti screen) before showing the dashboard. */}
@@ -465,7 +457,7 @@ export default function DriverDashboardPage() {
             <p className={`${displayFont.className} text-2xl text-[#0a3570]`}>
               Thank you, {driverUserName || "Driver"}, for delivering safe rides to other students!
             </p>
-            <p className="mt-3 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-3 text-sm">
               Loading your driver dashboard...
             </p>
             <style jsx>{`
@@ -495,7 +487,8 @@ export default function DriverDashboardPage() {
         ) : (
         <>
         {/* Main dashboard layout once the intro has finished. */}
-        <header className="flex items-center justify-between gap-4">
+        <header className="app-topbar flex items-center justify-between gap-4 rounded-[30px] px-5 py-4">
+          <BrandMark />
           <Link
             href="/dashboard"
             className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
