@@ -90,7 +90,7 @@ export default function DriverRideHistoryPage() {
   return (
     <main className="page-shell px-6 py-10">
       <div className="mx-auto w-full max-w-5xl">
-        <header className="app-topbar flex items-center justify-between gap-4 rounded-[28px] px-5 py-4">
+        <header className="app-topbar brand-accent-top flex items-center justify-between gap-4 rounded-[28px] px-5 py-5">
           <Link
             href="/driver/dashboard"
             className="icon-button grid h-12 w-12 place-items-center border-2"
@@ -101,8 +101,9 @@ export default function DriverRideHistoryPage() {
             </svg>
           </Link>
           <div>
+            <p className="eyebrow">Driver</p>
             <h1 className={`${displayFont.className} text-3xl text-[var(--primary)]`}>Ride History</h1>
-            <p className="text-muted mt-1 text-sm">Completed rides you've finished.</p>
+            <p className="text-muted mt-1 text-sm">Completed rides you have finished.</p>
           </div>
           <span className="btn-secondary px-4 py-2 text-xs font-semibold">{requests.length} completed</span>
         </header>

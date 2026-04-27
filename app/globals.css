@@ -113,6 +113,26 @@ a {
   background: color-mix(in srgb, var(--background) 88%, var(--surface) 12%);
 }
 
+.brand-accent-top {
+  position: relative;
+}
+
+.brand-accent-top::before {
+  content: "";
+  position: absolute;
+  left: 1.25rem;
+  right: 1.25rem;
+  top: 0;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    color-mix(in srgb, var(--primary) 42%, var(--surface)) 100%
+  );
+  pointer-events: none;
+}
+
 .page-shell {
   min-height: 100vh;
   background: var(--background);

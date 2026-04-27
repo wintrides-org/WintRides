@@ -259,7 +259,7 @@ function RiderRideHistoryContent() {
   return (
     <main className="page-shell px-6 py-10">
       <div className="mx-auto w-full max-w-5xl space-y-6">
-        <header>
+        <header className="brand-accent-top rounded-[28px] px-5 py-5">
           <p className="eyebrow">Rider</p>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <h1 className={`${displayFont.className} text-3xl text-[var(--primary)]`}>
@@ -285,10 +285,11 @@ function RiderRideHistoryContent() {
           <p className="text-muted mt-2 text-sm">Completed and canceled rides.</p>
         </header>
 
-        <div className="surface-card flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
+        <div className="surface-card brand-accent-top flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
           <div>
-            <p className="text-sm font-semibold text-[var(--primary)]">Past rides</p>
-            <p className="text-muted mt-1 text-xs">COMPLETED and CANCELED.</p>
+            <p className="eyebrow">Summary</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--primary)]">Past rides</p>
+            <p className="text-muted mt-1 text-xs">Completed and canceled rides.</p>
           </div>
           <span className="btn-secondary px-4 py-2 text-xs font-semibold">
             {requests.length} rides

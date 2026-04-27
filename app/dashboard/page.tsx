@@ -33,6 +33,7 @@ import RequestButton from "@/components/requestbutton";
 import SignOutButton from "@/components/SignOutButton";
 import Link from "next/link";
 import BrandMark from "@/components/BrandMark";
+import DashboardUtilityNav from "@/components/DashboardUtilityNav";
 import type { CarpoolType } from "@/types/carpool";
 
 const displayFont = { className: "font-heading" };
@@ -796,90 +797,24 @@ export default function DashboardPage() {
       ) : null}
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-10 text-[var(--foreground)]">
         {/* Header with greeting + MVP utility icons */}
-        <header className="app-topbar flex flex-wrap items-start justify-between gap-6 rounded-[30px] px-5 py-5">
+        <header className="app-topbar brand-accent-top flex flex-wrap items-start justify-between gap-6 rounded-[30px] px-5 py-5">
           <div>
             <BrandMark href="/dashboard" />
+            <p className="eyebrow mt-6">Rider Dashboard</p>
             <h1
-              className={`${displayFont.className} mt-6 text-3xl sm:text-4xl`}
+              className={`${displayFont.className} mt-2 text-3xl sm:text-4xl`}
             >
               Welcome, {userName || "there"}👋🏽
             </h1>
             <p className="text-muted mt-1 text-sm">
-              Ready for your next ride?
+              Plan your next ride, track requests, and manage your day.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Account icon links to the account profile hub */}
-            <Link
-              href="/account/profile"
-              aria-label="Account"
-              className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c2.2-4 13.8-4 16 0" />
-              </svg>
-            </Link>
-            <Link
-              href="/in-progress"
-              aria-label="Settings"
-              className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a2 2 0 1 1-4 0v-.1a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a2 2 0 1 1 0-4h.1a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a2 2 0 1 1 4 0v.1a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6H20a2 2 0 1 1 0 4h-.1a1 1 0 0 0-.5.9Z" />
-              </svg>
-            </Link>
-            <Link
-              href="/help"
-              aria-label="Help"
-              className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4" />
-                <circle cx="12" cy="17" r="1" />
-              </svg>
-            </Link>
-            <Link
-              href="/in-progress"
-              aria-label="Notifications"
-              className="btn-secondary relative grid h-10 w-10 place-items-center rounded-full p-0"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7" />
-                <path d="M9 18a3 3 0 0 0 6 0" />
-              </svg>
-            </Link>
-          </div>
+          <DashboardUtilityNav showNotifications />
         </header>
 
         {/* Alerts panel with collapse toggle */}
-        <section className="surface-card relative mt-8 rounded-2xl p-6">
+        <section className="surface-card brand-accent-top relative mt-8 rounded-2xl p-6">
           <button
             type="button"
             onClick={() => setAlertsOpen((prev) => !prev)}
@@ -938,6 +873,7 @@ export default function DashboardPage() {
           <div className="surface-card rounded-2xl p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
+                <p className="eyebrow">Status</p>
                 <h2 className="text-lg font-semibold text-[var(--primary)]">
                   Ride Status
                 </h2>
@@ -1109,7 +1045,8 @@ export default function DashboardPage() {
         </section>
 
         {/* Ride History entry point (separate page). */}
-        <section className="surface-card mt-6 rounded-2xl p-5">
+        <section className="surface-card brand-accent-top mt-6 rounded-2xl p-5">
+          <p className="eyebrow">History</p>
           <h2 className="text-lg font-semibold text-[var(--primary)]">Ride History</h2>
           <p className="text-muted mt-2 text-sm">
             Review completed and canceled rides.

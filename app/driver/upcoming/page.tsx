@@ -10,7 +10,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
 
 type RideRequestRow = {
@@ -26,15 +25,7 @@ type RideRequestRow = {
   driverLocationLastSharedAt?: string | null;
 };
 
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 export default function DriverUpcomingPage() {
   const router = useRouter();
@@ -363,7 +354,7 @@ export default function DriverUpcomingPage() {
 
   return (
     <main
-      className={`page-shell px-6 py-10 ${bodyFont.className}`}
+      className="page-shell px-6 py-10"
     >
       <div className="mx-auto w-full max-w-5xl">
         {/* Page header with back button, title, and upcoming count. */}

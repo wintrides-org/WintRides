@@ -13,6 +13,7 @@ import Link from "next/link";
 import { estimatePriceRange } from "@/lib/requestValidation";
 import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 import BrandMark from "@/components/BrandMark";
+import DashboardUtilityNav from "@/components/DashboardUtilityNav";
 
 const displayFont = { className: "font-heading" };
 const TOP_RATED_MIN_RATING = 4.8;
@@ -507,59 +508,25 @@ export default function DriverDashboardPage() {
         ) : (
         <>
         {/* Main dashboard layout once the intro has finished. */}
-        <header className="app-topbar flex items-center justify-between gap-4 rounded-[30px] px-5 py-4">
-          <BrandMark href="/dashboard" />
-
-          {/* Quick action icons (profile, settings, home, help). */}
-          <div className="flex items-center gap-3 text-[var(--primary)]">
-            <Link
-              href="/dashboard"
-              className="icon-button h-10 w-10"
-              aria-label="Profile"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c2.2-4 13.8-4 16 0" />
-              </svg>
-            </Link>
-            <Link
-              href="/in-progress"
-              className="icon-button h-10 w-10"
-              aria-label="Settings"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a2 2 0 1 1-4 0v-.1a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a2 2 0 1 1 0-4h.1a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a2 2 0 1 1 4 0v.1a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6H20a2 2 0 1 1 0 4h-.1a1 1 0 0 0-.5.9Z" />
-              </svg>
-            </Link>
-            <Link
-              href="/dashboard"
-              className="icon-button h-10 w-10"
-              aria-label="Home"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 10l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" />
-              </svg>
-            </Link>
-            <Link
-              href="/in-progress"
-              className="icon-button h-10 w-10"
-              aria-label="Help"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4" />
-                <circle cx="12" cy="17" r="1" />
-              </svg>
-            </Link>
+        <header className="app-topbar brand-accent-top flex flex-wrap items-start justify-between gap-6 rounded-[30px] px-5 py-5">
+          <div>
+            <BrandMark href="/dashboard" />
+            <p className="eyebrow mt-6">Driver Dashboard</p>
+            <h1 className={`${displayFont.className} mt-2 text-3xl text-[var(--primary)] sm:text-4xl`}>
+              Drive with WintRides
+            </h1>
+            <p className="text-muted mt-1 text-sm">
+              Manage availability, requests, payouts, and completed rides.
+            </p>
           </div>
+          <DashboardUtilityNav showHome homeHref="/dashboard" />
         </header>
 
         {/* Two-column layout: left = driver profile/availability, right = requests and earnings. */}
         <section className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-6">
             {/* Driver profile card with rating and review link. */}
-            <div className="surface-card rounded-3xl p-5 text-center">
+            <div className="surface-card brand-accent-top rounded-3xl p-5 text-center">
               <div className="relative mx-auto h-32 w-32">
                 <div className="surface-panel grid h-full w-full place-items-center rounded-full border-2 border-[var(--border-strong)]">
                   <span
@@ -611,7 +578,7 @@ export default function DriverDashboardPage() {
             </div>
 
             {/* Availability toggle card (client-side only for MVP). */}
-            <div className="surface-card rounded-3xl p-5">
+            <div className="surface-card brand-accent-top rounded-3xl p-5">
               <div
                 className="surface-panel flex items-center justify-between gap-3 rounded-full border-2 border-[var(--primary)] px-3 py-2"
               >
@@ -703,7 +670,7 @@ export default function DriverDashboardPage() {
               </div>
 
             {/* Collapsible list of new/open ride requests. */}
-            <div className="surface-card overflow-hidden rounded-3xl">
+            <div className="surface-card brand-accent-top overflow-hidden rounded-3xl">
               <div className="flex items-center justify-between rounded-t-3xl bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white">
                 <button
                   type="button"
@@ -786,7 +753,8 @@ export default function DriverDashboardPage() {
             </div>
 
             {/* Upcoming rides summary with shortcuts to history/upcoming pages. */}
-            <section className="surface-card rounded-3xl p-6">
+            <section className="surface-card brand-accent-top rounded-3xl p-6">
+              <p className="eyebrow">History</p>
               <h3 className={`${displayFont.className} text-xl text-[var(--primary)]`}>
                 Your Rides
               </h3>
@@ -875,7 +843,7 @@ export default function DriverDashboardPage() {
 
 
             {/* Payout section routes drivers to the Stripe-backed onboarding hub. */}
-            <section className="surface-card overflow-hidden rounded-3xl">
+            <section className="surface-card brand-accent-top overflow-hidden rounded-3xl">
               <button
                 type="button"
                 onClick={() => setPaymentOpen((prev) => !prev)}

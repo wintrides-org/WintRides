@@ -3,20 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 import CarpoolChat from "@/components/CarpoolChat";
 import { canCancelConfirmedParticipation } from "@/lib/carpoolDeparture";
 import type { CarpoolThread } from "@/types/carpool";
 
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 // Lock logic and associatederror warning parameters
 const MIN_CONFIRMED_PARTICIPANTS_TO_LOCK = 2;
@@ -311,9 +302,7 @@ export default function CarpoolThreadPage() {
 
   if (loading) {
     return (
-      <main
-        className={`page-shell mx-auto max-w-4xl p-6 ${bodyFont.className}`}
-      >
+      <main className="page-shell mx-auto max-w-4xl p-6">
         <Link
           href="/carpool/feed"
           className="icon-button h-12 w-12"
@@ -330,9 +319,7 @@ export default function CarpoolThreadPage() {
 
   if (error && !carpool) {
     return (
-      <main
-        className={`page-shell mx-auto max-w-4xl p-6 ${bodyFont.className}`}
-      >
+      <main className="page-shell mx-auto max-w-4xl p-6">
         <Link
           href="/carpool/feed"
           className="icon-button h-12 w-12"
@@ -399,9 +386,7 @@ export default function CarpoolThreadPage() {
     phaseConfirmedRider && carpool && canCancelConfirmedParticipation(carpool);
 
   return (
-    <main
-      className={`page-shell mx-auto max-w-4xl p-6 ${bodyFont.className}`}
-    >
+    <main className="page-shell mx-auto max-w-4xl p-6">
       <Link
         href="/carpool/feed"
         className="icon-button h-12 w-12"
