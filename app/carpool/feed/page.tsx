@@ -1,21 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 import CarpoolCard from "@/components/CarpoolCard";
 import type { CarpoolThread } from "@/types/carpool";
 
-// Define the fonts before the function
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 export default function CarpoolFeedPage() {
   const router = useRouter();
@@ -24,29 +15,10 @@ export default function CarpoolFeedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-
-  // Filters
   const [destinationFilter, setDestinationFilter] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<string>("");
 
-  useEffect(() => {
-    fetchCarpools();
-  }, [destinationFilter, dateFilter]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (!res.ok) return;
-        const data = await res.json();
-        setUserId(data?.user?.id || "");
-      } catch {
-        /* guest feed */
-      }
-    })();
-  }, []);
-
-  async function fetchCarpools() {
+  const fetchCarpools = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -58,144 +30,168 @@ export default function CarpoolFeedPage() {
       if (dateFilter) {
         params.append("date", dateFilter);
       }
-      // Only show open carpools in feed (MVP)
       params.append("status", "OPEN,PENDING_CONFIRMATIONS");
 
       const res = await fetch(`/api/carpools?${params.toString()}`);
-      
+
       if (!res.ok) {
         throw new Error("Failed to fetch carpools");
       }
 
       const data = await res.json();
       setCarpools(data.carpools || []);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load carpools");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load carpools");
     } finally {
       setLoading(false);
     }
-  }
+  }, [dateFilter, destinationFilter]);
 
-  const today = new Date().toISOString().split('T')[0];
+  useEffect(() => {
+    fetchCarpools();
+  }, [fetchCarpools]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUserId(data?.user?.id || "");
+      } catch {
+        // guest feed
+      }
+    })();
+  }, []);
+
+  const today = new Date().toISOString().split("T")[0];
 
   return (
-    <main
-      className={`min-h-screen bg-[#f4ecdf] px-6 py-12 text-[#1e3a5f] ${bodyFont.className}`}
-    >
+    <main className="page-shell px-6 py-12">
       <div className="mx-auto w-full max-w-4xl">
-        <Link
-          href="/dashboard"
-          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-          aria-label="Back to dashboard"
-        >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        {/* Header */}
-        <div className="mt-6 flex items-center justify-between mb-6">
+        <header className="app-topbar brand-accent-top rounded-[30px] px-5 py-5">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="eyebrow">Carpool</p>
+              <h1 className={`${displayFont.className} mt-2 text-3xl font-semibold text-[var(--primary)]`}>
+                Carpool Feed
+              </h1>
+              <p className="text-muted mt-2 text-sm">
+                Browse and join carpools for your upcoming trips.
+              </p>
+            </div>
+            <Link href="/dashboard" className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold" aria-label="Back to dashboard">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to dashboard
+            </Link>
+          </div>
+        </header>
+
+        <div className="surface-card brand-accent-top mb-6 mt-8 rounded-[28px] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+            <p className="eyebrow">Discover</p>
+            <p className="text-muted mt-2 text-sm">Filter by destination or date to find the best fit faster.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard?carpoolOptions=1")}
+              className="btn-primary px-5 py-2 text-sm font-semibold"
+            >
+              Create Carpool
+            </button>
+          </div>
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Filter by Destination</label>
+              <input
+                type="text"
+                value={destinationFilter}
+                onChange={(e) => setDestinationFilter(e.target.value)}
+                placeholder="e.g., Boston Airport"
+                className="app-input app-field-control"
+              />
+            </div>
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Filter by Date</label>
+              <input
+                type="date"
+                value={dateFilter}
+                min={today}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="app-input app-field-control"
+              />
+            </div>
+          </div>
+
+          {(destinationFilter || dateFilter) && (
+            <button
+              type="button"
+              onClick={() => {
+                setDestinationFilter("");
+                setDateFilter("");
+              }}
+              className="btn-secondary mt-4 px-4 py-1 text-sm font-medium"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className={`${displayFont.className} text-3xl font-semibold text-[#0a3570]`}>
-              Carpool Feed
-            </h1>
-            <p className="mt-1 text-sm text-[#6b5f52]">
-              Browse and join carpools for your upcoming trips
+            <p className="eyebrow">Available threads</p>
+            <p className="text-muted mt-2 text-sm">
+              {loading ? "Checking current trips..." : `${carpools.length} thread${carpools.length === 1 ? "" : "s"} available`}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => router.push("/carpool/create")}
-            className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
-          >
-            Create Carpool
-          </button>
         </div>
 
-      {/* Filters */}
-      <div className="mb-6 rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Filter by Destination</label>
-            <input
-              type="text"
-              value={destinationFilter}
-              onChange={(e) => setDestinationFilter(e.target.value)}
-              placeholder="e.g., Boston Airport"
-              className="rounded-xl border border-[#1e3a5f] bg-[#fdf9f3] p-2 text-[#1e3a5f] placeholder:text-[#7b6b5b] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-            />
+        {loading && (
+          <div className="app-feedback-panel app-feedback-muted app-feedback-center py-12">
+            Loading carpools...
           </div>
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Filter by Date</label>
-            <input
-              type="date"
-              value={dateFilter}
-              min={today}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="rounded-xl border border-[#1e3a5f] bg-[#fdf9f3] p-2 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
-            />
-          </div>
-        </div>
-        {(destinationFilter || dateFilter) && (
-          <button
-            type="button"
-            onClick={() => {
-              setDestinationFilter("");
-              setDateFilter("");
-            }}
-            className="mt-3 rounded-full border border-[#1e3a5f] px-4 py-1 text-sm font-medium text-[#1e3a5f] transition hover:bg-[#efe3d2]"
-          >
-            Clear filters
-          </button>
         )}
-      </div>
 
-      {/* Loading state */}
-      {loading && (
-        <div className="text-center py-12 text-[#6b5f52]">
-          Loading carpools...
-        </div>
-      )}
+        {error && !loading && (
+          <div className="app-feedback-panel app-feedback-error app-feedback-center py-12">
+            <p className="mb-4 text-sm">{error}</p>
+            <button
+              type="button"
+              onClick={fetchCarpools}
+              className="btn-secondary px-5 py-2 text-sm font-medium"
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
-      {/* Error state */}
-      {error && !loading && (
-        <div className="text-center py-12">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            type="button"
-            onClick={fetchCarpools}
-            className="rounded-full border border-[#1e3a5f] px-5 py-2 text-sm font-medium text-[#1e3a5f] transition hover:bg-[#efe3d2]"
-          >
-            Try again
-          </button>
-        </div>
-      )}
+        {!loading && !error && carpools.length === 0 && (
+          <div className="app-feedback-panel app-feedback-muted app-feedback-center py-12">
+            <p className="mb-4 text-sm">
+              {destinationFilter || dateFilter
+                ? "No carpools match your filters."
+                : "No carpools available yet. Be the first to create one!"}
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard?carpoolOptions=1")}
+              className="btn-primary px-5 py-2 text-sm font-semibold"
+            >
+              Create Carpool
+            </button>
+          </div>
+        )}
 
-      {/* Empty state */}
-      {!loading && !error && carpools.length === 0 && (
-        <div className="text-center py-12">
-          <p className="mb-4 text-[#6b5f52]">
-            {destinationFilter || dateFilter
-              ? "No carpools match your filters."
-              : "No carpools available yet. Be the first to create one!"}
-          </p>
-          <button
-            type="button"
-            onClick={() => router.push("/carpool/create")}
-            className="rounded-full bg-[#0a3570] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
-          >
-            Create Carpool
-          </button>
-        </div>
-      )}
-
-      {/* Carpool list */}
-      {!loading && !error && carpools.length > 0 && (
-        <div className="grid gap-4">
-          {carpools.map((carpool) => (
-            <CarpoolCard key={carpool.id} carpool={carpool} userId={userId} />
-          ))}
-        </div>
-      )}
+        {!loading && !error && carpools.length > 0 && (
+          <div className="grid gap-4">
+            {carpools.map((carpool) => (
+              <CarpoolCard key={carpool.id} carpool={carpool} userId={userId} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

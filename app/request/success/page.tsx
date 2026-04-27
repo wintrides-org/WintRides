@@ -1,17 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
-
-// Defines the fonts to be used on the success page
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 // Defines the confetti for the page
 const confettiPieces = [
   { left: "8%", delay: "0s", duration: "2.4s", color: "#ff6b6b" },
@@ -28,13 +18,11 @@ const confettiPieces = [
 // HTML rendering of the success page
 export default function RequestSuccessPage() {
   return (
-    <main
-      className={`min-h-screen bg-[#f4ecdf] px-6 py-16 text-[#0a1b3f] ${bodyFont.className}`}
-    >
+    <main className="page-shell px-6 py-16">
       <div className="mx-auto w-full max-w-2xl">
         <Link
           href="/dashboard"
-          className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+          className="icon-button grid h-12 w-12 place-items-center"
           aria-label="Back to dashboard"
         >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -42,7 +30,7 @@ export default function RequestSuccessPage() {
           </svg>
         </Link>
       </div>
-      <div className="relative mx-auto mt-6 w-full max-w-2xl overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] px-8 py-14 text-center shadow-[0_18px_40px_rgba(10,27,63,0.15)]">
+      <div className="surface-card relative mx-auto mt-6 w-full max-w-2xl overflow-hidden rounded-3xl px-8 py-14 text-center">
         <div className="pointer-events-none absolute inset-0">
           {confettiPieces.map((piece, index) => (
             <span
@@ -58,15 +46,15 @@ export default function RequestSuccessPage() {
             />
           ))}
         </div>
-        <h1 className={`${displayFont.className} text-3xl text-[#0a3570]`}>
+        <h1 className={`${displayFont.className} text-3xl text-[var(--primary)]`}>
           Congratulations, your request has been successfully placed
         </h1>
-        <p className="mt-3 text-sm text-[#6b5f52]">
+        <p className="text-muted mt-3 text-sm">
           We're finding a ride for you. Remember, WintRides gotchyu!
         </p>
         <Link
           href="/dashboard"
-          className="mt-8 inline-flex rounded-full bg-[#0a3570] px-6 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(10,27,63,0.2)] transition hover:-translate-y-0.5 hover:bg-[#0a2d5c]"
+          className="btn-primary mt-8 px-6 py-2 text-sm font-semibold"
         >
           Go to Home
         </Link>

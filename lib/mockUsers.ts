@@ -140,6 +140,17 @@ export async function getUserByUserName(userName: string) {
 }
 
 /**
+ * Update a user's username after availability has been checked by the caller.
+ */
+export async function updateUserName(userId: string, userName: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { userName: normalizeUserName(userName) },
+    include: { driverInfo: true }
+  });
+}
+
+/**
  * Fetch a user by email (case-insensitive), including driver info.
  */
 export async function getUserByEmail(email: string) {

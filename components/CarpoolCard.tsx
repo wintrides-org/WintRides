@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CarpoolThread } from "@/types/carpool";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 
 interface CarpoolCardProps {
   carpool: CarpoolThread;
@@ -79,7 +80,7 @@ export default function CarpoolCard({ carpool, userId = "" }: CarpoolCardProps) 
       <button
         type="button"
         onClick={goToRide}
-        className="w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7]"
+        className="btn-secondary w-full rounded-xl py-3 text-sm font-semibold"
       >
         Manage ride
       </button>
@@ -89,7 +90,7 @@ export default function CarpoolCard({ carpool, userId = "" }: CarpoolCardProps) 
       <button
         type="button"
         onClick={goToRide}
-        className="w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7]"
+        className="btn-secondary w-full rounded-xl py-3 text-sm font-semibold"
       >
         View ride
       </button>
@@ -99,7 +100,7 @@ export default function CarpoolCard({ carpool, userId = "" }: CarpoolCardProps) 
       <button
         type="button"
         onClick={goToRide}
-        className="w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7]"
+        className="btn-secondary w-full rounded-xl py-3 text-sm font-semibold"
       >
         Continue to chat
       </button>
@@ -110,7 +111,7 @@ export default function CarpoolCard({ carpool, userId = "" }: CarpoolCardProps) 
         type="button"
         onClick={handleInterested}
         disabled={joining}
-        className="w-full rounded-xl border border-[#1e3a5f] bg-white py-3 text-sm font-semibold text-[#1e3a5f] transition hover:bg-[#f7efe7] disabled:opacity-50"
+        className="btn-primary w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-50"
       >
         {joining ? "Joining…" : "I'm interested"}
       </button>
@@ -162,7 +163,10 @@ export default function CarpoolCard({ carpool, userId = "" }: CarpoolCardProps) 
           </p>
         )}
         {localError && (
-          <p className="mt-2 text-center text-xs text-red-600">{localError}</p>
+          <PaymentsSupportMessage
+            message={localError}
+            className="mt-2 text-center text-xs text-red-600"
+          />
         )}
       </div>
     </article>

@@ -32,7 +32,6 @@ export default function RiderRideStatusPage() {
     Pick<RideRequestRow, "id" | "status"> | null
   >(null);
 
-  // Resolve the signed-in rider ID for ride-status queries.
   useEffect(() => {
     let ignore = false;
 
@@ -40,11 +39,7 @@ export default function RiderRideStatusPage() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
         const res = await fetch("/api/auth/session", {
-          headers: sessionToken
-            ? {
-                Authorization: `Bearer ${sessionToken}`,
-              }
-            : {},
+          headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -52,14 +47,11 @@ export default function RiderRideStatusPage() {
           setRiderId(data?.user?.id || "");
         }
       } catch {
-        if (!ignore) {
-          setRiderId("");
-        }
+        if (!ignore) setRiderId("");
       }
     }
 
     fetchSession();
-
     return () => {
       ignore = true;
     };
@@ -68,45 +60,30 @@ export default function RiderRideStatusPage() {
   useEffect(() => {
     let ignore = false;
 
-    // Load OPEN + MATCHED rides scoped to the rider session.
     async function fetchStatus() {
       setError("");
       try {
         if (!riderId) return;
-        // Pass the session token so the API can authorize rider-scoped access.
         const sessionToken = localStorage.getItem("sessionToken");
         const res = await fetch(
           `/api/requests?status=OPEN,MATCHED&participantId=${riderId}`,
           {
-            headers: sessionToken
-              ? {
-                  Authorization: `Bearer ${sessionToken}`,
-                }
-              : {},
+            headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
           }
         );
-        if (!res.ok) {
-          throw new Error("Failed to load ride status.");
-        }
+        if (!res.ok) throw new Error("Failed to load ride status.");
         const data = await res.json();
-        if (!ignore) {
-          setRequests(data.requests || []);
-        }
+        if (!ignore) setRequests(data.requests || []);
       } catch (err: unknown) {
         if (!ignore) {
           setError(err instanceof Error ? err.message : "Failed to load ride status.");
         }
       } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
+        if (!ignore) setLoading(false);
       }
     }
 
-    if (riderId) {
-      fetchStatus();
-    }
-
+    if (riderId) fetchStatus();
     return () => {
       ignore = true;
     };
@@ -126,19 +103,16 @@ export default function RiderRideStatusPage() {
     [requests]
   );
 
-  // Open the rider cancellation modal.
   function handleCancelClick(request: Pick<RideRequestRow, "id" | "status">) {
     setCancelError("");
     setCancelModalRequest(request);
   }
 
-  // Cancel an upcoming ride via the API and update the local list.
   async function handleCancelConfirm() {
     if (!cancelModalRequest) return;
 
     setCancelingId(cancelModalRequest.id);
     try {
-      // Call the cancel API route (updates status in the database).
       const sessionToken = localStorage.getItem("sessionToken");
       const res = await fetch("/api/requests/rider-cancel", {
         method: "POST",
@@ -149,16 +123,11 @@ export default function RiderRideStatusPage() {
         body: JSON.stringify({ requestId: cancelModalRequest.id }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body?.error || "Failed to cancel ride.");
-      }
-      // updates the rider's requests list to exclude the canceled ride
+      if (!res.ok) throw new Error(body?.error || "Failed to cancel ride.");
       setRequests((prev) => prev.filter((req) => req.id !== cancelModalRequest.id));
       setCancelModalRequest(null);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to cancel ride.";
-      setCancelError(message);
+      setCancelError(err instanceof Error ? err.message : "Failed to cancel ride.");
     } finally {
       setCancelingId(null);
     }
@@ -168,12 +137,12 @@ export default function RiderRideStatusPage() {
     <div className="space-y-6">
       {cancelModalRequest ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
-          <div className="w-full max-w-xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
-            <h2 className="text-2xl font-semibold text-[#0a3570]">
+          <div className="surface-card w-full max-w-xl rounded-3xl p-6">
+            <h2 className="font-heading text-2xl text-[var(--primary)]">
               Are you sure you want to cancel?
             </h2>
             {cancelModalRequest.status === "MATCHED" ? (
-              <p className="mt-3 text-sm text-[#6b5f52]">
+              <p className="text-muted mt-3 text-sm">
                 You&apos;ll be charged 50% of the transaction.
               </p>
             ) : null}
@@ -181,7 +150,7 @@ export default function RiderRideStatusPage() {
               <button
                 type="button"
                 onClick={() => setCancelModalRequest(null)}
-                className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+                className="btn-secondary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
               >
                 Go Back
               </button>
@@ -189,70 +158,61 @@ export default function RiderRideStatusPage() {
                 type="button"
                 onClick={handleCancelConfirm}
                 disabled={cancelingId === cancelModalRequest.id}
-                className="rounded-full border border-[#b35656] bg-[#b35656] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#a54c4c] disabled:cursor-not-allowed disabled:opacity-70"
+                className="btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {cancelingId === cancelModalRequest.id
-                  ? "Canceling..."
-                  : "Cancel Ride"}
+                {cancelingId === cancelModalRequest.id ? "Canceling..." : "Cancel Ride"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
+
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#6b5f52]">
-          Rider
-        </p>
+        <p className="eyebrow">Rider</p>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold">Ride Status</h1>
+          <h1 className="font-heading text-3xl">Ride Status</h1>
           <button
             type="button"
             onClick={() => router.back()}
-            className="rounded-full border border-[#0a3570] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#e9dcc9]"
+            className="btn-secondary px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
           >
             Back
           </button>
         </div>
-        <p className="mt-2 text-sm text-[#6b5f52]">
+        <p className="text-muted mt-2 text-sm">
           Track upcoming rides and manage active requests.
         </p>
       </header>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#0a3570] bg-white/80 px-5 py-4">
+      <div className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
         <div>
-          <p className="text-sm font-semibold text-[#0a3570]">
-            Upcoming requests
-          </p>
-          <p className="mt-1 text-xs text-[#6b5f52]">
-            OPEN and MATCHED rides.
-          </p>
+          <p className="text-sm font-semibold text-[var(--primary)]">Upcoming requests</p>
+          <p className="text-muted mt-1 text-xs">OPEN and MATCHED rides.</p>
         </div>
-        <span className="rounded-full border border-[#0a3570] bg-[#f6efe6] px-4 py-2 text-xs font-semibold text-[#0a3570]">
-          {requests.length} active
-        </span>
+        <span className="btn-secondary px-4 py-2 text-xs font-semibold">{requests.length} active</span>
       </div>
 
       <section className="space-y-4">
         {loading && (
-          <div className="rounded-2xl border border-dashed border-[#0a3570] bg-white/70 p-6 text-center text-sm text-[#6b5f52]">
+          <div className="surface-panel text-muted rounded-2xl border-dashed p-6 text-center text-sm">
             Loading ride status...
           </div>
         )}
 
         {!loading && error && (
-          <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-6 text-center">
+          <div className="surface-panel rounded-2xl p-6 text-center">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
         {!loading && !error && formatted.length === 0 && (
-          <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-6 text-center text-sm text-[#6b5f52]">
+          <div className="surface-panel text-muted rounded-2xl p-6 text-center text-sm">
             No upcoming rides yet.
           </div>
         )}
 
         {!loading && !error && cancelError && (
-          <div className="rounded-2xl border border-[#0a3570] bg-white/80 p-4 text-center">
+          <div className="surface-panel rounded-2xl p-4 text-center">
             <p className="text-sm text-red-600">{cancelError}</p>
           </div>
         )}
@@ -261,49 +221,38 @@ export default function RiderRideStatusPage() {
           <div className="space-y-4">
             {formatted.map((request) => {
               const statusMeta =
-                STATUS_COPY[request.status as "OPEN" | "MATCHED"] ||
-                STATUS_COPY.OPEN;
+                STATUS_COPY[request.status as "OPEN" | "MATCHED"] || STATUS_COPY.OPEN;
               return (
-                <div
-                  key={request.id}
-                  className="rounded-2xl border border-[#0a3570] bg-white/90 p-5"
-                >
+                <div key={request.id} className="surface-card rounded-2xl p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold text-[#0a3570]">
+                      <h2 className="text-lg font-semibold text-[var(--primary)]">
                         {request.dropoffLabel}
                       </h2>
-                      <p className="mt-1 text-sm text-[#6b5f52]">
-                        {request.pickupTime}
-                      </p>
+                      <p className="text-muted mt-1 text-sm">{request.pickupTime}</p>
                     </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.tone}`}
-                    >
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.tone}`}>
                       {statusMeta.label}
                     </span>
                   </div>
 
-                  <div className="mt-4 text-sm text-[#0a1b3f]">
-                    <span className="font-semibold">Pickup:</span>{" "}
-                    {request.pickupLabel}
+                  <div className="mt-4 text-sm">
+                    <span className="font-semibold">Pickup:</span> {request.pickupLabel}
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-[#0a1b3f]">
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
                     <span>
-                      <span className="font-semibold">Party size:</span>{" "}
-                      {request.partySize}
+                      <span className="font-semibold">Party size:</span> {request.partySize}
                     </span>
                     <span>
-                      <span className="font-semibold">Cars needed:</span>{" "}
-                      {request.carsNeeded}
+                      <span className="font-semibold">Cars needed:</span> {request.carsNeeded}
                     </span>
                   </div>
 
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
-                          onClick={() => handleCancelClick(request)}
+                      onClick={() => handleCancelClick(request)}
                       disabled={cancelingId === request.id}
                       className="rounded-full border border-[#b35656] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#b35656] transition hover:bg-[#f7e9e7] disabled:cursor-not-allowed disabled:opacity-70"
                     >
@@ -311,7 +260,7 @@ export default function RiderRideStatusPage() {
                     </button>
                     <Link
                       href="/dashboard"
-                      className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6b5f52]"
+                      className="text-muted text-xs font-semibold uppercase tracking-[0.18em]"
                     >
                       Back to dashboard
                     </Link>

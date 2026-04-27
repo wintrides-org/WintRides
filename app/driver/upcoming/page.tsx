@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import { useRouter, useSearchParams } from "next/navigation";
 import { estimatePriceRange } from "@/lib/requestValidation";
 
 type RideRequestRow = {
@@ -25,17 +25,11 @@ type RideRequestRow = {
   driverLocationLastSharedAt?: string | null;
 };
 
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 export default function DriverUpcomingPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const MIN_CANCEL_REASON_LENGTH = 15;
   const LOCATION_SEND_INTERVAL_MS = 10_000;
   // Driver/session info and upcoming rides state.
@@ -54,9 +48,11 @@ export default function DriverUpcomingPage() {
   const [activeLocationRideId, setActiveLocationRideId] = useState<string | null>(null);
   const [locationNotice, setLocationNotice] = useState("");
   const [locationError, setLocationError] = useState("");
+  const [showLockSuccessModal, setShowLockSuccessModal] = useState(false);
   const locationWatchIdRef = useRef<number | null>(null);
   const lastLocationPostAtRef = useRef<number>(0);
   const lastLocationRequestIdRef = useRef<string | null>(null);
+  const successRideId = searchParams.get("rideId");
 
   function clearDriverLocationWatch() {
     if (locationWatchIdRef.current !== null && typeof window !== "undefined") {
@@ -65,6 +61,7 @@ export default function DriverUpcomingPage() {
     }
     setSharingLocationId(null);
     setActiveLocationRideId(null);
+    lastLocationRequestIdRef.current = null;
   }
 
   useEffect(() => {
@@ -101,6 +98,29 @@ export default function DriverUpcomingPage() {
   }, []);
 
   useEffect(() => clearDriverLocationWatch, []);
+
+  useEffect(() => {
+    if (searchParams.get("lockSuccess") === "1") {
+      setShowLockSuccessModal(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!activeLocationRideId) {
+      return;
+    }
+
+    const activeRideStillVisible = requests.some(
+      (request) => request.id === activeLocationRideId
+    );
+
+    // clears GPS notifications for a ride if the ride is no longer active
+    if (!activeRideStillVisible) {
+      clearDriverLocationWatch();
+      setLocationNotice("");
+      setLocationError("");
+    }
+  }, [activeLocationRideId, requests]);
 
   useEffect(() => {
     let ignore = false;
@@ -156,6 +176,19 @@ export default function DriverUpcomingPage() {
       })),
     [requests]
   );
+
+  /* function to clear out LOCK success modal  */
+  function dismissLockSuccessModal() {
+    setShowLockSuccessModal(false);
+    if (searchParams.get("lockSuccess") !== "1") {
+      return;
+    }
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("lockSuccess");
+    nextParams.delete("rideId");
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `/driver/upcoming?${nextQuery}` : "/driver/upcoming");
+  }
 
   // Mark a ride as completed and show a confirmation.
   async function handleComplete(requestId: string, pay: number) {
@@ -321,14 +354,14 @@ export default function DriverUpcomingPage() {
 
   return (
     <main
-      className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
+      className="page-shell px-6 py-10"
     >
       <div className="mx-auto w-full max-w-5xl">
         {/* Page header with back button, title, and upcoming count. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/driver/dashboard"
-            className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+            className="icon-button h-12 w-12"
             aria-label="Back to driver dashboard"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -336,14 +369,14 @@ export default function DriverUpcomingPage() {
             </svg>
           </Link>
           <div>
-            <h1 className={`${displayFont.className} text-3xl text-[#0a3570]`}>
+            <h1 className={`${displayFont.className} text-3xl text-[var(--primary)]`}>
               Upcoming Rides
             </h1>
-            <p className="mt-1 text-sm text-[#6b5f52]">
+            <p className="text-muted mt-1 text-sm">
               Accepted rides waiting for pickup.
             </p>
           </div>
-          <span className="rounded-full border border-[#0a3570] bg-[#fdf7ef] px-4 py-2 text-xs font-semibold text-[#0a3570]">
+          <span className="btn-secondary px-4 py-2 text-xs font-semibold">
             {requests.length} upcoming
           </span>
         </header>
@@ -352,21 +385,21 @@ export default function DriverUpcomingPage() {
         <section className="mt-8 space-y-4">
           {cancelModalRequest ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-              <div className="w-full max-w-2xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
-                <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+              <div className="surface-card w-full max-w-2xl rounded-3xl p-6">
+                <h2 className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
                   Are you sure you want to cancel?
                 </h2>
-                <p className="mt-3 text-sm text-[#6b5f52]">
+                <p className="text-muted mt-3 text-sm">
                   Canceling will reflect on your profile. We discourage canceling on riders but we understand that things happen.
                 </p>
-                <label className="mt-5 block text-sm font-semibold text-[#0a3570]">
+                <label className="mt-5 block text-sm font-semibold text-[var(--primary)]">
                   Cancellation reason
                 </label>
                 <textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={5}
-                  className="mt-2 w-full rounded-2xl border border-[#0a3570] bg-white p-4 text-sm text-[#0a1b3f] focus:outline-none focus:ring-2 focus:ring-[#0a3570]/40"
+                  className="app-input mt-2 w-full rounded-2xl p-4 text-sm"
                   placeholder="Explain why you need to cancel this ride."
                 />
                 {cancelReason.length > 0 && cancelReason.trim().length < MIN_CANCEL_REASON_LENGTH ? (
@@ -381,7 +414,7 @@ export default function DriverUpcomingPage() {
                       setCancelModalRequest(null);
                       setCancelReason("");
                     }}
-                    className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+                    className="btn-secondary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
                   >
                     Go Back
                   </button>
@@ -392,7 +425,7 @@ export default function DriverUpcomingPage() {
                       cancelingId === cancelModalRequest.id ||
                       cancelReason.trim().length < MIN_CANCEL_REASON_LENGTH
                     }
-                    className="rounded-full border border-[#b42318] bg-[#b42318] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#981b12] disabled:cursor-not-allowed disabled:border-[#bdb4ab] disabled:bg-[#d8d1cb] disabled:text-[#7a6f63]"
+                    className="btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {cancelingId === cancelModalRequest.id ? "Canceling..." : "Cancel Ride"}
                   </button>
@@ -402,15 +435,15 @@ export default function DriverUpcomingPage() {
           ) : null}
           {gpsPromptRequest ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-              <div className="w-full max-w-2xl rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
-                <h2 className={`${displayFont.className} text-2xl text-[#0a3570]`}>
+              <div className="surface-card w-full max-w-2xl rounded-3xl p-6">
+                <h2 className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
                   Turn on driver GPS sharing?
                 </h2>
-                <p className="mt-3 text-sm text-[#6b5f52]">
+                <p className="text-muted mt-3 text-sm">
                   Your GPS location is shared with WintRides. Driver location is
                   required on every trip for rider safety.
                 </p>
-                <p className="mt-3 text-sm text-[#6b5f52]">
+                <p className="text-muted mt-3 text-sm">
                   Sharing starts only for this matched ride and updates while this
                   page remains open.
                 </p>
@@ -418,14 +451,14 @@ export default function DriverUpcomingPage() {
                   <button
                     type="button"
                     onClick={() => setGpsPromptRequest(null)}
-                    className="rounded-full border border-[#0a3570] bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a3570] hover:bg-[#efe3d2]"
+                    className="btn-secondary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
                   >
                     Not Now
                   </button>
                   <button
                     type="button"
                     onClick={() => handleStartDriverGps(gpsPromptRequest)}
-                    className="rounded-full border border-[#0a3570] bg-[#0a3570] px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:bg-[#092a59]"
+                    className="btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
                   >
                     Share My Location
                   </button>
@@ -433,14 +466,41 @@ export default function DriverUpcomingPage() {
               </div>
             </div>
           ) : null}
+
+          {/* Success Modal after LOCK (and associated after effects) completed for driver */}
+          {showLockSuccessModal ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+              <div className="surface-card w-full max-w-2xl rounded-3xl p-6">
+                <h2 className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
+                  Ride created successfully
+                </h2>
+                <p className="text-muted mt-3 text-sm">
+                  The ride has been created and entered into the flow. Monitor the status on your driver dashboard.
+                </p>
+                <p className="text-muted mt-2 text-sm">
+                  Riders on the carpool can also monitor the status of the ride from their dashboard.
+                </p>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    /* clicking clears out the modal */
+                    onClick={dismissLockSuccessModal}
+                    className="btn-primary px-5 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {cancelNotice ? (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4 text-center">
-              <p className="text-sm text-[#0a3570]">{cancelNotice}</p>
+            <div className="surface-card rounded-2xl p-4 text-center">
+              <p className="text-sm text-[var(--primary)]">{cancelNotice}</p>
             </div>
           ) : null}
           {locationNotice ? (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-4 text-center">
-              <p className="text-sm text-[#0a3570]">{locationNotice}</p>
+            <div className="surface-card rounded-2xl p-4 text-center">
+              <p className="text-sm text-[var(--primary)]">{locationNotice}</p>
             </div>
           ) : null}
           {locationError ? (
@@ -450,7 +510,7 @@ export default function DriverUpcomingPage() {
           ) : null}
           {completeNotice ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-              <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border-2 border-[#0a3570] bg-[#fdf7ef] p-6 text-center shadow-[0_18px_40px_rgba(10,27,63,0.2)]">
+              <div className="surface-card relative w-full max-w-sm overflow-hidden rounded-3xl p-6 text-center">
                 <div className="pointer-events-none absolute inset-0">
                   {Array.from({ length: 10 }).map((_, index) => (
                     <span
@@ -465,13 +525,13 @@ export default function DriverUpcomingPage() {
                     />
                   ))}
                 </div>
-                <p className={`${displayFont.className} text-xl text-[#0a3570]`}>
+                <p className={`${displayFont.className} text-xl text-[var(--primary)]`}>
                   {completeNotice}
                 </p>
                 <button
                   type="button"
                   onClick={() => setCompleteNotice("")}
-                  className="mt-4 rounded-full border border-[#0a3570] px-4 py-1 text-xs font-semibold text-[#0a3570]"
+                  className="btn-secondary mt-4 px-4 py-1 text-xs font-semibold"
                   aria-label="Dismiss confirmation"
                 >
                   ✕
@@ -503,19 +563,19 @@ export default function DriverUpcomingPage() {
             </div>
           ) : null}
           {loading && (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
+            <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
               Loading upcoming rides...
             </div>
           )}
 
           {!loading && error && (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center">
+            <div className="surface-card rounded-2xl p-6 text-center">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
           {!loading && !error && formatted.length === 0 && (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
+            <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
               No upcoming rides yet.
             </div>
           )}
@@ -525,25 +585,29 @@ export default function DriverUpcomingPage() {
               {formatted.map((request) => (
                 <div
                   key={request.id}
-                  className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5"
+                  className={`rounded-2xl p-5 ${
+                    successRideId === request.id
+                      ? "border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
+                      : "surface-card"
+                  }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold text-[#0a3570]">
+                      <h2 className="text-lg font-semibold text-[var(--primary)]">
                         {request.dropoffLabel}
                       </h2>
-                      <p className="mt-1 text-sm text-[#6b5f52]">
+                      <p className="text-muted mt-1 text-sm">
                         {request.pickupTime}
                       </p>
                     </div>
-                    <span className="rounded-full bg-[#d9e8ff] px-3 py-1 text-xs font-semibold text-[#0a3570]">
+                    <span className="rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,var(--background))] px-3 py-1 text-xs font-semibold text-[var(--primary)]">
                       UPCOMING
                     </span>
                   </div>
-                  <div className="mt-3 text-sm text-[#0a1b3f]">
+                  <div className="mt-3 text-sm">
                     <span className="font-semibold">Pickup:</span> {request.pickupLabel}
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-[#0a1b3f]">
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                     <span>
                       <span className="font-semibold">Party size:</span> {request.partySize}
                     </span>
@@ -554,8 +618,8 @@ export default function DriverUpcomingPage() {
                       <span className="font-semibold">Pay:</span> ${request.pay}
                     </span>
                   </div>
-                  <div className="mt-3 rounded-2xl border border-[#d8d1cb] bg-white/70 p-3 text-sm text-[#6b5f52]">
-                    <p className="font-semibold text-[#0a3570]">Driver GPS</p>
+                  <div className="surface-panel mt-3 rounded-2xl p-3 text-sm text-muted">
+                    <p className="font-semibold text-[var(--primary)]">Driver GPS</p>
                     <p className="mt-1">
                       {activeLocationRideId === request.id
                         ? "Sharing live location now."
@@ -578,7 +642,7 @@ export default function DriverUpcomingPage() {
                         setGpsPromptRequest(request);
                       }}
                       disabled={sharingLocationId === request.id}
-                      className="rounded-full border border-[#0a3570] bg-[#0a3570] px-4 py-1 text-xs font-semibold text-white hover:bg-[#092a59] disabled:opacity-60"
+                      className="btn-primary px-4 py-1 text-xs font-semibold disabled:opacity-60"
                     >
                       {activeLocationRideId === request.id
                         ? "GPS Sharing Active"
@@ -592,7 +656,7 @@ export default function DriverUpcomingPage() {
                       )}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                      className="btn-secondary px-4 py-1 text-xs font-semibold"
                     >
                       Navigate
                     </a>
@@ -600,7 +664,7 @@ export default function DriverUpcomingPage() {
                       type="button"
                       onClick={() => handleComplete(request.id, request.pay)}
                       disabled={completingId === request.id}
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2] disabled:opacity-60"
+                      className="btn-secondary px-4 py-1 text-xs font-semibold disabled:opacity-60"
                     >
                       {completingId === request.id ? "Completing..." : "Complete"}
                     </button>

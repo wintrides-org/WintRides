@@ -31,17 +31,33 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import BrandMark from "@/components/BrandMark";
 
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
+type GoogleCredentialResponse = {
+  credential?: string;
+};
 
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+type GoogleAccountsWindow = Window & {
+  google?: {
+    accounts?: {
+      id?: {
+        initialize: (config: {
+          client_id: string;
+          callback: (response: GoogleCredentialResponse) => void;
+        }) => void;
+        renderButton: (
+          element: HTMLElement,
+          options: {
+            theme: string;
+            size: string;
+            text: string;
+            shape: string;
+          }
+        ) => void;
+      };
+    };
+  };
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -115,12 +131,12 @@ export default function RegisterPage() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID; // Read the Google client ID.
 
   useEffect(() => { // Handle client-side navigation when GIS is already loaded.
-    if ((window as any)?.google?.accounts?.id) { // Detect the loaded GIS script.
+    if ((window as GoogleAccountsWindow)?.google?.accounts?.id) { // Detect the loaded GIS script.
       setGoogleReady(true); // Mark Google as ready without waiting for onLoad.
     }
   }, []);
 
-  async function handleGoogleCredentialResponse(response: { credential?: string }) { // Handle GIS credential response.
+  async function handleGoogleCredentialResponse(response: GoogleCredentialResponse) { // Handle GIS credential response.
     setGoogleError(""); // Clear any previous Google error message.
     const idToken = response?.credential; // Extract the ID token from the response.
     if (!idToken) { // Guard against missing credentials.
@@ -146,8 +162,8 @@ export default function RegisterPage() {
       }
 
       router.push("/dashboard"); // Redirect to the dashboard on success.
-    } catch (e: any) { // Catch and display errors from the exchange.
-      setGoogleError(e?.message || "Google sign-in failed"); // Show a fallback error message.
+    } catch (e: unknown) { // Catch and display errors from the exchange.
+      setGoogleError(e instanceof Error ? e.message : "Google sign-in failed"); // Show a fallback error message.
     }
   }
 
@@ -160,7 +176,7 @@ export default function RegisterPage() {
       return; // Stop initialization without a client ID.
     }
 
-    const google = (window as any)?.google; // Access the global GIS object.
+    const google = (window as GoogleAccountsWindow)?.google; // Access the global GIS object.
     if (!google?.accounts?.id || !googleButtonRef.current) { // Verify GIS and the button ref.
       return; // Exit if the GIS library or button ref is missing.
     }
@@ -326,17 +342,15 @@ export default function RegisterPage() {
           router.push("/verify-email?email=" + encodeURIComponent(email) + nextParam);
         }
       }, 1500);
-    } catch (e: any) {
-      setSubmitError(e?.message || "Something went wrong. Please try again.");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main
-      className={`min-h-screen bg-[#f4ecdf] p-6 text-[#1e3a5f] ${bodyFont.className}`}
-    >
+    <main className="app-shell min-h-screen px-6 py-10">
       <Script
         src="https://accounts.google.com/gsi/client"
         async
@@ -344,23 +358,21 @@ export default function RegisterPage() {
         onLoad={() => setGoogleReady(true)}
       />
       <div className="mx-auto max-w-xl">
-      <Link
-        href="/"
-        className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-        aria-label="Back to home"
-      >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </Link>
-      <h1 className={`${displayFont.className} mt-6 text-2xl font-semibold`}>
-        Create Account
+      <div className="surface-card rounded-[32px] p-8">
+      <div className="flex items-center justify-between gap-4">
+        <BrandMark />
+        <Link href="/" className="btn-ghost rounded-full px-4 py-2 text-sm font-semibold">
+          Back
+        </Link>
+      </div>
+      <h1 className="font-heading mt-8 text-4xl">
+        Create account
       </h1>
-      <p className="mt-1 text-sm text-neutral-600">
+      <p className="text-muted mt-2 text-sm">
         Sign up with your campus email to join WintRides.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+      <form onSubmit={onSubmit} className="mt-8 grid gap-4">
         {/* Email */}
         <div className="grid gap-1">
           <label htmlFor="email" className="text-sm font-medium">
@@ -372,7 +384,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your.name@university.edu"
-            className="rounded-xl border p-3"
+            className="app-input rounded-2xl p-3"
             disabled={submitting}
           />
           {errors.email ? (
@@ -395,7 +407,7 @@ export default function RegisterPage() {
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             placeholder="Enter a username"
-            className="rounded-xl border p-3"
+            className="app-input rounded-2xl p-3"
             disabled={submitting}
           />
           {errors.userName || userNameError ? (
@@ -423,7 +435,7 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="At least 8 characters"
-            className="rounded-xl border p-3"
+            className="app-input rounded-2xl p-3"
             disabled={submitting}
           />
           {errors.password ? (
@@ -442,7 +454,7 @@ export default function RegisterPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Re-enter your password"
-            className="rounded-xl border p-3"
+            className="app-input rounded-2xl p-3"
             disabled={submitting}
           />
           {errors.confirmPassword ? (
@@ -457,11 +469,11 @@ export default function RegisterPage() {
               type="checkbox"
               checked={wantsToDrive}
               onChange={(e) => setWantsToDrive(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-[var(--border-strong)]"
               disabled={submitting}
             />
             <span className="text-sm font-medium">
-              I'm also available to drive
+              I&apos;m also available to drive
             </span>
           </label>
           <p className="mt-1 ml-6 text-xs text-neutral-500">
@@ -472,7 +484,7 @@ export default function RegisterPage() {
         {/* Driver intent */}
         {wantsToDrive && (
           <div className="ml-6 grid gap-4 border-l-2 border-neutral-200 pl-4">
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-3 text-sm text-[var(--foreground)]">
               Driver details are collected after email verification. We will guide you to the
               dedicated driver form once your account is created.
             </div>
@@ -483,9 +495,9 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-4 rounded-xl bg-black px-4 py-3 font-medium text-white hover:bg-neutral-800 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+          className="btn-primary mt-4 px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Creating Account..." : "Create Account"}
+          {submitting ? "Creating account..." : "Create account"}
         </button>
 
         {/* Error Message */}
@@ -505,16 +517,16 @@ export default function RegisterPage() {
         {/* Sign In Link */}
         <p className="mt-4 text-center text-sm text-neutral-600">
           Already have an account?{" "}
-          <Link href="/signin" className="font-medium text-[#2f6db3] underline">
+          <Link href="/signin" className="font-medium text-[var(--primary)] underline">
             Sign in
           </Link>
         </p>
 
         <div className="mt-4 grid gap-3">
           <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-neutral-300" />
-            <span className="text-xs text-neutral-500">or</span>
-            <span className="h-px flex-1 bg-neutral-300" />
+            <span className="h-px flex-1 bg-[var(--border)]" />
+            <span className="text-muted text-xs">or</span>
+            <span className="h-px flex-1 bg-[var(--border)]" />
           </div>
           <div ref={googleButtonRef} className="flex justify-center" />
           {googleError && (
@@ -524,6 +536,7 @@ export default function RegisterPage() {
           )}
         </div>
       </form>
+      </div>
       </div>
     </main>
   );

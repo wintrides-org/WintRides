@@ -3,20 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import BrandMark from "@/components/BrandMark";
 
-// Define the fonts for consistency
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-// Define the pages under "Account" and links to their pages
 const navItems = [
   {
     label: "Profile",
@@ -73,7 +61,7 @@ const navItems = [
     ),
   },
 ];
-// Defines the sign-out footer
+
 const footerItems = [
   {
     label: "Sign out",
@@ -88,48 +76,69 @@ const footerItems = [
   },
 ];
 
-/* Wraps active child pages in the main content panel*/
+const pageMeta: Record<string, { eyebrow: string; title: string; description: string }> = {
+  "/account/profile": {
+    eyebrow: "Account",
+    title: "Profile",
+    description:
+      "Update your personal information. Email changes stay disabled until the verification flow is built.",
+  },
+  "/account/driver-info": {
+    eyebrow: "Account",
+    title: "Driver Info",
+    description: "Driver status, license details, and insights live here.",
+  },
+  "/account/reviews": {
+    eyebrow: "Account",
+    title: "Reviews",
+    description: "Ratings summary and review history live here.",
+  },
+  "/account/payments": {
+    eyebrow: "Account",
+    title: "Payments",
+    description:
+      "Manage the saved rider payment method and the driver payout onboarding flow in one place.",
+  },
+  "/account/preferences": {
+    eyebrow: "Account",
+    title: "Preferences",
+    description: "Personalization settings live here. (Planned for v2.)",
+  },
+  "/account/signout": {
+    eyebrow: "Account",
+    title: "Sign out",
+    description: "Leave your WintRides account session securely.",
+  },
+};
+
 export default function AccountShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // stores the active path name
-  const pathname = usePathname(); 
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  // activeHref shows which account page the user is on
-  // allows for aria-styling for active pages so screenreaders can read it
   const activeHref = useMemo(() => {
     if (!pathname) return "/account/profile";
     return pathname.startsWith("/account") ? pathname : "/account/profile";
   }, [pathname]);
+  const activePage = pageMeta[activeHref] || pageMeta["/account/profile"];
 
   return (
-    <div
-      className={`min-h-screen bg-[#f1e8dc] text-[#0a1b3f] ${bodyFont.className}`}
-      style={
-        {
-          "--account-blue": "#071a72",
-          "--account-cream": "#f1e8dc",
-          "--account-ink": "#0a1b3f",
-        } as React.CSSProperties
-      }
-    >
+    <div className="app-shell min-h-screen text-[var(--foreground)]">
       <div className="flex min-h-screen w-full">
         <aside
-          className={`relative flex min-h-screen flex-col bg-[var(--account-blue)] px-6 py-10 text-white transition-all duration-300 ${
-            collapsed ? "w-[90px]" : "w-[330px]"
+          className={`relative flex min-h-screen flex-col border-r border-[var(--border)] bg-[var(--surface-inverse)] px-6 py-10 text-white transition-all duration-300 ${
+            collapsed ? "w-[92px]" : "w-[330px]"
           }`}
           aria-label="Account navigation"
         >
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 place-items-center rounded-full border border-white/30 text-sm font-semibold">
-              WR
-            </span>
+            <BrandMark href="/dashboard" compact light />
             {!collapsed ? (
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em]">Account</p>
-                <p className="text-xs text-white/70">Personalize WintRides</p>
+                <p className="text-xs text-white/70">Manage your WintRides profile</p>
               </div>
             ) : null}
           </div>
@@ -141,14 +150,14 @@ export default function AccountShell({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                    isActive ? "bg-white text-[var(--account-blue)]" : "text-white/85 hover:bg-white/10"
+                  className={`flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive ? "bg-white text-[var(--primary)]" : "text-white/85 hover:bg-white/10"
                   }`}
                   aria-current={isActive ? "page" : undefined}
                 >
                   <span
                     className={`grid h-10 w-10 place-items-center rounded-xl border ${
-                      isActive ? "border-[var(--account-blue)] text-[var(--account-blue)]" : "border-white/30 text-white"
+                      isActive ? "border-[var(--primary)] text-[var(--primary)]" : "border-white/30 text-white"
                     }`}
                     aria-hidden="true"
                   >
@@ -167,13 +176,13 @@ export default function AccountShell({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                    isActive ? "bg-white text-[var(--account-blue)]" : "text-white/85 hover:bg-white/10"
+                  className={`flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive ? "bg-white text-[var(--primary)]" : "text-white/85 hover:bg-white/10"
                   }`}
                 >
                   <span
                     className={`grid h-10 w-10 place-items-center rounded-xl border ${
-                      isActive ? "border-[var(--account-blue)] text-[var(--account-blue)]" : "border-white/30 text-white"
+                      isActive ? "border-[var(--primary)] text-[var(--primary)]" : "border-white/30 text-white"
                     }`}
                     aria-hidden="true"
                   >
@@ -188,29 +197,28 @@ export default function AccountShell({
           <button
             type="button"
             onClick={() => setCollapsed((prev) => !prev)}
-            className="absolute right-0 top-1/2 flex h-14 w-10 -translate-y-1/2 items-center justify-center rounded-l-full border border-white/30 bg-[var(--account-blue)] text-white transition hover:bg-[#0a268f]"
+            className="absolute right-0 top-1/2 flex h-14 w-10 -translate-y-1/2 items-center justify-center rounded-l-full border border-white/30 bg-[var(--primary)] text-white transition hover:bg-[var(--primary-hover)]"
             aria-label={collapsed ? "Expand menu" : "Collapse menu"}
             aria-expanded={!collapsed}
           >
-            <span className="text-2xl leading-none">{collapsed ? "›" : "‹"}</span>
+            <span className="text-2xl leading-none">{collapsed ? ">" : "<"}</span>
           </button>
         </aside>
 
-        <main className="flex-1 px-8 py-10 text-[var(--account-ink)]">
+        <main className="flex-1 px-8 py-10">
           <div className="mx-auto w-full max-w-5xl">
-            {/* Back button for account pages, styled like the driver dashboard back control. */}
-            <div className="mb-6">
-              <Link
-                href="/dashboard"
-                className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
-                aria-label="Back to dashboard"
-              >
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
+            <div className="app-topbar brand-accent-top mb-8 flex flex-wrap items-start justify-between gap-5 rounded-[28px] px-5 py-5">
+              <div>
+                <BrandMark href="/dashboard" />
+                <p className="eyebrow mt-6">{activePage.eyebrow}</p>
+                <h1 className="font-heading mt-2 text-3xl font-semibold">{activePage.title}</h1>
+                <p className="text-muted mt-2 text-sm">{activePage.description}</p>
+              </div>
+              <Link href="/dashboard" className="btn-secondary px-4 py-2 text-sm">
+                Back to rider dashboard
               </Link>
             </div>
-            <div className={displayFont.className}>{children}</div>
+            <div>{children}</div>
           </div>
         </main>
       </div>

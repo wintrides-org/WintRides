@@ -9,8 +9,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Playfair_Display, Work_Sans } from "next/font/google";
 import { estimatePriceRange } from "@/lib/requestValidation";
+import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
 
 type RideRequestRow = {
   id: string;
@@ -23,25 +23,15 @@ type RideRequestRow = {
   carsNeeded: number;
 };
 
-const displayFont = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const bodyFont = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+const displayFont = { className: "font-heading" };
 
 export default function DriverRequestsPage() {
-  // Driver/session info and request list state.
   const [driverId, setDriverId] = useState<string>("");
   const [requests, setRequests] = useState<RideRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptNotice, setAcceptNotice] = useState<string>("");
-  // Filter inputs for narrowing the open-request list.
   const [dateFilter, setDateFilter] = useState("");
   const [timeStartFilter, setTimeStartFilter] = useState("");
   const [timeEndFilter, setTimeEndFilter] = useState("");
@@ -50,16 +40,11 @@ export default function DriverRequestsPage() {
   useEffect(() => {
     let ignore = false;
 
-    // Identify the signed-in driver so accept actions can be attributed.
     async function fetchSession() {
       try {
         const sessionToken = localStorage.getItem("sessionToken");
         const res = await fetch("/api/auth/session", {
-          headers: sessionToken
-            ? {
-                Authorization: `Bearer ${sessionToken}`,
-              }
-            : {},
+          headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {},
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -84,7 +69,6 @@ export default function DriverRequestsPage() {
     let ignore = false;
     let interval: NodeJS.Timeout | null = null;
 
-    // Poll open requests so the list stays fresh.
     async function fetchRequests() {
       setError("");
 
@@ -97,9 +81,9 @@ export default function DriverRequestsPage() {
         if (!ignore) {
           setRequests(data.requests || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!ignore) {
-          setError(err?.message || "Failed to load requests.");
+          setError(err instanceof Error ? err.message : "Failed to load requests.");
         }
       } finally {
         if (!ignore) {
@@ -108,10 +92,9 @@ export default function DriverRequestsPage() {
       }
     }
 
-    // Initial load + repeat every 10 seconds.
     setLoading(true);
     fetchRequests();
-    interval = setInterval(fetchRequests, 10000); // Calls fetchRequests every 10s
+    interval = setInterval(fetchRequests, 10000);
 
     return () => {
       ignore = true;
@@ -121,7 +104,6 @@ export default function DriverRequestsPage() {
     };
   }, []);
 
-  // Accept a request and remove it from the open list.
   async function handleAccept(requestId: string) {
     setAcceptNotice("");
     setAcceptingId(requestId);
@@ -141,34 +123,28 @@ export default function DriverRequestsPage() {
       }
       setRequests((prev) => prev.filter((req) => req.id !== requestId));
       setAcceptNotice("Request accepted. It is now in your Upcoming Rides.");
-    } catch (err: any) {
-      setAcceptNotice(err?.message || "Failed to accept request.");
+    } catch (err: unknown) {
+      setAcceptNotice(err instanceof Error ? err.message : "Failed to accept request.");
     } finally {
       setAcceptingId(null);
     }
   }
 
-  // Format pickup time for display on the request cards.
-  const formatPickup = (pickupAt: string) =>
-    new Date(pickupAt).toLocaleString([], {
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  // Precompute formatted values like pickup time and pay estimate.
   const formattedRequests = useMemo(
     () =>
       requests.map((request) => ({
         ...request,
-        pickupTime: formatPickup(request.pickupAt),
+        pickupTime: new Date(request.pickupAt).toLocaleString([], {
+          month: "short",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         pay: estimatePriceRange(request.partySize).min,
       })),
     [requests]
   );
 
-  // Apply date/time/pay filters on top of the formatted list.
   const filteredRequests = useMemo(() => {
     return formattedRequests.filter((request) => {
       const pickupDate = new Date(request.pickupAt);
@@ -214,15 +190,12 @@ export default function DriverRequestsPage() {
   }, [formattedRequests, dateFilter, timeStartFilter, timeEndFilter, payFilter]);
 
   return (
-    <main
-      className={`min-h-screen bg-[#f4ecdf] px-6 py-10 text-[#0a1b3f] ${bodyFont.className}`}
-    >
+    <main className="page-shell px-6 py-10">
       <div className="mx-auto w-full max-w-5xl">
-        {/* Page header with back button, title, and open count. */}
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/driver/dashboard"
-            className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#0a3570] text-[#0a3570] hover:bg-[#e9dcc9]"
+            className="icon-button h-12 w-12"
             aria-label="Back to driver dashboard"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -230,40 +203,37 @@ export default function DriverRequestsPage() {
             </svg>
           </Link>
           <div>
-            <h1 className={`${displayFont.className} text-3xl text-[#0a3570]`}>
+            <h1 className={`${displayFont.className} text-3xl text-[var(--primary)]`}>
               Requests
             </h1>
-            <p className="mt-1 text-sm text-[#6b5f52]">
-              Open ride requests waiting for drivers.
-            </p>
+            <p className="text-muted mt-1 text-sm">Open ride requests waiting for drivers.</p>
           </div>
-          <span className="rounded-full border border-[#0a3570] bg-[#fdf7ef] px-4 py-2 text-xs font-semibold text-[#0a3570]">
+          <span className="btn-secondary px-4 py-2 text-xs font-semibold">
             {requests.length} open
           </span>
         </header>
 
-        {/* Filter controls for date/time/pay. */}
-        <section className="mt-8 rounded-2xl border border-[#1e3a5f] bg-[#f7efe7] p-5">
+        <section className="surface-card mt-8 rounded-2xl p-5">
           <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
             <div className="grid gap-1">
-              <label className="text-sm font-medium text-[#0a3570]">
+              <label className="text-sm font-medium text-[var(--primary)]">
                 Filter by Pickup Date
               </label>
               <input
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="rounded-xl border border-[#1e3a5f] bg-[#fdf9f3] p-2 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
+                className="app-input rounded-xl p-2"
               />
             </div>
             <div className="grid gap-1">
-              <label className="text-sm font-medium text-[#0a3570]">
+              <label className="text-sm font-medium text-[var(--primary)]">
                 Filter by Pay Range
               </label>
               <select
                 value={payFilter}
                 onChange={(e) => setPayFilter(e.target.value)}
-                className="rounded-xl border border-[#1e3a5f] bg-[#fdf9f3] p-2 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
+                className="app-input rounded-xl p-2"
               >
                 <option value="ALL">All</option>
                 <option value="LT_10">$&lt;10</option>
@@ -274,30 +244,32 @@ export default function DriverRequestsPage() {
               </select>
             </div>
           </div>
+
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1">
-              <label className="text-sm font-medium text-[#0a3570]">
+              <label className="text-sm font-medium text-[var(--primary)]">
                 Filter by Pickup Time (Start)
               </label>
               <input
                 type="time"
                 value={timeStartFilter}
                 onChange={(e) => setTimeStartFilter(e.target.value)}
-                className="rounded-xl border border-[#1e3a5f] bg-[#fdf9f3] p-2 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
+                className="app-input rounded-xl p-2"
               />
             </div>
             <div className="grid gap-1">
-              <label className="text-sm font-medium text-[#0a3570]">
+              <label className="text-sm font-medium text-[var(--primary)]">
                 Filter by Pickup Time (End)
               </label>
               <input
                 type="time"
                 value={timeEndFilter}
                 onChange={(e) => setTimeEndFilter(e.target.value)}
-                className="rounded-xl border border-[#1e3a5f] bg-[#fdf9f3] p-2 text-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
+                className="app-input rounded-xl p-2"
               />
             </div>
           </div>
+
           {(dateFilter || timeStartFilter || timeEndFilter || payFilter !== "ALL") && (
             <button
               type="button"
@@ -307,43 +279,43 @@ export default function DriverRequestsPage() {
                 setTimeEndFilter("");
                 setPayFilter("ALL");
               }}
-              className="mt-4 rounded-full border border-[#1e3a5f] px-4 py-1 text-sm font-medium text-[#0a3570] transition hover:bg-[#efe3d2]"
+              className="btn-secondary mt-4 px-4 py-1 text-sm font-medium"
             >
               Clear filters
             </button>
           )}
         </section>
 
-        {/* Requests list with loading/error/empty states. */}
         <section className="mt-8 space-y-4">
           {acceptNotice ? (
-            <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-4 text-sm text-[#0a1b3f] shadow-[0_14px_30px_rgba(10,27,63,0.2)]">
+            <div className="surface-card fixed bottom-6 right-6 z-50 max-w-xs rounded-2xl p-4 text-sm">
               <div className="flex items-start justify-between gap-3">
-                <p>{acceptNotice}</p>
+                <PaymentsSupportMessage message={acceptNotice} />
                 <button
                   type="button"
                   onClick={() => setAcceptNotice("")}
-                  className="rounded-full border border-[#0a3570] px-2 py-0.5 text-xs font-semibold text-[#0a3570]"
+                  className="btn-secondary px-2 py-0.5 text-xs font-semibold"
                   aria-label="Dismiss confirmation"
                 >
-                  ✕
+                  x
                 </button>
               </div>
             </div>
           ) : null}
+
           {loading && (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
+            <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
               Loading requests...
             </div>
           )}
 
           {!loading && error && (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center">
+            <div className="surface-card rounded-2xl p-6 text-center">
               <p className="text-sm text-red-600">{error}</p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="mt-4 rounded-full border border-[#0a3570] px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                className="btn-secondary mt-4 px-4 py-1 text-xs font-semibold"
               >
                 Try again
               </button>
@@ -351,7 +323,7 @@ export default function DriverRequestsPage() {
           )}
 
           {!loading && !error && filteredRequests.length === 0 && (
-            <div className="rounded-2xl border border-[#0a3570] bg-[#fdf7ef] p-6 text-center text-sm text-[#6b5f52]">
+            <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
               No open requests yet.
             </div>
           )}
@@ -359,28 +331,23 @@ export default function DriverRequestsPage() {
           {!loading && !error && filteredRequests.length > 0 && (
             <div className="space-y-4">
               {filteredRequests.map((request) => (
-                <div
-                  key={request.id}
-                  id={`request-${request.id}`}
-                  className="rounded-2xl border-2 border-[#0a3570] bg-[#fdf7ef] p-5"
-                >
+                <div key={request.id} id={`request-${request.id}`} className="surface-card rounded-2xl p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold text-[#0a3570]">
+                      <h2 className="text-lg font-semibold text-[var(--primary)]">
                         {request.dropoffLabel}
                       </h2>
-                      <p className="mt-1 text-sm text-[#6b5f52]">
-                        {request.pickupTime}
-                      </p>
+                      <p className="text-muted mt-1 text-sm">{request.pickupTime}</p>
                     </div>
-                    <span className="rounded-full bg-[#dff5e1] px-3 py-1 text-xs font-semibold text-[#1a7f37]">
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                       OPEN
                     </span>
                   </div>
-                  <div className="mt-3 text-sm text-[#0a1b3f]">
+
+                  <div className="mt-3 text-sm">
                     <span className="font-semibold">Pickup:</span> {request.pickupLabel}
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-[#0a1b3f]">
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
                     <span>
                       <span className="font-semibold">Party size:</span> {request.partySize}
                     </span>
@@ -396,14 +363,11 @@ export default function DriverRequestsPage() {
                       type="button"
                       onClick={() => handleAccept(request.id)}
                       disabled={acceptingId === request.id}
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
+                      className="btn-primary px-4 py-1 text-xs font-semibold disabled:opacity-70"
                     >
                       {acceptingId === request.id ? "Accepting..." : "Accept"}
                     </button>
-                    <button
-                      type="button"
-                      className="rounded-full border border-[#0a3570] bg-white px-4 py-1 text-xs font-semibold text-[#0a3570] hover:bg-[#efe3d2]"
-                    >
+                    <button type="button" className="btn-secondary px-4 py-1 text-xs font-semibold">
                       View
                     </button>
                   </div>

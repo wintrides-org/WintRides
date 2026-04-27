@@ -1,23 +1,14 @@
-"use client"; // makes requestbutton.tsx a client component. Tells Next.jst the component runs in  the browser
+"use client";
 
-/*
-imports necessary objects
-*/
-
-// useState: lets us store component state (is the modal open or close?)
-// useMemo: lets us define data once without recreating it on every render
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation"; // allows navigation to another page
-import type { RequestType } from "@/types/request"; // imports teh request types we defined in types/request
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { RequestType } from "@/types/request";
 
-/* 
-defines what ONE request option looks like in the UI
-*/
 type Option = {
-  type: RequestType; // IMMEDIATE | SCHEDULED | GROUP
-  title: string; // Text shown to the user
-  description: string; // Small explanation under the title 
-  href: string; // Where to navigate when selected
+  type: RequestType;
+  title: string;
+  description: string;
+  href: string;
 };
 
 type RequestButtonProps = {
@@ -31,17 +22,19 @@ export default function RequestButton({
   className = "",
   unstyled = false,
 }: RequestButtonProps) {
-  const router = useRouter(); // define a router object for navigation
-  const [open, setOpen] = useState(false); // contols whether the modal is visible 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [localOpen, setLocalOpen] = useState(false);
+  const requestOptionsOpen = searchParams.get("requestOptions") === "1";
+  const open = localOpen || requestOptionsOpen;
 
-  // Defines the three request options shown in the modal
-  // useMemo ensures this array is not created on every render
   const options: Option[] = useMemo(
     () => [
       {
         type: "IMMEDIATE",
-        title: "Request now", 
-        description: "Get a ride as soon as possible.", 
+        title: "Request now",
+        description: "Get a ride as soon as possible.",
         href: "/request/immediate",
       },
       {
@@ -60,97 +53,98 @@ export default function RequestButton({
     []
   );
 
-  // Called when the user clicks one of the options
   function onSelect(option: Option) {
-    setOpen(false); // Close the modal
-    router.push(option.href); // Navigate to the correct page
+    setLocalOpen(false);
+    router.push(option.href);
+  }
+
+  function setModalState(nextOpen: boolean) {
+    setLocalOpen(nextOpen);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextOpen) {
+      params.set("requestOptions", "1");
+    } else {
+      params.delete("requestOptions");
+    }
+
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
   }
 
   return (
     <>
-      {/* The main Request button*/}
       <button
         type="button"
-        onClick={() => setOpen(true)} // Open modal
+        onClick={() => setModalState(true)}
         className={
           unstyled
             ? className
-            : `rounded-xl px-4 py-2 font-medium shadow-sm border border-neutral-200 bg-white hover:bg-neutral-50 ${className}`
+            : `btn-secondary rounded-xl px-4 py-2 font-medium ${className}`.trim()
         }
       >
         {label}
       </button>
-      
-      {/* Only show the modal if open === True */}
-      {open && (
+
+      {open ? (
         <div
           className="fixed inset-0 z-50"
           role="dialog"
           aria-modal="true"
           aria-label="Request options"
         >
-          {/* Background overlay. Clicking it closes the modal */}
           <button
             type="button"
             className="absolute inset-0 bg-black/50"
-            onClick={() => setOpen(false)}
+            onClick={() => setModalState(false)}
             aria-label="Close modal"
           />
 
-          {/* Modal container */}
-          <div className="absolute left-1/2 top-1/2 w-[min(560px,92vw)] -translate-x-1/2
-                         -translate-y-1/2 rounded-2xl bg-white p-5 shadow-xl">
-            {/* Modal header */}
+          <div className="surface-card absolute left-1/2 top-1/2 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 text-[var(--foreground)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold">Choose request type</h2>
-                <p className="mt-1 text-sm text-neutral-600">
+                <p className="text-muted mt-1 text-sm">
                   Select how you want to request a ride.
                 </p>
               </div>
 
-              {/* Close button */}
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+                onClick={() => setModalState(false)}
+                className="btn-ghost rounded-lg px-2 py-1 text-sm text-muted"
                 aria-label="Close modal"
               >
-                ✕
+                x
               </button>
             </div>
 
-            {/* Request options */}
             <div className="mt-4 grid gap-3">
               {options.map((opt) => (
                 <button
                   key={opt.type}
                   type="button"
                   onClick={() => onSelect(opt)}
-                  className="text-left rounded-xl border border-neutral-200 p-4 hover:bg-neutral-50"
+                  className="surface-panel rounded-xl p-4 text-left transition hover:bg-[var(--surface)]"
                 >
                   <div className="font-medium">{opt.title}</div>
-                  <div className="mt-1 text-sm text-neutral-600">
-                    {opt.description}
-                  </div>
+                  <div className="text-muted mt-1 text-sm">{opt.description}</div>
                 </button>
               ))}
             </div>
-            
-            {/* Footer cancel button */}
+
             <div className="mt-4 flex justify-end">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-2 text-sm border border-neutral-200 hover:bg-neutral-50"
+                onClick={() => setModalState(false)}
+                className="btn-secondary px-4 py-2 text-sm"
               >
                 Cancel
               </button>
             </div>
-
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
