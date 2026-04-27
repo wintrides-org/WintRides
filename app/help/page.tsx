@@ -234,66 +234,6 @@ function FAQAnswer({ blocks }: { blocks: AnswerBlock[] }) {
   );
 }
 
-function TopRightIcons() {
-  return (
-    <div className="flex items-center gap-3">
-      <Link href="/account/profile" aria-label="Account" className="icon-button h-10 w-10">
-        <svg
-          viewBox="0 0 24 24"
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c2.2-4 13.8-4 16 0" />
-        </svg>
-      </Link>
-      <Link href="/in-progress" aria-label="Settings" className="icon-button h-10 w-10">
-        <svg
-          viewBox="0 0 24 24"
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a2 2 0 1 1-4 0v-.1a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a2 2 0 1 1 0-4h.1a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a2 2 0 1 1 4 0v.1a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6H20a2 2 0 1 1 0 4h-.1a1 1 0 0 0-.5.9Z" />
-        </svg>
-      </Link>
-      <Link
-        href="/help"
-        aria-label="Help"
-        className="icon-button h-10 w-10 bg-[color-mix(in_srgb,var(--primary)_10%,var(--background))]"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4" />
-          <circle cx="12" cy="17" r="1" />
-        </svg>
-      </Link>
-      <Link href="/in-progress" aria-label="Notifications" className="icon-button h-10 w-10">
-        <svg
-          viewBox="0 0 24 24"
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7" />
-          <path d="M9 18a3 3 0 0 0 6 0" />
-        </svg>
-      </Link>
-    </div>
-  );
-}
-
 export default function HelpPage() {
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
 
@@ -306,8 +246,15 @@ export default function HelpPage() {
 
   return (
     <main className="page-shell">
-      <div className="mx-auto max-w-6xl px-6 pb-16 pt-10">
-        <header className="flex flex-wrap items-start justify-between gap-6">
+      <div className="mx-auto max-w-6xl px-6 pb-20 pt-10">
+        <header className="app-topbar brand-accent-top flex flex-wrap items-start justify-between gap-6 rounded-[30px] px-5 py-5">
+          <div>
+            <p className="eyebrow">Support</p>
+            <h1 className={`${displayFont.className} mt-2 text-4xl sm:text-5xl`}>WintRides FAQ</h1>
+            <p className="text-muted mt-3 max-w-3xl text-base sm:text-lg">
+              Reliable, affordable rides for college students on rural and suburban campuses.
+            </p>
+          </div>
           <Link href="/dashboard" className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold">
             <svg
               viewBox="0 0 24 24"
@@ -320,22 +267,14 @@ export default function HelpPage() {
             </svg>
             Back to Dashboard
           </Link>
-          <TopRightIcons />
         </header>
 
-        <section className="mt-10">
-          <h1 className={`${displayFont.className} text-4xl sm:text-5xl`}>WintRides FAQ</h1>
-          <p className="text-muted mt-3 max-w-3xl text-lg sm:text-xl">
-            Reliable, affordable rides for college students on rural and suburban campuses.
-          </p>
-        </section>
-
-        <div className="mt-12 space-y-12">
+        <div className="mt-10 space-y-10">
           {sections.map((section) => (
-            <section key={section.title} className="border-t pt-8 first:border-t-0 first:pt-0">
-              <div className="btn-secondary mb-6 px-5 py-2 text-sm font-semibold uppercase tracking-[0.18em]">
+            <section key={section.title} className="space-y-5">
+              <h2 className="eyebrow text-base text-[var(--muted-foreground)]">
                 {section.title}
-              </div>
+              </h2>
 
               <div className="space-y-4">
                 {section.items.map((item) => {
@@ -343,7 +282,7 @@ export default function HelpPage() {
                   const isOpen = Boolean(openItems[itemKey]);
 
                   return (
-                    <article key={item.question} className="surface-card overflow-hidden rounded-[28px]">
+                    <article key={item.question} className="surface-card brand-accent-top overflow-hidden rounded-[28px]">
                       <button
                         type="button"
                         onClick={() => toggleItem(itemKey)}

@@ -551,7 +551,7 @@ export default function DashboardPage() {
         className="app-shell min-h-screen"
       >
         <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-muted">Loading...</p>
+          <p className="app-feedback-panel app-feedback-muted text-sm">Loading...</p>
         </div>
       </main>
     );
@@ -834,7 +834,7 @@ export default function DashboardPage() {
           {alertsOpen ? (
             <ul className="mt-2 space-y-4">
               {alerts.length === 0 ? (
-                <li className="text-muted text-sm">No alerts yet.</li>
+                <li className="app-feedback-panel app-feedback-muted text-sm">No alerts yet.</li>
               ) : null}
               {alerts.map((alert) => (
                 <li
@@ -888,26 +888,26 @@ export default function DashboardPage() {
 
             <div className="mt-4 space-y-4">
               {ridesLoading && (
-                <div className="surface-panel text-muted rounded-2xl border-dashed p-6 text-center text-sm">
+                <div className="app-feedback-panel app-feedback-muted app-feedback-center text-sm">
                   Loading ride status...
                 </div>
               )}
 
               {!ridesLoading && ridesError && (
-                <div className="surface-panel rounded-2xl p-6 text-center">
-                  <p className="text-sm text-red-600">{ridesError}</p>
+                <div className="app-feedback-panel app-feedback-error app-feedback-center">
+                  <p className="text-sm">{ridesError}</p>
                 </div>
               )}
 
               {!ridesLoading && !ridesError && upcomingRides.length === 0 && (
-                <div className="surface-panel text-muted rounded-2xl p-6 text-center text-sm">
+                <div className="app-feedback-panel app-feedback-muted app-feedback-center text-sm">
                   No upcoming rides yet.
                 </div>
               )}
 
               {!ridesLoading && !ridesError && cancelError && (
-                <div className="surface-panel rounded-2xl p-4 text-center">
-                  <p className="text-sm text-red-600">{cancelError}</p>
+                <div className="app-feedback-panel app-feedback-error app-feedback-center">
+                  <p className="text-sm">{cancelError}</p>
                 </div>
               )}
 

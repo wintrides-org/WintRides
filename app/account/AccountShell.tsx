@@ -76,6 +76,41 @@ const footerItems = [
   },
 ];
 
+const pageMeta: Record<string, { eyebrow: string; title: string; description: string }> = {
+  "/account/profile": {
+    eyebrow: "Account",
+    title: "Profile",
+    description:
+      "Update your personal information. Email changes stay disabled until the verification flow is built.",
+  },
+  "/account/driver-info": {
+    eyebrow: "Account",
+    title: "Driver Info",
+    description: "Driver status, license details, and insights live here.",
+  },
+  "/account/reviews": {
+    eyebrow: "Account",
+    title: "Reviews",
+    description: "Ratings summary and review history live here.",
+  },
+  "/account/payments": {
+    eyebrow: "Account",
+    title: "Payments",
+    description:
+      "Manage the saved rider payment method and the driver payout onboarding flow in one place.",
+  },
+  "/account/preferences": {
+    eyebrow: "Account",
+    title: "Preferences",
+    description: "Personalization settings live here. (Planned for v2.)",
+  },
+  "/account/signout": {
+    eyebrow: "Account",
+    title: "Sign out",
+    description: "Leave your WintRides account session securely.",
+  },
+};
+
 export default function AccountShell({
   children,
 }: {
@@ -87,6 +122,7 @@ export default function AccountShell({
     if (!pathname) return "/account/profile";
     return pathname.startsWith("/account") ? pathname : "/account/profile";
   }, [pathname]);
+  const activePage = pageMeta[activeHref] || pageMeta["/account/profile"];
 
   return (
     <div className="app-shell min-h-screen text-[var(--foreground)]">
@@ -171,8 +207,13 @@ export default function AccountShell({
 
         <main className="flex-1 px-8 py-10">
           <div className="mx-auto w-full max-w-5xl">
-            <div className="app-topbar mb-6 flex items-center justify-between rounded-[28px] px-5 py-4">
-              <BrandMark href="/dashboard" />
+            <div className="app-topbar brand-accent-top mb-8 flex flex-wrap items-start justify-between gap-5 rounded-[28px] px-5 py-5">
+              <div>
+                <BrandMark href="/dashboard" />
+                <p className="eyebrow mt-6">{activePage.eyebrow}</p>
+                <h1 className="font-heading mt-2 text-3xl font-semibold">{activePage.title}</h1>
+                <p className="text-muted mt-2 text-sm">{activePage.description}</p>
+              </div>
               <Link href="/dashboard" className="btn-secondary px-4 py-2 text-sm">
                 Back to rider dashboard
               </Link>

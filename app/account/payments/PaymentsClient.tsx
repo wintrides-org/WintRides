@@ -128,7 +128,7 @@ function RiderSetupForm({
 
       <PaymentElement />
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="app-feedback-panel app-feedback-error text-sm">{error}</p> : null}
 
       <button
         type="submit"
@@ -259,29 +259,19 @@ export default function PaymentsClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="eyebrow">
-          Account
-        </p>
-        <h1 className="font-heading mt-2 text-3xl font-semibold">Payments</h1>
-        <p className="text-muted mt-2 text-sm">
-          Manage the saved rider payment method and the driver payout onboarding flow in one place.
-        </p>
-      </header>
-
+    <div className="space-y-8">
       {loading ? (
-        <div className="surface-panel rounded-2xl border-dashed p-6 text-sm text-[var(--muted-foreground)]">
+        <div className="app-feedback-panel app-feedback-muted text-sm">
           Loading payment details...
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="app-feedback-panel app-feedback-error text-sm">
           {error}
         </div>
       ) : summary ? (
         <>
-          <section className="grid gap-4 lg:grid-cols-2">
-            <div className="surface-panel rounded-2xl p-5">
+          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="surface-card brand-accent-top rounded-[28px] p-6">
               <h2 className="text-base font-semibold text-[var(--primary)]">Rider payment readiness</h2>
               <p className="text-muted mt-2 text-sm">
                 Riders must have a saved card before they can request a ride, create a carpool, or join a carpool.
@@ -348,7 +338,7 @@ export default function PaymentsClient() {
               ) : null}
             </div>
 
-            <div className="surface-panel rounded-2xl p-5">
+            <div className="surface-card brand-accent-top rounded-[28px] p-6">
               <h2 className="text-base font-semibold text-[var(--primary)]">Driver payouts</h2>
               <p className="text-muted mt-2 text-sm">
                 Set up your payout account so WintRides can send your earnings after completed rides.
@@ -397,7 +387,7 @@ export default function PaymentsClient() {
                 </button>
 
                   {connectError ? (
-                    <p className="mt-3 text-sm text-red-600">{connectError}</p>
+                    <p className="app-feedback-panel app-feedback-error mt-3 text-sm">{connectError}</p>
                   ) : null}
                 </>
               ) : (
@@ -408,7 +398,7 @@ export default function PaymentsClient() {
             </div>
           </section>
 
-          <section className="surface-panel rounded-2xl p-5">
+          <section className="surface-card brand-accent-top rounded-[28px] p-6">
             <h2 className="text-base font-semibold text-[var(--primary)]">Recent payment activity</h2>
 
             <div className="mt-4 space-y-3">

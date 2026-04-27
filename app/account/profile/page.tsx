@@ -215,7 +215,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="surface-panel rounded-2xl border-dashed p-6 text-sm text-[var(--muted-foreground)]">
+      <div className="app-feedback-panel app-feedback-muted text-sm">
         Loading profile...
       </div>
     );
@@ -223,18 +223,8 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <p className="eyebrow">
-          Account
-        </p>
-        <h1 className="font-heading mt-2 text-3xl font-semibold">Profile</h1>
-        <p className="text-muted mt-2 text-sm">
-          Update your personal information. Email changes stay disabled until the verification flow is built.
-        </p>
-      </header>
-
-      <section className="surface-card overflow-hidden rounded-[32px]">
-        <div className="border-b border-[var(--border)] px-8 py-6">
+      <section className="surface-card brand-accent-top overflow-hidden rounded-[32px]">
+        <div className="border-b border-[var(--border)] px-8 py-7">
           <p className="eyebrow">
             Bio + Personal Information
           </p>
@@ -243,7 +233,7 @@ export default function ProfilePage() {
           </h2>
         </div>
 
-        <div className="grid gap-8 px-8 py-8 lg:grid-cols-[260px_1fr]">
+        <div className="grid gap-8 px-8 py-9 lg:grid-cols-[260px_1fr]">
           <aside className="surface-panel flex flex-col items-center justify-start rounded-[28px] px-6 py-8 text-center">
             <div className="grid h-40 w-40 place-items-center rounded-full border-2 border-[var(--primary)] bg-[var(--background)] text-4xl font-semibold text-[var(--primary)]">
               {profileInitials}
@@ -379,14 +369,12 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-[24px] p-5">
+            <div className="surface-panel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-6">
               <div className="space-y-1">
                 <p className="text-muted text-sm">
                   Username changes save to the database. Name remains local until a shared profile-name field is added.
                 </p>
-                {saveError ? (
-                  <p className="text-sm text-[#b42318]">{saveError}</p>
-                ) : null}
+                {saveError ? <p className="app-feedback-panel app-feedback-error text-sm">{saveError}</p> : null}
               </div>
               <button
                 type="button"

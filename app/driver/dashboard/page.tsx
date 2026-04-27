@@ -738,13 +738,13 @@ export default function DriverDashboardPage() {
                         </div>
                       ))}
                       {openRequests.length === 0 ? (
-                        <p className="surface-panel rounded-2xl px-4 py-4 text-center text-sm">
+                        <p className="app-feedback-panel app-feedback-muted app-feedback-center text-sm">
                           No open ride requests yet.
                         </p>
                       ) : null}
                     </div>
                   ) : (
-                    <p className="surface-panel rounded-2xl px-4 py-4 text-center text-sm">
+                    <p className="app-feedback-panel app-feedback-muted app-feedback-center text-sm">
                       Turn ON availability to see ride requests.
                     </p>
                   )}
@@ -774,7 +774,7 @@ export default function DriverDashboardPage() {
               </div>
               <div className="mt-5 space-y-3">
                 {upcomingRequests.length === 0 ? (
-                  <p className="text-muted text-sm">
+                  <p className="app-feedback-panel app-feedback-muted text-sm">
                     No upcoming rides yet.
                   </p>
                 ) : (

@@ -303,16 +303,21 @@ export default function CarpoolThreadPage() {
   if (loading) {
     return (
       <main className="page-shell mx-auto max-w-4xl p-6">
-        <Link
-          href="/carpool/feed"
-          className="icon-button h-12 w-12"
-          aria-label="Back to carpool feed"
-        >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <div className="py-12 text-center text-neutral-600">Loading carpool...</div>
+        <div className="app-topbar brand-accent-top rounded-[30px] px-5 py-5">
+          <Link
+            href="/carpool/feed"
+            className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold"
+            aria-label="Back to carpool feed"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back to feed
+          </Link>
+        </div>
+        <div className="surface-card brand-accent-top app-feedback-center mt-8 rounded-[28px] py-12 text-muted">
+          Loading carpool...
+        </div>
       </main>
     );
   }
@@ -320,21 +325,24 @@ export default function CarpoolThreadPage() {
   if (error && !carpool) {
     return (
       <main className="page-shell mx-auto max-w-4xl p-6">
-        <Link
-          href="/carpool/feed"
-          className="icon-button h-12 w-12"
-          aria-label="Back to carpool feed"
-        >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <div className="py-12 text-center">
+        <div className="app-topbar brand-accent-top rounded-[30px] px-5 py-5">
+          <Link
+            href="/carpool/feed"
+            className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold"
+            aria-label="Back to carpool feed"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back to feed
+          </Link>
+        </div>
+        <div className="surface-card brand-accent-top mt-8 rounded-[28px] py-12 text-center">
           <p className="mb-4 text-red-600">{error}</p>
           <button
             type="button"
             onClick={() => router.push("/carpool/feed")}
-            className="rounded-xl border border-neutral-200 px-4 py-2 hover:bg-neutral-50"
+            className="btn-secondary px-4 py-2 text-sm font-semibold"
           >
             Back to Feed
           </button>
@@ -387,33 +395,45 @@ export default function CarpoolThreadPage() {
 
   return (
     <main className="page-shell mx-auto max-w-4xl p-6">
-      <Link
-        href="/carpool/feed"
-        className="icon-button h-12 w-12"
-        aria-label="Back to carpool feed"
-      >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </Link>
-
-      <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-4 border-b border-neutral-200 pb-4">
-          <div className="min-w-0 flex-1">
-            <h1 className={`${displayFont.className} mb-2 text-2xl font-semibold text-[var(--primary)]`}>
+      <header className="app-topbar brand-accent-top rounded-[30px] px-5 py-5">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <p className="eyebrow">Carpool Thread</p>
+            <h1 className={`${displayFont.className} mt-2 text-3xl font-semibold text-[var(--primary)]`}>
               {carpool.destination}
             </h1>
-            <div className="space-y-1 text-sm text-neutral-600">
+            <p className="text-muted mt-2 text-sm">
+              Review trip details, participants, and next steps for this thread.
+            </p>
+          </div>
+          <Link
+            href="/carpool/feed"
+            className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold"
+            aria-label="Back to carpool feed"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back to feed
+          </Link>
+        </div>
+      </header>
+
+      <div className="surface-card brand-accent-top mt-8 rounded-[28px] p-6">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] pb-5">
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow">Trip details</p>
+            <div className="mt-3 space-y-1 text-sm text-muted">
               <p>
-                <span className="font-medium text-neutral-800">Date:</span>{" "}
+                <span className="font-medium text-[var(--foreground)]">Date:</span>{" "}
                 {formatDateLong(carpool.date)}
               </p>
               <p>
-                <span className="font-medium text-neutral-800">Time:</span>{" "}
+                <span className="font-medium text-[var(--foreground)]">Time:</span>{" "}
                 {formatTimeWindow(carpool.timeWindow)}
               </p>
               <p>
-                <span className="font-medium text-neutral-800">Pickup:</span> {carpool.pickupArea}
+                <span className="font-medium text-[var(--foreground)]">Pickup:</span> {carpool.pickupArea}
               </p>
               {carpool.notes && <p className="mt-2 italic">{carpool.notes}</p>}
             </div>
@@ -437,27 +457,47 @@ export default function CarpoolThreadPage() {
           ) : null}
         </div>
 
-        <div className="flex flex-wrap gap-6 pt-4 text-sm text-neutral-600">
+        <div className="flex flex-wrap gap-6 pt-5 text-sm text-muted">
           <div>
-            <span className="font-medium text-neutral-800">{carpool.confirmedCount}</span>{" "}
+            <span className="font-medium text-[var(--foreground)]">{carpool.confirmedCount}</span>{" "}
             confirmed
           </div>
           <div>
-            <span className="font-medium text-neutral-800">{carpool.interestedCount}</span>{" "}
+            <span className="font-medium text-[var(--foreground)]">{carpool.interestedCount}</span>{" "}
             interested
           </div>
           <div>
-            <span className="font-medium text-neutral-800">{seatsRemaining}</span> seats left
+            <span className="font-medium text-[var(--foreground)]">{seatsRemaining}</span> seats left
           </div>
         </div>
+        {phaseInterested && (
+          <div className="mt-6 flex flex-wrap gap-3 border-t border-[var(--border)] pt-5">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={actionLoading !== ""}
+              className="btn-primary min-w-[200px] flex-1 px-5 py-3 text-sm font-semibold disabled:opacity-50"
+            >
+              {actionLoading === "confirm" ? "Confirming..." : "Confirm participation"}
+            </button>
+            <button
+              type="button"
+              onClick={handleLeave}
+              disabled={actionLoading !== ""}
+              className="btn-secondary min-w-[200px] flex-1 px-5 py-3 text-sm font-semibold disabled:opacity-50"
+            >
+              {actionLoading === "leave" ? "Removing..." : "Remove interest"}
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
-        <div className="mb-4 mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        <div className="app-feedback-panel app-feedback-error mb-4 mt-4 text-sm">{error}</div>
       )}
 
       {sessionError && !userId && (
-        <div className="surface-panel mb-4 mt-4 rounded-xl p-3 text-sm text-muted">
+        <div className="app-feedback-panel app-feedback-muted mb-4 mt-4 text-sm">
           {sessionError}
         </div>
       )}
@@ -484,8 +524,8 @@ export default function CarpoolThreadPage() {
 
       {/* Phase 1 (browse on detail): interest only, no chat */}
       {phaseBrowse && carpool.status !== "CANCELED" && carpool.status !== "EXPIRED" && (
-        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-          <p className="mb-4 text-sm text-neutral-600">
+        <div className="surface-card brand-accent-top mt-6 rounded-[24px] p-5">
+          <p className="mb-4 text-sm text-muted">
             Starts around <span className="font-medium">{formatStartTime(carpool.timeWindow.start)}</span>
             . No commitment until you confirm on the next step.
           </p>
@@ -497,7 +537,7 @@ export default function CarpoolThreadPage() {
           >
             {actionLoading === "join" ? "Joining…" : "I'm interested"}
           </button>
-          <p className="mt-2 text-center text-xs text-neutral-500">
+          <p className="app-helper-text mt-2 text-center">
             No commitment yet — you can leave anytime
           </p>
         </div>
@@ -505,7 +545,7 @@ export default function CarpoolThreadPage() {
 
       {/* Host actions */}
       {isCreator && (
-        <div className="mt-6 flex flex-wrap gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+        <div className="surface-card brand-accent-top mt-6 flex flex-wrap gap-3 rounded-[24px] p-5">
           {canLock && (
             <button
               type="button"
@@ -537,9 +577,9 @@ export default function CarpoolThreadPage() {
       )}
 
       {/* Phase 2: interested rider */}
-      {phaseInterested && (
+      {false && phaseInterested && (
         <div className="mt-6">
-          <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="surface-card brand-accent-top rounded-[24px] p-5">
             <button
               type="button"
               onClick={handleConfirm}
@@ -562,7 +602,7 @@ export default function CarpoolThreadPage() {
 
       {/* Phase 3: confirmed rider */}
       {phaseConfirmedRider && (
-        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+        <div className="surface-card brand-accent-top mt-6 rounded-[24px] p-5">
           <div className="surface-panel mb-4 rounded-lg px-3 py-2 text-sm text-muted">
             Cancel window closes 2 hours before departure.
             {!canCancelConfirmed && (
@@ -583,12 +623,12 @@ export default function CarpoolThreadPage() {
       )}
 
       {showParticipants && (
-        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 border-b border-neutral-200 pb-2 font-semibold text-neutral-900">
+        <div className="surface-card brand-accent-top mt-6 rounded-[24px] p-5">
+          <h2 className="mb-3 border-b border-[var(--border)] pb-2 font-semibold text-[var(--foreground)]">
             Participants
           </h2>
           {carpool.participants.length === 0 ? (
-            <p className="text-sm text-neutral-600">No participants yet.</p>
+            <p className="text-sm text-muted">No participants yet.</p>
           ) : (
             <div className="space-y-2">
               {carpool.participants.map((p) => {
@@ -597,10 +637,10 @@ export default function CarpoolThreadPage() {
                 return (
                   <div
                     key={p.userId}
-                    className="flex items-center justify-between rounded-lg bg-neutral-50 p-2"
+                    className="surface-panel flex items-center justify-between rounded-lg p-2"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-neutral-900">
+                      <span className="text-sm font-medium text-[var(--foreground)]">
                         {p.isCreator ? "👑 " : ""}
                         {label}
                       </span>
@@ -614,7 +654,7 @@ export default function CarpoolThreadPage() {
                       {p.confirmedAt ? (
                         <span className="font-medium text-green-700">Confirmed</span>
                       ) : (
-                        <span className="text-neutral-500">Interested</span>
+                        <span className="text-muted">Interested</span>
                       )}
                     </div>
                   </div>
@@ -627,7 +667,8 @@ export default function CarpoolThreadPage() {
 
       {showChat && (
         <div className="mt-6">
-          <h2 className="mb-3 font-semibold text-neutral-900">Group chat</h2>
+          <p className="eyebrow mb-3">Conversation</p>
+          <h2 className="mb-3 font-semibold text-[var(--foreground)]">Group chat</h2>
           <CarpoolChat carpoolId={carpoolId} userId={userId} />
         </div>
       )}

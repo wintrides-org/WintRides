@@ -69,32 +69,41 @@ export default function CarpoolFeedPage() {
   return (
     <main className="page-shell px-6 py-12">
       <div className="mx-auto w-full max-w-4xl">
-        <Link href="/dashboard" className="icon-button h-12 w-12" aria-label="Back to dashboard">
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-
-        <div className="mb-6 mt-6 flex items-center justify-between">
-          <div>
-            <h1 className={`${displayFont.className} text-3xl font-semibold text-[var(--primary)]`}>
-              Carpool Feed
-            </h1>
-            <p className="text-muted mt-1 text-sm">
-              Browse and join carpools for your upcoming trips
-            </p>
+        <header className="app-topbar brand-accent-top rounded-[30px] px-5 py-5">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="eyebrow">Carpool</p>
+              <h1 className={`${displayFont.className} mt-2 text-3xl font-semibold text-[var(--primary)]`}>
+                Carpool Feed
+              </h1>
+              <p className="text-muted mt-2 text-sm">
+                Browse and join carpools for your upcoming trips.
+              </p>
+            </div>
+            <Link href="/dashboard" className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold" aria-label="Back to dashboard">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to dashboard
+            </Link>
           </div>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard?carpoolOptions=1")}
-            className="btn-primary px-5 py-2 text-sm font-semibold"
-          >
-            Create Carpool
-          </button>
-        </div>
+        </header>
 
-        <div className="surface-card mb-6 rounded-2xl p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="surface-card brand-accent-top mb-6 mt-8 rounded-[28px] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+            <p className="eyebrow">Discover</p>
+            <p className="text-muted mt-2 text-sm">Filter by destination or date to find the best fit faster.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard?carpoolOptions=1")}
+              className="btn-primary px-5 py-2 text-sm font-semibold"
+            >
+              Create Carpool
+            </button>
+          </div>
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="grid gap-1">
               <label className="text-sm font-medium">Filter by Destination</label>
               <input
@@ -102,7 +111,7 @@ export default function CarpoolFeedPage() {
                 value={destinationFilter}
                 onChange={(e) => setDestinationFilter(e.target.value)}
                 placeholder="e.g., Boston Airport"
-                className="app-input rounded-xl p-2"
+                className="app-input app-field-control"
               />
             </div>
             <div className="grid gap-1">
@@ -112,7 +121,7 @@ export default function CarpoolFeedPage() {
                 value={dateFilter}
                 min={today}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="app-input rounded-xl p-2"
+                className="app-input app-field-control"
               />
             </div>
           </div>
@@ -124,18 +133,31 @@ export default function CarpoolFeedPage() {
                 setDestinationFilter("");
                 setDateFilter("");
               }}
-              className="btn-secondary mt-3 px-4 py-1 text-sm font-medium"
+              className="btn-secondary mt-4 px-4 py-1 text-sm font-medium"
             >
               Clear filters
             </button>
           )}
         </div>
 
-        {loading && <div className="text-muted py-12 text-center">Loading carpools...</div>}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="eyebrow">Available threads</p>
+            <p className="text-muted mt-2 text-sm">
+              {loading ? "Checking current trips..." : `${carpools.length} thread${carpools.length === 1 ? "" : "s"} available`}
+            </p>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="app-feedback-panel app-feedback-muted app-feedback-center py-12">
+            Loading carpools...
+          </div>
+        )}
 
         {error && !loading && (
-          <div className="py-12 text-center">
-            <p className="mb-4 text-red-600">{error}</p>
+          <div className="app-feedback-panel app-feedback-error app-feedback-center py-12">
+            <p className="mb-4 text-sm">{error}</p>
             <button
               type="button"
               onClick={fetchCarpools}
@@ -147,8 +169,8 @@ export default function CarpoolFeedPage() {
         )}
 
         {!loading && !error && carpools.length === 0 && (
-          <div className="py-12 text-center">
-            <p className="text-muted mb-4">
+          <div className="app-feedback-panel app-feedback-muted app-feedback-center py-12">
+            <p className="mb-4 text-sm">
               {destinationFilter || dateFilter
                 ? "No carpools match your filters."
                 : "No carpools available yet. Be the first to create one!"}

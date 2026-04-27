@@ -18,7 +18,7 @@ export default function DashboardUtilityNav({
       <Link
         href="/account/profile"
         aria-label="Account"
-        className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
+        className="icon-button"
       >
         <svg
           viewBox="0 0 24 24"
@@ -35,7 +35,7 @@ export default function DashboardUtilityNav({
       <Link
         href="/in-progress"
         aria-label="Settings"
-        className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
+        className="icon-button"
       >
         <svg
           viewBox="0 0 24 24"
@@ -53,7 +53,7 @@ export default function DashboardUtilityNav({
         <Link
           href={homeHref}
           aria-label="Home"
-          className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
+          className="icon-button"
         >
           <svg
             viewBox="0 0 24 24"
@@ -70,7 +70,7 @@ export default function DashboardUtilityNav({
       <Link
         href="/help"
         aria-label="Help"
-        className="btn-secondary grid h-10 w-10 place-items-center rounded-full p-0"
+        className="icon-button"
       >
         <svg
           viewBox="0 0 24 24"
@@ -89,7 +89,7 @@ export default function DashboardUtilityNav({
         <Link
           href="/in-progress"
           aria-label="Notifications"
-          className="btn-secondary relative grid h-10 w-10 place-items-center rounded-full p-0"
+          className="icon-button relative"
         >
           <svg
             viewBox="0 0 24 24"

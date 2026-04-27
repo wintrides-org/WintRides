@@ -224,31 +224,40 @@ export default function CreateCarpoolPage() {
   return (
     <main className="page-shell px-6 py-12">
       <div className="mx-auto w-full max-w-xl">
-        <Link
-          href="/dashboard?carpoolOptions=1"
-          className="icon-button h-12 w-12"
-          aria-label="Back to carpool options"
-        >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <h1 className={`${displayFont.className} mt-6 text-3xl font-semibold text-[var(--primary)]`}>
-          Create Carpool
-        </h1>
-        <p className="text-muted mt-1 text-sm">
-          Fill out the details to create a new carpool thread.
-        </p>
+        <header className="app-topbar brand-accent-top rounded-[30px] px-5 py-5">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="eyebrow">Carpool</p>
+              <h1 className={`${displayFont.className} mt-2 text-3xl font-semibold text-[var(--primary)]`}>
+                Create Carpool
+              </h1>
+              <p className="text-muted mt-2 text-sm">
+                Fill out the details to create a new carpool thread.
+              </p>
+            </div>
+            <Link
+              href="/dashboard?carpoolOptions=1"
+              className="btn-secondary gap-2 px-4 py-2 text-sm font-semibold"
+              aria-label="Back to carpool options"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to options
+            </Link>
+          </div>
+        </header>
 
-      <div className="mt-6 grid gap-4">
+      <div className="mt-8 grid gap-5">
         {loadingSession ? (
-          <div className="surface-card rounded-2xl p-4 text-sm text-muted">
+          <div className="surface-card brand-accent-top rounded-[28px] p-5 text-sm text-muted">
             Loading account details...
           </div>
         ) : null}
 
         {canChooseCarpoolType && !carpoolType ? (
-          <div className="surface-card rounded-3xl p-5">
+          <div className="surface-card brand-accent-top rounded-[28px] p-6">
+            <p className="eyebrow">Step 1</p>
             <h2 className={`${displayFont.className} text-2xl text-[var(--primary)]`}>
               Who are you requesting this carpool AS?
             </h2>
@@ -288,7 +297,7 @@ export default function CreateCarpoolPage() {
         ) : null}
 
         {carpoolType ? (
-          <div className="surface-card rounded-2xl p-3 text-sm">
+          <div className="surface-card brand-accent-top rounded-[24px] p-4 text-sm">
             <span className="font-semibold">Carpool type:</span>{" "}
             {carpoolType === "DRIVER" ? "Driver on the request" : "Rider on request"}
             {canChooseCarpoolType ? (
@@ -304,7 +313,17 @@ export default function CreateCarpoolPage() {
         ) : null}
 
         {carpoolType ? (
-          <>
+          <div className="surface-card brand-accent-top rounded-[28px] p-6">
+        <p className="eyebrow">Step 2</p>
+        <div className="mt-2">
+          <h2 className={`${displayFont.className} text-2xl font-semibold text-[var(--primary)]`}>
+            Trip details
+          </h2>
+          <p className="text-muted mt-2 text-sm">
+            Add the destination, timing, pickup area, and seat details for this thread.
+          </p>
+        </div>
+        <div className="mt-6 space-y-5">
         {/* Destination */}
         <div className="grid gap-1">
           <label className="text-sm font-medium">Destination</label>
@@ -313,7 +332,7 @@ export default function CreateCarpoolPage() {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="Type a destination"
-            className="app-input rounded-xl p-3"
+            className="app-input app-field-control"
           />
           {errors.destination ? (
             <p className="text-sm text-red-600">{errors.destination}</p>
@@ -342,7 +361,7 @@ export default function CreateCarpoolPage() {
             value={date}
             min={today}
             onChange={(e) => setDate(e.target.value)}
-            className="app-input rounded-xl p-3"
+            className="app-input app-field-control"
           />
           {errors.date ? (
             <p className="text-sm text-red-600">{errors.date}</p>
@@ -359,7 +378,7 @@ export default function CreateCarpoolPage() {
                 type="time"
                 value={timeStart}
                 onChange={(e) => setTimeStart(e.target.value)}
-                className="app-input rounded-xl p-3"
+                className="app-input app-field-control"
               />
             </div>
             <div className="grid gap-1">
@@ -368,7 +387,7 @@ export default function CreateCarpoolPage() {
                 type="time"
                 value={timeEnd}
                 onChange={(e) => setTimeEnd(e.target.value)}
-                className="app-input rounded-xl p-3"
+                className="app-input app-field-control"
               />
             </div>
           </div>
@@ -377,7 +396,7 @@ export default function CreateCarpoolPage() {
               {errors.timeStart || errors.timeEnd}
             </p>
           ) : (
-            <p className="text-xs text-neutral-500">
+            <p className="app-helper-text">
               Choose a time window (e.g., 4:30 PM - 5:30 PM)
             </p>
           )}
@@ -391,7 +410,7 @@ export default function CreateCarpoolPage() {
             value={pickupArea}
             onChange={(e) => setPickupArea(e.target.value)}
             placeholder="Type a pickup location"
-            className="app-input rounded-xl p-3"
+            className="app-input app-field-control"
           />
           {errors.pickupArea ? (
             <p className="text-sm text-red-600">{errors.pickupArea}</p>
@@ -421,12 +440,12 @@ export default function CreateCarpoolPage() {
             max={10}
             value={seatsNeeded}
             onChange={(e) => setSeatsNeeded(Number(e.target.value))}
-            className="app-input rounded-xl p-3"
+            className="app-input app-field-control"
           />
           {errors.seatsNeeded ? (
             <p className="text-sm text-red-600">{errors.seatsNeeded}</p>
           ) : (
-            <p className="text-xs text-neutral-500">
+            <p className="app-helper-text">
               How many additional riders do you need?
             </p>
           )}
@@ -441,7 +460,7 @@ export default function CreateCarpoolPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g., luggage, quiet ride, etc."
-            className="app-input min-h-[84px] rounded-xl p-3"
+            className="app-input app-field-control min-h-[84px]"
           />
         </div>
 
@@ -464,7 +483,8 @@ export default function CreateCarpoolPage() {
         {submitError ? (
           <PaymentsSupportMessage message={submitError} className="text-sm text-red-600" />
         ) : null}
-          </>
+        </div>
+          </div>
         ) : null}
       </div>
       </div>
