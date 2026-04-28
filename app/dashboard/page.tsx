@@ -27,7 +27,7 @@
 // Dashboard is a client component because it checks auth state on the client (browser)
 // This means it shows the page before it checks if the user is logged in for that session
 // and uses local UI state (alerts, menus).
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import RequestButton from "@/components/requestbutton";
 import SignOutButton from "@/components/SignOutButton";
@@ -123,6 +123,26 @@ function buildAuthHeaders(sessionToken: string | null): HeadersInit | undefined 
 }
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardPageLoading />}>
+      <DashboardPageContent />
+    </Suspense>
+  );
+}
+
+function DashboardPageLoading() {
+  return (
+    <main
+      className="app-shell min-h-screen"
+    >
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="app-feedback-panel app-feedback-muted text-sm">Loading...</p>
+      </div>
+    </main>
+  );
+}
+
+function DashboardPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -546,15 +566,7 @@ export default function DashboardPage() {
 
   // Loading state while auth check runs.
   if (isLoading) {
-    return (
-      <main
-        className="app-shell min-h-screen"
-      >
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p className="app-feedback-panel app-feedback-muted text-sm">Loading...</p>
-        </div>
-      </main>
-    );
+    return <DashboardPageLoading />;
   }
 
   // If unauthenticated, do not render anything (redirect in progress).
