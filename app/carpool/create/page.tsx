@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PaymentsSupportMessage from "@/components/PaymentsSupportMessage";
@@ -11,6 +11,26 @@ const displayFont = { className: "font-heading" };
 type FieldErrors = Partial<Record<"destination" | "date" | "timeStart" | "timeEnd" | "pickupArea" | "seatsNeeded", string>>;
 
 export default function CreateCarpoolPage() {
+  return (
+    <Suspense fallback={<CreateCarpoolFallback />}>
+      <CreateCarpoolPageContent />
+    </Suspense>
+  );
+}
+
+function CreateCarpoolFallback() {
+  return (
+    <main className="page-shell px-6 py-12">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="surface-card brand-accent-top rounded-[28px] p-5 text-sm text-muted">
+          Loading account details...
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function CreateCarpoolPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // When the rider arrives from the dashboard chooser, preserve the selected

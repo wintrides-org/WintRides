@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { estimatePriceRange } from "@/lib/requestValidation";
@@ -28,6 +28,28 @@ type RideRequestRow = {
 const displayFont = { className: "font-heading" };
 
 export default function DriverUpcomingPage() {
+  return (
+    <Suspense fallback={<DriverUpcomingFallback />}>
+      <DriverUpcomingPageContent />
+    </Suspense>
+  );
+}
+
+function DriverUpcomingFallback() {
+  return (
+    <main
+      className="page-shell px-6 py-10"
+    >
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="surface-card rounded-2xl p-6 text-center text-sm text-muted">
+          Loading upcoming rides...
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function DriverUpcomingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const MIN_CANCEL_REASON_LENGTH = 15;
